@@ -13,7 +13,12 @@ first part
 <a class="a" href="http://example.com/3" id="link3">a3</a>
 and they lived at the bottom of a well.</p>
 <p class="body">...</p>
-
+<div>
+<span>d1</span>
+</div>
+<div>
+<span>d2</span>
+</div>
 
 '''
 
@@ -55,11 +60,46 @@ def test_css_parser():
     # print(result)
     assert result == ['', 'a2', 'a3']
 
+    # test parsing list of input_objects
+    tags = uni.css.parse(HTML, 'div', '$self')
+    result = uni.css.parse(tags, 'span', '$text')
+    # print(result)
+    assert result == [['d1'], ['d2']]
 
-def test_css_parser():
+
+def test_re_parser():
     uni = Uniparser()
-    # test get attribute
+    # test re findall without ()
+    result = uni.re.parse(HTML, 'class="a"', '')
+    # print(result)
+    assert result == ['class="a"', 'class="a"', 'class="a"']
+
+    # test re findall with ()
+    result = uni.re.parse(HTML, 'class="(.*?)"', '')
+    # print(result)
+    assert result == ['title', 'body', 'a', 'a', 'a', 'body']
+
+    # test re match $0
+    result = uni.re.parse(HTML, 'class="(a)"', '$0')
+    # print(result)
+    assert result == ['class="a"', 'class="a"', 'class="a"']
+
+    # test re match $1
+    result = uni.re.parse(HTML, 'class="(a)"', '$1')
+    # print(result)
+    assert result == ['a', 'a', 'a']
+
+    # test re sub @xxx
+    result = uni.re.parse(HTML, '<a.*</a>', '')
+    result = uni.re.parse(result, 'class="(a)"', r'@class="\1 b"')
+    # print(result)
+    assert result == [
+        '<a class="a b" id="link1"><!--invisible comment--></a>',
+        '<a class="a b" href="http://example.com/2" id="link2">a2</a>',
+        '<a class="a b" href="http://example.com/3" id="link3">a3</a>'
+    ]
 
 
 if __name__ == "__main__":
     test_css_parser()
+    test_re_parser()

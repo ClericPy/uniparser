@@ -42,7 +42,7 @@ JSON = '''
       "price": 3
     }
   ],
-  "phoneNumbers": [
+  "phoneNums": [
     {
       "type"  : "iPhone",
       "number": "0123-4567-8888"
@@ -151,7 +151,7 @@ def test_jsonpath_parser():
     assert result == ['Nara']
 
     # test slice
-    result = uni.jsonpath.parse(JSON, '$.phoneNumbers[1:]', '')
+    result = uni.jsonpath.parse(JSON, '$.phoneNums[1:]', '')
     # print(result)
     assert result == [{'type': 'home', 'number': '0123-4567-8910'}]
 
@@ -161,8 +161,7 @@ def test_jsonpath_parser():
     assert result == [{'price': 2}, {'price': 3}]
 
     # test filter2
-    result = uni.jsonpath.parse(JSON, '$.phoneNumbers[?(@.type = "iPhone")]',
-                                '')
+    result = uni.jsonpath.parse(JSON, '$.phoneNums[?(@.type = "iPhone")]', '')
     # print(result)
     assert result == [{'type': 'iPhone', 'number': '0123-4567-8888'}]
 
@@ -185,7 +184,7 @@ def test_objectpath_parser():
     assert result == 'Nara'
 
     # test slice, not support...........
-    # result = uni.objectpath.parse(JSON, '$.phoneNumbers[0:1]', '')
+    # result = uni.objectpath.parse(JSON, '$.phoneNums[0:1]', '')
     # print(result)
     # assert result == [{'type': 'home', 'number': '0123-4567-8910'}]
 
@@ -195,10 +194,33 @@ def test_objectpath_parser():
     assert result == [{'price': 2}, {'price': 3}]
 
     # test filter2
-    result = uni.objectpath.parse(JSON, '$.phoneNumbers[@.type is "iPhone"]',
-                                  '')
+    result = uni.objectpath.parse(JSON, '$.phoneNums[@.type is "iPhone"]', '')
     # print(result)
     assert result == [{'type': 'iPhone', 'number': '0123-4567-8888'}]
+
+
+def test_udf_parser():
+    uni = Uniparser()
+    # test python code without import
+    result = uni.udf.parse(JSON, 'parse = lambda item: item.strip()[5:5+9]', '')
+    # print(result)
+    assert result == 'firstName'
+
+    # test python code with import, raise RuntimeError
+    scode = '''
+def parse(item):
+    import json
+    return json.loads(item)['firstName']
+'''
+    result = uni.udf.parse(JSON, scode, '')
+    # print(result)
+    assert isinstance(result, Exception)
+
+    # test python code with import, no raise RuntimeError
+    uni.udf._ALLOW_IMPORT = True
+    result = uni.udf.parse(JSON, scode, '')
+    # print(result)
+    assert result == 'John'
 
 
 if __name__ == "__main__":
@@ -206,3 +228,4 @@ if __name__ == "__main__":
     test_re_parser()
     test_jsonpath_parser()
     test_objectpath_parser()
+    test_udf_parser()

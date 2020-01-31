@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from json import loads
 from re import compile as re_compile
 # from typing import List
-from traceback import print_exc
 from warnings import filterwarnings
 
 from bs4 import BeautifulSoup, Tag
@@ -43,9 +42,9 @@ class BaseParser(ABC):
                 ]
             else:
                 return self._parse(input_object, param, value)
-        except Exception:
-            print_exc()
-            return None
+        except Exception as err:
+            # for traceback
+            return err
 
 
 class Rule(object):
@@ -184,8 +183,8 @@ class ObjectPathParser(BaseParser):
         :type input_object: [str, list, dict]
         :param param: JSON path
         :type param: [str]
-        :param value: attribute of find result
-        :type value: [str, None]
+        :param value: not to use
+        :type value: [Any]
     """
     name = 'objectpath'
     doc_url = 'http://github.com/adriank/ObjectPath'
@@ -199,6 +198,36 @@ class ObjectPathParser(BaseParser):
         if isgenerator(result):
             result = list(result)
         return result
+
+
+class UDFParser(BaseParser):
+    """Input as python function source code, which named as `parse`.
+
+        :param input_object: input object, any object.
+        :type input_object: [object]
+        :param param: python code
+        :type param: [str]
+        :param value: not to use
+        :type value: [Any]
+    """
+    name = 'udf'
+    doc_url = 'http://github.com/adriank/ObjectPath'
+    test_url = 'http://objectpath.org/'
+    _ALLOW_IMPORT = False
+
+    def _parse(self, input_object, param, value):
+        if not self._ALLOW_IMPORT and 'import' in param:
+            # cb = re_compile(r'^\s*(from  )?import \w+') # not strict enough
+            raise RuntimeError(
+                'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
+            )
+        exec(param)
+        tmp = locals().get('parse')
+        if not tmp:
+            raise ValueError(
+                'UDF format error, snippet should have the function named `parse`'
+            )
+        return tmp(input_object)
 
 
 # def parse_with_udf(scode):

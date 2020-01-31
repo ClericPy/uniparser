@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 # pip install jsonpath_ng
 
-from json import loads
 from abc import ABC, abstractmethod
+from json import loads
 from re import compile as re_compile
 # from typing import List
+from traceback import print_exc
 from warnings import filterwarnings
 
 from bs4 import BeautifulSoup, Tag
 from jsonpath_ng.ext import parse as jp_parse
+from objectpath import Tree as OP_Tree
+from inspect import isgenerator
 
 filterwarnings('ignore', message='^No parser was')
 
@@ -33,10 +36,16 @@ class BaseParser(ABC):
         pass
 
     def parse(self, input_object, param, value):
-        if isinstance(input_object, list):
-            return [self._parse(item, param, value) for item in input_object]
-        else:
-            return self._parse(input_object, param, value)
+        try:
+            if isinstance(input_object, list):
+                return [
+                    self._parse(item, param, value) for item in input_object
+                ]
+            else:
+                return self._parse(input_object, param, value)
+        except Exception:
+            print_exc()
+            return None
 
 
 class Rule(object):
@@ -44,7 +53,7 @@ class Rule(object):
 
 
 class CSSParser(BaseParser):
-    """CSS selector parser, requires bs4 and lxml.
+    """CSS selector parser, requires `bs4` and `lxml`(optional).
 
     Parse the input object with standard css selector, features from `BeautifulSoup`.
 
@@ -140,26 +149,14 @@ class RegexParser(BaseParser):
 
 
 class JSONPathParser(BaseParser):
-    """JSONPath parser, requires jsonpath_ng lib.
-    Parse the input object with standard regex, features from `re`.
+    """JSONPath parser, requires `jsonpath_ng` lib.
 
-        :param input_object: input object, could be str.
-        :type input_object: [str]
-        :param param: css selector path
+        :param input_object: input object, could be str, list, dict.
+        :type input_object: [str, list, dict]
+        :param param: JSON path
         :type param: [str]
-        :param value: operation for each item of result
-        :type value: [str]
-
-            @attribute: return element.get(xxx)
-
-            $text: return element.text
-
-            $innerHTML: return element.decode_contents()
-
-            $outerHTML: return str(element)
-
-            $self: return element
-
+        :param value: attribute of find result, default to '' as '$value'
+        :type value: [str, None]
         :return: list of str
         :rtype: List[Union[str]]
     """
@@ -177,6 +174,30 @@ class JSONPathParser(BaseParser):
             getattr(match, attr_name, match.value)
             for match in jsonpath_expr.find(input_object)
         ]
+        return result
+
+
+class ObjectPathParser(BaseParser):
+    """ObjectPath parser, requires `objectpath` lib.
+
+        :param input_object: input object, could be str, list, dict.
+        :type input_object: [str, list, dict]
+        :param param: JSON path
+        :type param: [str]
+        :param value: attribute of find result
+        :type value: [str, None]
+    """
+    name = 'objectpath'
+    doc_url = 'http://github.com/adriank/ObjectPath'
+    test_url = 'http://objectpath.org/'
+
+    def _parse(self, input_object, param, value=''):
+        if isinstance(input_object, str):
+            input_object = loads(input_object)
+        tree = OP_Tree(input_object)
+        result = tree.execute(param)
+        if isgenerator(result):
+            result = list(result)
         return result
 
 
@@ -199,6 +220,9 @@ class Uniparser(object):
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()
+        self.re = RegexParser()
+        self.jsonpath = JSONPathParser()
+        self.objectpath = ObjectPathParser()
 
     def _prepare_custom_parsers(self):
         for parser in BaseParser.__subclasses__():

@@ -21,6 +21,36 @@ and they lived at the bottom of a well.</p>
 </div>
 
 '''
+JSON = '''
+{
+  "firstName": "John",
+  "lastName" : "doe",
+  "age"      : 26,
+  "address"  : {
+    "streetAddress": "naist street",
+    "city"         : "Nara",
+    "postalCode"   : "630-0192"
+  },
+  "prices": [
+    {
+      "price": 1
+    },
+    {
+      "price": 2
+    }
+  ],
+  "phoneNumbers": [
+    {
+      "type"  : "iPhone",
+      "number": "0123-4567-8888"
+    },
+    {
+      "type"  : "home",
+      "number": "0123-4567-8910"
+    }
+  ]
+}
+'''
 
 
 def test_css_parser():
@@ -100,6 +130,46 @@ def test_re_parser():
     ]
 
 
+def test_jsonpath_parser():
+    uni = Uniparser()
+    # test default value ''
+    result = uni.jsonpath.parse(JSON, 'firstName', '')
+    # print(result)
+    assert result == ['John']
+
+    # test value=$value
+    result = uni.jsonpath.parse(JSON, 'firstName', '$value')
+    # print(result)
+    assert result == ['John']
+
+    # test absolute path
+    result = uni.jsonpath.parse(JSON, '$.address.city', '')
+    # print(result)
+    assert result == ['Nara']
+
+    # test slice
+    result = uni.jsonpath.parse(JSON, '$.phoneNumbers[1:]', '')
+    # print(result)
+    assert result == [{'type': 'home', 'number': '0123-4567-8910'}]
+
+    # test filter large than
+    result = uni.jsonpath.parse(JSON, '$.prices[?(@.price > 1)]', '')
+    # print(result)
+    assert result == [{'price': 2}]
+
+    # test filter2
+    result = uni.jsonpath.parse(JSON, '$.phoneNumbers[?(@.type = "iPhone")]',
+                                '')
+    print(result)
+    assert result == [{'type': 'iPhone', 'number': '0123-4567-8888'}]
+
+    # test other attributes, full_path
+    result = uni.jsonpath.parse(JSON, 'firstName', '$full_path')
+    # print(result)
+    assert str(result) == "[Fields('firstName')]"
+
+
 if __name__ == "__main__":
     test_css_parser()
     test_re_parser()
+    test_jsonpath_parser()

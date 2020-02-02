@@ -5,14 +5,16 @@ from abc import ABC, abstractmethod
 from functools import reduce
 from hashlib import md5 as _md5
 from inspect import isgenerator
-from json import loads
+from json import loads as json_loads, JSONDecodeError
 from re import compile as re_compile
-from typing import List, NamedTuple, Any
+from typing import Any, List, NamedTuple
 from warnings import filterwarnings
 
 from bs4 import BeautifulSoup, Tag
 from jsonpath_ng.ext import parse as jp_parse
 from objectpath import Tree as OP_Tree
+from toml import loads as toml_loads
+from yaml import load as yaml_loads
 
 filterwarnings('ignore', message='^No parser was')
 
@@ -57,8 +59,8 @@ class BaseParser(ABC):
     3. use lazy import, maybe
     4. Each parser subclass will recursion parse list of input_object, except PythonParser (self.)
     """
-    test_url = ''
-    doc_url = ''
+    test_url = 'https://github.com/ClericPy/uniparser'
+    doc_url = 'https://github.com/ClericPy/uniparser'
     name = 'base'
     _RECURSION_LIST = True
 
@@ -264,7 +266,7 @@ class JSONPathParser(BaseParser):
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
-            input_object = loads(input_object)
+            input_object = json_loads(input_object)
         value = value or '$value'
         attr_name = value[1:]
         jsonpath_expr = jp_parse(param)
@@ -291,7 +293,7 @@ class ObjectPathParser(BaseParser):
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
-            input_object = loads(input_object)
+            input_object = json_loads(input_object)
         tree = OP_Tree(input_object)
         result = tree.execute(param)
         if isgenerator(result):
@@ -367,6 +369,36 @@ class PythonParser(BaseParser):
         return input_object[key]
 
 
+class LoaderParser(BaseParser):
+    """ObjectPath parser, requires `objectpath` lib.
+
+        :param input_object: str match format of json / yaml / toml
+        :type input_object: [str]
+        :param param: loader name, such as: json, yaml, toml
+        :type param: [str]
+        :param value: some kwargs, input as json string
+        :type value: [str]
+    """
+    name = 'loader'
+    _RECURSION_LIST = False
+    loaders = {
+        'json': json_loads,
+        'toml': toml_loads,
+        'yaml': yaml_loads,
+    }
+
+    def _parse(self, input_object, param, value=''):
+        loader = self.loaders.get(param, return_self)
+        if value:
+            try:
+                kwargs = json_loads(value)
+                return loader(input_object, **kwargs)
+            except JSONDecodeError as err:
+                return err
+        else:
+            return loader(input_object)
+
+
 class Uniparser(object):
 
     def __init__(self):
@@ -378,10 +410,12 @@ class Uniparser(object):
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()
+        self.xml = XMLParser()
         self.re = RegexParser()
         self.jsonpath = JSONPathParser()
         self.objectpath = ObjectPathParser()
         self.python = PythonParser()
+        self.loader = LoaderParser()
 
     def _prepare_custom_parsers(self):
         for parser in BaseParser.__subclasses__():

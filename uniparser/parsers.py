@@ -2,15 +2,17 @@
 # pip install jsonpath_ng
 
 from abc import ABC, abstractmethod
+from functools import reduce
+from hashlib import md5 as _md5
+from inspect import isgenerator
 from json import loads
 from re import compile as re_compile
-# from typing import List
+from typing import List, NamedTuple, Any
 from warnings import filterwarnings
 
 from bs4 import BeautifulSoup, Tag
 from jsonpath_ng.ext import parse as jp_parse
 from objectpath import Tree as OP_Tree
-from inspect import isgenerator
 
 filterwarnings('ignore', message='^No parser was')
 
@@ -19,6 +21,33 @@ __all__ = ['BaseParser', 'Rule', 'Tag', 'CSSParser', 'RegexParser']
 
 def return_self(self, *args, **kwargs):
     return self
+
+
+def md5(string, n=32, encoding="utf-8", skip_encode=False):
+    """str(obj) -> md5_string
+
+    :param string: string to operate.
+    :param n: md5_str length.
+
+    >>> md5(1, 10)
+    '923820dcc5'
+    >>> md5('test')
+    '098f6bcd4621d373cade4e832627b4f6'
+    """
+    todo = string if skip_encode else str(string).encode(encoding)
+    if n == 32:
+        return _md5(todo).hexdigest()
+    elif isinstance(n, (int, float)):
+        return _md5(todo).hexdigest()[(32 - n) // 2:(n - 32) // 2]
+    elif isinstance(n, (tuple, list)):
+        return _md5(todo).hexdigest()[n[0]:n[1]]
+
+
+class ParseRule(NamedTuple):
+    method: str
+    input_object: Any
+    param: str
+    value: Any
 
 
 class BaseParser(ABC):
@@ -48,7 +77,21 @@ class BaseParser(ABC):
 
 
 class Rule(object):
-    __slots__ = ()
+    __slots__ = ('id', 'name', 'parse_rules')
+
+    def __init__(
+            self,
+            name: str,
+            request: dict,
+            parse_rules: List,
+    ):
+        assert name
+        self.id = md5(name)
+        self.name = name
+        self.parse_rules = parse_rules
+
+    def add_parse_rule(self, parse_rule: List):
+        pass
 
 
 class CSSParser(BaseParser):
@@ -103,11 +146,13 @@ class CSSParser(BaseParser):
         return result
 
 
-class RegexParser(BaseParser):
-    """Parse the input object with standard regex, features from `re`.
+class XMLParser(BaseParser):
+    """XML parser, requires `bs4` and `lxml`(necessary).
 
-        :param input_object: input object, could be str.
-        :type input_object: [str]
+    Parse the input object with css selector, `BeautifulSoup` with features='xml'.
+
+        :param input_object: input object, could be Tag or str.
+        :type input_object: [Tag, str]
         :param param: css selector path
         :type param: [str]
         :param value: operation for each item of result
@@ -117,11 +162,59 @@ class RegexParser(BaseParser):
 
             $text: return element.text
 
-            $innerHTML: return element.decode_contents()
+            $innerXML: return element.decode_contents()
 
-            $outerHTML: return str(element)
+            $outerXML: return str(element)
 
             $self: return element
+
+        :return: list of Tag / str
+        :rtype: List[Union[str, Tag]]
+    """
+    name = 'xml'
+    doc_url = 'https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors'
+    operations = {
+        '@attr': lambda element: element.get(),
+        '$text': lambda element: element.text,
+        '$innerXML': lambda element: element.decode_contents(),
+        '$outerXML': lambda element: str(element),
+        '$self': return_self,
+    }
+
+    def _parse(self, input_object, param, value):
+        result = []
+        if not input_object:
+            return result
+        # ensure input_object is instance of BeautifulSoup
+        if not isinstance(input_object, Tag):
+            input_object = BeautifulSoup(input_object, 'xml')
+        operate = self.operations.get(value, return_self)
+        if value.startswith('@'):
+            result = [
+                item.get(value[1:], '') for item in input_object.select(param)
+            ]
+        else:
+            result = [operate(item) for item in input_object.select(param)]
+        return result
+
+
+class RegexParser(BaseParser):
+    """Parse the input object with standard regex, features from `re`.
+
+        :param input_object: input object, could be str.
+        :type input_object: [str]
+        :param param: standard regex
+        :type param: [str]
+        :param value: operation for each item of result
+        :type value: [str]
+
+            @some string: using re.sub
+
+            $0: re.finditer and return list of the whole matched string
+
+            $1: re.finditer, $1 means return list of group 1
+
+            '': null str, means using re.findall method
 
         :return: list of str
         :rtype: List[Union[str]]
@@ -228,14 +321,6 @@ class UDFParser(BaseParser):
                 'UDF format error, snippet should have the function named `parse`'
             )
         return tmp(input_object)
-
-
-# def parse_with_udf(scode):
-#     exec(scode)
-#     tmp = locals().get('parse')
-#     if not tmp:
-#         raise ValueError('UDF format error, snippet should be one function named `parse`')
-#     return tmp(1)
 
 
 class Uniparser(object):

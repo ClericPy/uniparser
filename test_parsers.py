@@ -147,7 +147,7 @@ def test_css_parser():
     # print(result)
     assert result == ['', 'a2', 'a3']
 
-    # test parsing list of input_objects
+    # test parsing list of input_object
     tags = uni.css.parse(HTML, 'div', '$self')
     result = uni.css.parse(tags, 'span', '$text')
     # print(result)
@@ -196,7 +196,7 @@ def test_xml_parser():
     # print(result)
     assert result == ['This is a title']
 
-    # test parsing list of input_objects
+    # test parsing list of input_object
     tags = uni.xml.parse(XML, 'item', '$self')
     result = uni.xml.parse(tags, 'title', '$text')
     # print(result)
@@ -370,6 +370,11 @@ def parse(item):
     result = uni.python.parse(JSON, 'udf', scode)
     # print(result)
     assert result == 'John'
+
+    # test python code without parse function, using eval
+    result = uni.python.parse('hello', 'udf', 'input_object + " world."')
+    # print(result)
+    assert result == 'hello world.'
 
 
 if __name__ == "__main__":

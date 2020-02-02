@@ -307,7 +307,7 @@ class PythonParser(BaseParser):
         param & value:
 
             1.  param: udf
-                value: the python source code to be exec(), must have the function named `parse`.
+                value: the python source code to be exec(value), either have the function named `parse`, or will return eval(value)
             2.  param: getitem
                 value: could be [0] as index, [1:3] as slice
             3.  param: split
@@ -337,13 +337,16 @@ class PythonParser(BaseParser):
             raise RuntimeError(
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
-        exec(value)
-        tmp = locals().get('parse')
-        if not tmp:
-            raise ValueError(
-                'UDF format error, snippet should have the function named `parse`'
-            )
-        return tmp(input_object)
+        if 'parse' in value and ('lambda' in value or 'def ' in value):
+            exec(value)
+            tmp = locals().get('parse')
+            if not tmp:
+                raise ValueError(
+                    'UDF format error, snippet should have the function named `parse`'
+                )
+            return tmp(input_object)
+        else:
+            return eval(value)
 
     def _handle_getitem(self, input_object, param, value):
         value = value[1:-1]

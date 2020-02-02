@@ -4,7 +4,6 @@ from uniparser import Uniparser
 from uniparser.parsers import Tag
 
 HTML = '''
-
 <html><head><title >This is HTML title</title></head>
 <body>
 <p class="title" name="dromouse"><b>This is article title</b></p>
@@ -21,7 +20,6 @@ and they lived at the bottom of a well.</p>
 <div>
 <span>d2</span>
 </div>
-
 '''
 JSON = '''
 {
@@ -57,7 +55,6 @@ JSON = '''
 }
 '''
 XML = r'''
-
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
     <channel>
@@ -81,7 +78,6 @@ XML = r'''
             <category>
                 <![CDATA[category]]>
             </category>
-
             <guid isPermaLink="false">https://www.example.com/?p=35293</guid>
             <description>
                 <![CDATA[ description ]]>
@@ -101,7 +97,6 @@ XML = r'''
             <category>
                 <![CDATA[category]]>
             </category>
-
             <guid isPermaLink="false">https://www.example.com/?p=35293</guid>
             <description>
                 <![CDATA[ description ]]>
@@ -210,16 +205,18 @@ def test_xml_parser():
 
 def test_re_parser():
     uni = Uniparser()
-    # test re findall without ()
+    # ======================
+    # test re findall without () group
     result = uni.re.parse(HTML, 'class="a"', '')
     # print(result)
     assert result == ['class="a"', 'class="a"', 'class="a"']
 
-    # test re findall with ()
+    # test re findall with () group
     result = uni.re.parse(HTML, 'class="(.*?)"', '')
     # print(result)
     assert result == ['title', 'body', 'a', 'a', 'a', 'body']
 
+    # ======================
     # test re match $0
     result = uni.re.parse(HTML, 'class="(a)"', '$0')
     # print(result)
@@ -230,6 +227,7 @@ def test_re_parser():
     # print(result)
     assert result == ['a', 'a', 'a']
 
+    # ======================
     # test re sub @xxx, with group id \1
     result = uni.re.parse(HTML, '<a.*</a>', '')
     result = uni.re.parse(result, 'class="(a)"', r'@class="\1 b"')
@@ -239,6 +237,11 @@ def test_re_parser():
         '<a class="a b" href="http://example.com/2" id="link2">a2</a>',
         '<a class="a b" href="http://example.com/3" id="link3">a3</a>'
     ]
+    # ======================
+    # test re.split
+    result = uni.re.parse('a\t \nb  c', r'\s+', '-')
+    # print(result)
+    assert result == ['a', 'b', 'c']
 
 
 def test_jsonpath_parser():
@@ -307,15 +310,48 @@ def test_objectpath_parser():
     assert result == [{'type': 'iPhone', 'number': '0123-4567-8888'}]
 
 
-def test_udf_parser():
+def test_python_parser():
     uni = Uniparser()
+    # ===================== test getitem =====================
+    # getitem with index
+    result = uni.python.parse([1, 2, 3], 'getitem', '[-1]')
+    # print(result)
+    assert result == 3
+
+    # getitem with slice
+    result = uni.python.parse([1, 2, 3], 'getitem', '[:2]')
+    # print(result)
+    assert result == [1, 2]
+    result = uni.python.parse([1, 2, 3, 4, 5], 'getitem', '[1::2]')
+    # print(result)
+    assert result == [2, 4]
+
+    # ===================== test split =====================
+    # split by None
+    result = uni.python.parse('a b\tc \n \td', 'split', '')
+    # print(result)
+    assert result == ['a', 'b', 'c', 'd']
+
+    # split by 's'
+    result = uni.python.parse('asbscsd', 'split', 's')
+    # print(result)
+    assert result == ['a', 'b', 'c', 'd']
+
+    # ===================== test join =====================
+    # join by ''
+    result = uni.python.parse(['a', 'b', 'c', 'd'], 'join', '')
+    # print(result)
+    assert result == 'abcd'
+
+    # ===================== test udf =====================
     # test python code without import; use `lambda` and `def`
-    result = uni.udf.parse(JSON, 'parse = lambda item: item.strip()[5:5+9]', '')
+    result = uni.python.parse(JSON, 'udf',
+                              'parse = lambda item: item.strip()[5:5+9]')
     # print(result)
     assert result == 'firstName'
     # test python code without import; use `lambda` and `def`
-    result = uni.udf.parse(JSON, 'def parse(item): return item.strip()[5:5+9]',
-                           '')
+    result = uni.python.parse(JSON, 'udf',
+                              'def parse(item): return item.strip()[5:5+9]')
     # print(result)
     assert result == 'firstName'
 
@@ -325,13 +361,13 @@ def parse(item):
     import json
     return json.loads(item)['firstName']
 '''
-    result = uni.udf.parse(JSON, scode, '')
+    result = uni.python.parse(JSON, 'udf', scode)
     # print(result)
     assert isinstance(result, Exception)
 
     # test python code with import, no raise RuntimeError
-    uni.udf._ALLOW_IMPORT = True
-    result = uni.udf.parse(JSON, scode, '')
+    uni.python._ALLOW_IMPORT = True
+    result = uni.python.parse(JSON, 'udf', scode)
     # print(result)
     assert result == 'John'
 
@@ -342,4 +378,4 @@ if __name__ == "__main__":
     test_re_parser()
     test_jsonpath_parser()
     test_objectpath_parser()
-    test_udf_parser()
+    test_python_parser()

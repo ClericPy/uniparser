@@ -361,15 +361,41 @@ def test_python_parser():
     # print(result)
     assert result == 'abcd'
 
-    # ===================== test udf =====================
+
+def test_udf_parser():
+    uni = Uniparser()
+    context = {'a': 1}
+    # ===================== test udf with context=====================
+    # return a variable like context, one line code.
+    result = uni.udf.parse('abcd', 'context', context)
+    # print(result)
+    assert result == context
+
+    # return a variable like context, lambda function.
+    # context will be set to exec's globals
+    result = uni.udf.parse(
+        'abcd', 'parse = lambda input_object: (input_object, context)', context)
+    # print(result)
+    assert result == ('abcd', context)
+
+    # return a variable like context, `def` function.
+    # context will be set to exec's globals
+    scode = '''
+def parse(item):
+    return (item, context)
+'''
+    result = uni.udf.parse('abcd', scode, context)
+    # print(result)
+    assert result == ('abcd', context)
+
+    # ===================== test udf without context=====================
     # test python code without import; use `lambda` and `def`
-    result = uni.python.parse(JSON, 'udf',
-                              'parse = lambda item: item.strip()[5:5+9]')
+    result = uni.udf.parse(JSON, 'parse = lambda item: item.strip()[5:5+9]', '')
     # print(result)
     assert result == 'firstName'
     # test python code without import; use `lambda` and `def`
-    result = uni.python.parse(JSON, 'udf',
-                              'def parse(item): return item.strip()[5:5+9]')
+    result = uni.udf.parse(JSON, 'def parse(item): return item.strip()[5:5+9]',
+                           '')
     # print(result)
     assert result == 'firstName'
 
@@ -379,18 +405,18 @@ def parse(item):
     import json
     return json.loads(item)['firstName']
 '''
-    result = uni.python.parse(JSON, 'udf', scode)
+    result = uni.udf.parse(JSON, scode, '')
     # print(result)
     assert isinstance(result, Exception)
 
     # test python code with import, no raise RuntimeError
-    uni.python._ALLOW_IMPORT = True
-    result = uni.python.parse(JSON, 'udf', scode)
+    uni.udf._ALLOW_IMPORT = True
+    result = uni.udf.parse(JSON, scode, '')
     # print(result)
     assert result == 'John'
 
     # test python code without parse function, using eval
-    result = uni.python.parse('hello', 'udf', 'input_object + " world."')
+    result = uni.udf.parse('hello', 'input_object + " world."', '')
     # print(result)
     assert result == 'hello world.'
 
@@ -440,4 +466,5 @@ if __name__ == "__main__":
     test_jsonpath_parser()
     test_objectpath_parser()
     test_python_parser()
+    test_udf_parser()
     test_loader_parser()

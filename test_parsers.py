@@ -108,6 +108,24 @@ XML = r'''
     </channel>
 </rss>
 '''
+YAML = r'''
+user1:
+  name: a
+  pwd: 123
+user2:
+  name: b
+  pwd: 456
+'''
+TOML = """
+# This is a TOML document.
+title = "TOML Example"
+[owner]
+name = "ClericPy" # some comments
+[example]
+ports = [ 8001, 8001, 8002 ]
+connection_max = 5000
+enabled = true
+"""
 
 
 def test_css_parser():
@@ -377,6 +395,44 @@ def parse(item):
     assert result == 'hello world.'
 
 
+def test_loader_parser():
+    uni = Uniparser()
+    # ===================== test getitem =====================
+    # yaml
+    result = uni.loader.parse(YAML, 'yaml', '')
+    # print(result)
+    assert result == {
+        'user1': {
+            'name': 'a',
+            'pwd': 123
+        },
+        'user2': {
+            'name': 'b',
+            'pwd': 456
+        }
+    }
+
+    # toml
+    result = uni.loader.parse(TOML, 'toml', '{"decoder": null}')
+    # print(result)
+    assert result == {
+        'title': 'TOML Example',
+        'owner': {
+            'name': 'ClericPy'
+        },
+        'example': {
+            'ports': [8001, 8001, 8002],
+            'connection_max': 5000,
+            'enabled': True
+        }
+    }
+
+    # json
+    result = uni.loader.parse(JSON, 'json', '{"encoding": null}')
+    # print(result)
+    assert result['age'] == 26
+
+
 if __name__ == "__main__":
     test_css_parser()
     test_xml_parser()
@@ -384,3 +440,4 @@ if __name__ == "__main__":
     test_jsonpath_parser()
     test_objectpath_parser()
     test_python_parser()
+    test_loader_parser()

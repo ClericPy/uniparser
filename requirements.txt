@@ -1,3 +1,6 @@
 jsonpath_ng
 objectpath
 bs4
+toml
+yaml
+lxml

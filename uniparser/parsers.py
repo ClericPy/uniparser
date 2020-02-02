@@ -16,9 +16,10 @@ from objectpath import Tree as OP_Tree
 from toml import loads as toml_loads
 from yaml import load as yaml_loads
 
-filterwarnings('ignore', message='^No parser was')
-
-__all__ = ['BaseParser', 'Rule', 'Tag', 'CSSParser', 'RegexParser']
+__all__ = [
+    'BaseParser', 'Rule', 'Tag', 'CSSParser', 'XMLParser', 'RegexParser',
+    'JSONPathParser', 'ObjectPathParser', 'PythonParser', 'LoaderParser'
+]
 
 
 def return_self(self, *args, **kwargs):
@@ -45,11 +46,24 @@ def md5(string, n=32, encoding="utf-8", skip_encode=False):
         return _md5(todo).hexdigest()[n[0]:n[1]]
 
 
-class ParseRule(NamedTuple):
-    method: str
-    input_object: Any
-    param: str
-    value: Any
+class Rule(object):
+    __slots__ = ('id', 'name', 'parse_rules', 'context')
+
+    def __init__(
+            self,
+            name: str,
+            request: dict,
+            parse_rules: List,
+            context: dict = None,
+    ):
+        assert name
+        self.id = md5(name)
+        self.name = name
+        self.parse_rules = parse_rules
+        self.context = context or {}
+
+    def add_parse_rule(self, parse_rule: List):
+        pass
 
 
 class BaseParser(ABC):
@@ -79,24 +93,6 @@ class BaseParser(ABC):
         except Exception as err:
             # for traceback
             return err
-
-
-class Rule(object):
-    __slots__ = ('id', 'name', 'parse_rules')
-
-    def __init__(
-            self,
-            name: str,
-            request: dict,
-            parse_rules: List,
-    ):
-        assert name
-        self.id = md5(name)
-        self.name = name
-        self.parse_rules = parse_rules
-
-    def add_parse_rule(self, parse_rule: List):
-        pass
 
 
 class CSSParser(BaseParser):
@@ -140,7 +136,7 @@ class CSSParser(BaseParser):
             return result
         # ensure input_object is instance of BeautifulSoup
         if not isinstance(input_object, Tag):
-            input_object = BeautifulSoup(input_object)
+            input_object = BeautifulSoup(input_object, 'lxml')
         operate = self.operations.get(value, return_self)
         if value.startswith('@'):
             result = [
@@ -301,46 +297,28 @@ class ObjectPathParser(BaseParser):
         return result
 
 
-class PythonParser(BaseParser):
-    """
+class UDFParser(BaseParser):
+    """Python source code snippets.
 
-        :param input_object: input object, any object.
-        :type input_object: [object]
         param & value:
-
-            1.  param: udf
-                value: the python source code to be exec(value), either have the function named `parse`, or will return eval(value)
-            2.  param: getitem
-                value: could be [0] as index, [1:3] as slice
-            3.  param: split
-                value: return input_object.split(value or None)
-            3.  param: join
-                value: return value.join(input_object)
+            param: the python source code to be exec(param), either have the function named `parse`, or will return eval(param)
+            value: will be renamed to `context`, which can be used in parser function. `value` often be set as the dict of request & response.
     """
-    name = 'python'
+    name = 'udf'
     doc_url = 'https://docs.python.org/3/'
     _ALLOW_IMPORT = False
-    # Python will be different from others, treate list as list object
+    # Differ from others, treate list as list object
     _RECURSION_LIST = False
 
-    def _parse(self, input_object, param, value):
-        param_functions = {
-            'udf': self._handle_udf,
-            'getitem': self._handle_getitem,
-            'split': lambda input_object, param, value: input_object.split(value or None),
-            'join': lambda input_object, param, value: value.join(input_object),
-        }
-        function = param_functions.get(param, return_self)
-        return function(input_object, param, value)
-
-    def _handle_udf(self, input_object, param, value):
-        if not self._ALLOW_IMPORT and 'import' in value:
+    def _parse(self, input_object, param, value=""):
+        context = value
+        if not self._ALLOW_IMPORT and 'import' in param:
             # cb = re_compile(r'^\s*(from  )?import \w+') # not strict enough
             raise RuntimeError(
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
-        if 'parse' in value and ('lambda' in value or 'def ' in value):
-            exec(value)
+        if 'parse' in param and ('lambda' in param or 'def ' in param):
+            exec(param, locals(), locals())
             tmp = locals().get('parse')
             if not tmp:
                 raise ValueError(
@@ -348,7 +326,36 @@ class PythonParser(BaseParser):
                 )
             return tmp(input_object)
         else:
-            return eval(value)
+            return eval(param)
+
+
+class PythonParser(BaseParser):
+    """Some frequently-used utils
+
+        :param input_object: input object, any object.
+        :type input_object: [object]
+        param & value:
+
+            1.  param: getitem
+                value: could be [0] as index, [1:3] as slice
+            2.  param: split
+                value: return input_object.split(value or None)
+            3.  param: join
+                value: return value.join(input_object)
+    """
+    name = 'python'
+    doc_url = 'https://docs.python.org/3/'
+    # Differ from others, treate list as list object
+    _RECURSION_LIST = False
+
+    def _parse(self, input_object, param, value):
+        param_functions = {
+            'getitem': self._handle_getitem,
+            'split': lambda input_object, param, value: input_object.split(value or None),
+            'join': lambda input_object, param, value: value.join(input_object),
+        }
+        function = param_functions.get(param, return_self)
+        return function(input_object, param, value)
 
     def _handle_getitem(self, input_object, param, value):
         value = value[1:-1]

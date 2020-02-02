@@ -55,9 +55,12 @@ class BaseParser(ABC):
     1. class variable `name`
     2. `_parse` method
     3. use lazy import, maybe
+    4. Each parser subclass will recursion parse list of input_object, except PythonParser (self.)
     """
     test_url = ''
     doc_url = ''
+    name = 'base'
+    _RECURSION_LIST = True
 
     @abstractmethod
     def _parse(self, input_object, param, value):
@@ -65,7 +68,7 @@ class BaseParser(ABC):
 
     def parse(self, input_object, param, value):
         try:
-            if isinstance(input_object, list):
+            if isinstance(input_object, list) and self._RECURSION_LIST:
                 return [
                     self._parse(item, param, value) for item in input_object
                 ]
@@ -216,6 +219,8 @@ class RegexParser(BaseParser):
 
             '': null str, means using re.findall method
 
+            -: return re.split(param, input_object)
+
         :return: list of str
         :rtype: List[Union[str]]
     """
@@ -226,18 +231,19 @@ class RegexParser(BaseParser):
     def _parse(self, input_object, param, value):
         assert isinstance(input_object,
                           str), ValueError(r'input_object type should be str')
-        assert re_compile(r'^@|^\$\d+').match(value) or not value, ValueError(
-            r'args1 should match ^@|^\$\d+')
+        assert re_compile(r'^@|^\$\d+|^-$').match(
+            value) or not value, ValueError(r'args1 should match ^@|^\$\d+')
         com = re_compile(param)
         if not value:
             return com.findall(input_object)
         prefix, arg = value[0], value[1:]
         if prefix == '@':
-            result = com.sub(arg, input_object)
-            return result
+            return com.sub(arg, input_object)
         elif prefix == '$':
             result = com.finditer(input_object)
             return [match.group(int(arg)) for match in result]
+        elif prefix == '-':
+            return com.split(input_object)
 
 
 class JSONPathParser(BaseParser):
@@ -293,34 +299,69 @@ class ObjectPathParser(BaseParser):
         return result
 
 
-class UDFParser(BaseParser):
-    """Input as python function source code, which named as `parse`.
+class PythonParser(BaseParser):
+    """
 
         :param input_object: input object, any object.
         :type input_object: [object]
-        :param param: python code
-        :type param: [str]
-        :param value: not to use
-        :type value: [Any]
+        param & value:
+
+            1.  param: udf
+                value: the python source code to be exec(), must have the function named `parse`.
+            2.  param: getitem
+                value: could be [0] as index, [1:3] as slice
+            3.  param: split
+                value: return input_object.split(value or None)
+            3.  param: join
+                value: return value.join(input_object)
     """
-    name = 'udf'
-    doc_url = 'http://github.com/adriank/ObjectPath'
-    test_url = 'http://objectpath.org/'
+    name = 'python'
+    doc_url = 'https://docs.python.org/3/'
     _ALLOW_IMPORT = False
+    # Python will be different from others, treate list as list object
+    _RECURSION_LIST = False
 
     def _parse(self, input_object, param, value):
-        if not self._ALLOW_IMPORT and 'import' in param:
+        param_functions = {
+            'udf': self._handle_udf,
+            'getitem': self._handle_getitem,
+            'split': lambda input_object, param, value: input_object.split(value or None),
+            'join': lambda input_object, param, value: value.join(input_object),
+        }
+        function = param_functions.get(param, return_self)
+        return function(input_object, param, value)
+
+    def _handle_udf(self, input_object, param, value):
+        if not self._ALLOW_IMPORT and 'import' in value:
             # cb = re_compile(r'^\s*(from  )?import \w+') # not strict enough
             raise RuntimeError(
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
-        exec(param)
+        exec(value)
         tmp = locals().get('parse')
         if not tmp:
             raise ValueError(
                 'UDF format error, snippet should have the function named `parse`'
             )
         return tmp(input_object)
+
+    def _handle_getitem(self, input_object, param, value):
+        value = value[1:-1]
+        if ':' in value:
+            # as slice
+            start, stop = value.split(':', 1)
+            if ':' in stop:
+                stop, step = stop.split(':')
+            else:
+                step = None
+            start = int(start) if start else None
+            stop = int(stop) if stop else None
+            step = int(step) if step else None
+            key = slice(start, stop, step)
+        else:
+            # as index
+            key = int(value)
+        return input_object[key]
 
 
 class Uniparser(object):
@@ -337,6 +378,7 @@ class Uniparser(object):
         self.re = RegexParser()
         self.jsonpath = JSONPathParser()
         self.objectpath = ObjectPathParser()
+        self.python = PythonParser()
 
     def _prepare_custom_parsers(self):
         for parser in BaseParser.__subclasses__():

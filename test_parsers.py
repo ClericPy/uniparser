@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from uniparser import Uniparser
 from uniparser.parsers import Tag
 
@@ -54,6 +56,63 @@ JSON = '''
   ]
 }
 '''
+XML = r'''
+
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+    <channel>
+        <title>Channel title</title>
+        <atom:link href="https://www.example.com/feed/" rel="self" type="application/rss+xml" />
+        <link>https://www.example.com</link>
+        <description>XML example</description>
+        <lastBuildDate>Fri, 31 Jan 2020 08:02:33 +0000</lastBuildDate>
+        <language>zh-CN</language>
+        <sy:updatePeriod>
+            hourly </sy:updatePeriod>
+        <sy:updateFrequency>1</sy:updateFrequency>
+        <item>
+            <title>This is a title</title>
+            <link>https://example.com/1/</link>
+            <comments>https://example.com/1/#comments</comments>
+            <pubDate>Fri, 31 Jan 2020 08:02:12 +0000</pubDate>
+            <dc:creator>
+                <![CDATA[creator]]>
+            </dc:creator>
+            <category>
+                <![CDATA[category]]>
+            </category>
+
+            <guid isPermaLink="false">https://www.example.com/?p=35293</guid>
+            <description>
+                <![CDATA[ description ]]>
+            </description>
+            <content:encoded>
+                <![CDATA[ <p><a href="https://example.com" class="home">homepage</a> some words </p>]]>
+            </content:encoded>
+        </item>
+        <item>
+            <title>This is a title2</title>
+            <link>https://example.com/2/</link>
+            <comments>https://example.com/1/#comments</comments>
+            <pubDate>Fri, 31 Jan 2020 08:02:12 +0000</pubDate>
+            <dc:creator>
+                <![CDATA[creator]]>
+            </dc:creator>
+            <category>
+                <![CDATA[category]]>
+            </category>
+
+            <guid isPermaLink="false">https://www.example.com/?p=35293</guid>
+            <description>
+                <![CDATA[ description ]]>
+            </description>
+            <content:encoded>
+                <![CDATA[ <p><a href="https://example.com" class="home">homepage</a> some words </p>]]>
+            </content:encoded>
+        </item>
+    </channel>
+</rss>
+'''
 
 
 def test_css_parser():
@@ -100,6 +159,55 @@ def test_css_parser():
     assert result == [['d1'], ['d2']]
 
 
+def test_xml_parser():
+    uni = Uniparser()
+    # test get attribute
+    result = uni.xml.parse(XML, 'link', '@href')
+    # print(result)
+    assert result == ['https://www.example.com/feed/', '', '', '']
+
+    # test get text
+    result = uni.xml.parse(XML, 'creator', '$text')
+    # print(result)
+    assert result == [
+        '\n                creator\n            ',
+        '\n                creator\n            '
+    ]
+
+    # test get innerXML
+    result = uni.xml.parse(XML, 'description', '$innerXML')
+    # print(result)
+    assert result == [
+        'XML example', '\n                 description \n            ',
+        '\n                 description \n            '
+    ]
+
+    # test get outerXML
+    result = uni.xml.parse(XML, 'encoded', '$outerXML')
+    # print(result)
+    assert result == [
+        '<encoded>\n                 &lt;p&gt;&lt;a href="https://example.com" class="home"&gt;homepage&lt;/a&gt; some words &lt;/p&gt;\n            </encoded>',
+        '<encoded>\n                 &lt;p&gt;&lt;a href="https://example.com" class="home"&gt;homepage&lt;/a&gt; some words &lt;/p&gt;\n            </encoded>'
+    ]
+
+    # test get Tag object self
+    result = uni.xml.parse(XML, 'link', '$self')
+    # print(result)
+    assert all([isinstance(i, Tag) for i in result])
+
+    # test parsing Tag object
+    tag = uni.xml.parse(XML, 'item', '$self')[0]
+    result = uni.xml.parse(tag, 'title', '$text')
+    # print(result)
+    assert result == ['This is a title']
+
+    # test parsing list of input_objects
+    tags = uni.xml.parse(XML, 'item', '$self')
+    result = uni.xml.parse(tags, 'title', '$text')
+    # print(result)
+    assert result == [['This is a title'], ['This is a title2']]
+
+
 def test_re_parser():
     uni = Uniparser()
     # test re findall without ()
@@ -122,7 +230,7 @@ def test_re_parser():
     # print(result)
     assert result == ['a', 'a', 'a']
 
-    # test re sub @xxx
+    # test re sub @xxx, with group id \1
     result = uni.re.parse(HTML, '<a.*</a>', '')
     result = uni.re.parse(result, 'class="(a)"', r'@class="\1 b"')
     # print(result)
@@ -201,8 +309,13 @@ def test_objectpath_parser():
 
 def test_udf_parser():
     uni = Uniparser()
-    # test python code without import
+    # test python code without import; use `lambda` and `def`
     result = uni.udf.parse(JSON, 'parse = lambda item: item.strip()[5:5+9]', '')
+    # print(result)
+    assert result == 'firstName'
+    # test python code without import; use `lambda` and `def`
+    result = uni.udf.parse(JSON, 'def parse(item): return item.strip()[5:5+9]',
+                           '')
     # print(result)
     assert result == 'firstName'
 
@@ -225,6 +338,7 @@ def parse(item):
 
 if __name__ == "__main__":
     test_css_parser()
+    test_xml_parser()
     test_re_parser()
     test_jsonpath_parser()
     test_objectpath_parser()

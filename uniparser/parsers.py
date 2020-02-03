@@ -7,7 +7,9 @@ from json import JSONDecodeError
 from json import dumps as json_dumps
 from json import loads as json_loads
 from re import compile as re_compile
-from typing import List, Set
+from time import localtime, mktime, strftime, strptime, timezone
+from typing import List
+from warnings import warn
 
 from bs4 import BeautifulSoup, Tag
 from jsonpath_ng.ext import parse as jp_parse
@@ -399,6 +401,45 @@ class LoaderParser(BaseParser):
             return loader(input_object)
 
 
+class TimeParser(BaseParser):
+    """Parse different format of time. Sometimes time string need a preprocessing with regex.
+
+        :param input_object: str
+        :type input_object: [str]
+        :param param: encode / decode. encode: time string => timestamp; decode: timestamp => time string
+        :type param: [str]
+        :param value: standard strftime/strptime format
+        :type value: [str]
+
+    WARNING: time.struct_time do not have timezone info, so %z is always the local timezone
+    """
+    name = 'time'
+    match_int_float = re_compile(r'^-?\d+(\.\d+)?$')
+    # EAST8 = +8, WEST8 = -8
+    _OS_LOCAL_TIME_ZONE: int = -int(timezone / 3600)
+    LOCAL_TIME_ZONE: int = _OS_LOCAL_TIME_ZONE
+
+    def _parse(self, input_object, param, value):
+        value = value or "%Y-%m-%d %H:%M:%S"
+        tz_fix_seconds = (
+            self.LOCAL_TIME_ZONE - self._OS_LOCAL_TIME_ZONE) * 3600
+        if param == 'encode':
+            # time string => timestamp
+            if '%z' in value:
+                warn(
+                    'TimeParser Warning: time.struct_time do not have timezone info, so %z is nonsense'
+                )
+            return mktime(strptime(input_object, value)) - tz_fix_seconds
+        elif param == 'decode':
+            if isinstance(input_object,
+                          str) and self.match_int_float.match(input_object):
+                input_object = float(input_object)
+            # timestamp => time string
+            return strftime(value, localtime(input_object + tz_fix_seconds))
+        else:
+            return input_object
+
+
 class Uniparser(object):
 
     def __init__(self):
@@ -425,6 +466,7 @@ class Uniparser(object):
         self.objectpath = ObjectPathParser()
         self.python = PythonParser()
         self.loader = LoaderParser()
+        self.time = TimeParser()
 
     def _prepare_custom_parsers(self):
         for parser in BaseParser.__subclasses__():

@@ -34,8 +34,9 @@ with open(os.path.join(here, 'uniparser', '__init__.py'), encoding="u8") as f:
 setup(
     name="uniparser",
     version=version,
-    keywords=(
-        "requests async multi-thread aiohttp asyncio uvloop asynchronous"),
+    keywords=
+    ("requests crawler parser tools universal lxml beautifulsoup bs4 jsonpath udf"
+    ),
     description=
     "Provide a universal solution for crawler platforms. Read more: https://github.com/ClericPy/uniparser.",
     long_description=long_description,

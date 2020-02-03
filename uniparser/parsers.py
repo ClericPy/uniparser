@@ -399,15 +399,12 @@ class LoaderParser(BaseParser):
             return loader(input_object)
 
 
-class ParseRule(dict):
+class JsonSerializable(dict):
 
-    def __init__(self, name: str, parse_rules: List, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__()
-        self.id = self['id'] = md5(name)
-        self.name = self['name'] = name
-        # ['parser_name', 'param', 'value']
-        self.parse_rules = self['parse_rules'] = parse_rules
         self.update(kwargs)
+        self.__dict__.update(kwargs)
 
     def to_dict(self):
         return dict(self)
@@ -416,7 +413,14 @@ class ParseRule(dict):
         return json_dumps(self, *args, **kwargs)
 
 
-class CrawlRule(ParseRule):
+class ParseRule(JsonSerializable):
+
+    def __init__(self, name: str, parse_rules: List, **kwargs):
+        super().__init__(
+            id=md5(name), name=name, parse_rules=parse_rules, **kwargs)
+
+
+class CrawlRule(JsonSerializable):
 
     def __init__(self, name: str, request_args: dict, parse_rules: List,
                  **kwargs):
@@ -425,7 +429,6 @@ class CrawlRule(ParseRule):
             parse_rules=parse_rules,
             request_args=request_args,
             **kwargs)
-        self.request_args = request_args
 
 
 class Uniparser(object):

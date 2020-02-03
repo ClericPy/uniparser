@@ -510,6 +510,21 @@ def test_crawl_rules():
     result = uni.parse(resp.text, rule=crawl_rule, context=resp)
     # print(result)
     assert result == ('http://httpbin.org/get', 'http')
+    crawl_rule_json = crawl_rule.to_json()
+    # print(crawl_rule_json)
+    assert crawl_rule_json == '{"name": "test", "parse_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "request_args": {"url": "http://httpbin.org/get", "method": "get"}}'
+    crawl_rule_json = crawl_rule.to_dict()
+    # print(crawl_rule_json)
+    assert crawl_rule_json == {
+        "name": "test",
+        "parse_rules": [["objectpath", "JSON.url", ""],
+                        ["python", "getitem", "[:4]"],
+                        ["udf", "(context.url, input_object)", ""]],
+        "request_args": {
+            "url": "http://httpbin.org/get",
+            "method": "get"
+        }
+    }
 
 
 if __name__ == "__main__":

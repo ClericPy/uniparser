@@ -498,7 +498,7 @@ def test_time_parser():
 
     # =============================================
     # set a new timezone as local timezone +1, time will be 1 hour earlier than local.
-    uni.time.LOCAL_TIME_ZONE = (-timezone / 3600) + 1
+    uni.time.LOCAL_TIME_ZONE += 1
 
     # same timestamp, different tz, earlier time_string will be larger than the old one.
     new_result = uni.time.parse(timestamp, 'decode', '')

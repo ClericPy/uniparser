@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-
-from uniparser import Uniparser
+import requests
+from uniparser import Uniparser, ParseRule, CrawlRule
 from uniparser.parsers import Tag
 
 HTML = '''
@@ -371,6 +371,11 @@ def test_udf_parser():
     # print(result)
     assert result == context
 
+    # return a variable like context(json), one line code.
+    result = uni.udf.parse('abcd', 'context["a"]', '{"a": 1}')
+    # print(result)
+    assert result == 1
+
     # return a variable like context, lambda function.
     # context will be set to exec's globals
     result = uni.udf.parse(
@@ -459,6 +464,54 @@ def test_loader_parser():
     assert result['age'] == 26
 
 
+def test_parser_rules():
+    uni = Uniparser()
+
+    # test simple parse rules
+    rule = ParseRule('test', [
+        ['css', 'a', '@href'],
+        ['udf', '(context, input_object[1])', ''],
+    ])
+    # test parse with context
+    result = uni.parse(HTML, rule, 'mock context')
+    # print(result)
+    assert result == ('mock context', 'http://example.com/2')
+    # test rule.to_json
+    assert rule.to_json(
+    ) == '{"id": "098f6bcd4621d373cade4e832627b4f6", "name": "test", "parse_rules": [["css", "a", "@href"], ["udf", "(context, input_object[1])", ""]]}'
+    # test rule.to_dict
+    # print(rule.to_dict())
+    assert rule.to_dict() == {
+        'id': '098f6bcd4621d373cade4e832627b4f6',
+        'name': 'test',
+        'parse_rules': [
+            ['css', 'a', '@href'],
+            ['udf', '(context, input_object[1])', ''],
+        ]
+    }
+
+
+def test_crawl_rules():
+    # Simple usage of Uniparser and CrawlRule
+    uni = Uniparser()
+    crawl_rule = CrawlRule(
+        'test',
+        {
+            'url': 'http://httpbin.org/get',
+            'method': 'get'
+        },
+        [
+            ['objectpath', 'JSON.url', ''],
+            ['python', 'getitem', '[:4]'],
+            ['udf', '(context.url, input_object)', ''],
+        ],
+    )
+    resp = requests.request(timeout=3, **crawl_rule.request_args)
+    result = uni.parse(resp.text, rule=crawl_rule, context=resp)
+    # print(result)
+    assert result == ('http://httpbin.org/get', 'http')
+
+
 if __name__ == "__main__":
     test_css_parser()
     test_xml_parser()
@@ -468,3 +521,5 @@ if __name__ == "__main__":
     test_python_parser()
     test_udf_parser()
     test_loader_parser()
+    test_parser_rules()
+    test_crawl_rules()

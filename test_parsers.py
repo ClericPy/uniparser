@@ -500,14 +500,16 @@ def test_time_parser():
     # set a new timezone as local timezone +1, time will be 1 hour earlier than local.
     uni.time.LOCAL_TIME_ZONE = (-timezone / 3600) + 1
 
+    # same timestamp, different tz, earlier time_string will be larger than the old one.
     new_result = uni.time.parse(timestamp, 'decode', '')
     # print(new_result)
     # print(time_string)
     assert new_result > time_string
 
+    # same time_string, different tz, earlier timestamp is less than the old one.
     new_result = uni.time.parse(time_string, 'encode', '')
-    # print(new_result - int(float(timestamp)))
-    assert new_result - int(float(timestamp)) == 1 * 3600
+    print(new_result - int(float(timestamp)))
+    assert new_result - int(float(timestamp)) == -1 * 3600
 
 
 def test_parser_rules():

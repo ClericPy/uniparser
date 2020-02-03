@@ -570,7 +570,7 @@ if __name__ == "__main__":
 
 ## TODO
 
-- [ ] Release to pypi.org
-- [ ] Add github actions for testing
+- [ ] Release to **pypi.org**
+- [ ] Add **github actions** for testing package
 - [ ] Web UI for testing rules
 - [ ] Complete the doc

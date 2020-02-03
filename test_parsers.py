@@ -1,51 +1,3 @@
-# uniparser
-
-Provide a universal solution for crawler platforms. Python3.6+ is needed.
-
-## Install
-
-> pip install uniparser -U
-
-## Why?
-
-1. Reduced the code quantity from plenty of similar crawlers & parsers.  Don't Repeat Yourself.
-2. Make the parsing process of different parsers persistent.
-3. Separating parsing processes from the downloading.
-4. Provide a universal solution for crawler platforms.
-5. Summarize common string parsing tools on the market.
-
-## Quick Start
-
-```python
-# -*- coding: utf-8 -*-
-import requests
-from uniparser import Uniparser, CrawlRule
-
-# Simple usage of Uniparser and CrawlRule
-uni = Uniparser()
-crawl_rule = CrawlRule(
-    'test',
-    {
-        'url': 'http://httpbin.org/get',
-        'method': 'get'
-    },
-    [
-        ['objectpath', 'JSON.url', ''],
-        ['python', 'getitem', '[:4]'],
-        ['udf', '(context.url, input_object)', ''],
-    ],
-)
-resp = requests.request(timeout=3, **crawl_rule.request_args)
-result = uni.parse(resp.text, rule=crawl_rule, context=resp)
-# print(result)
-assert result == ('http://httpbin.org/get', 'http')
-```
-
-## More Usage
-
-> Talk is cheap, code == doc. ^_^
-
-```python
 # -*- coding: utf-8 -*-
 import requests
 from uniparser import Uniparser, ParseRule, CrawlRule
@@ -516,9 +468,10 @@ def test_parser_rules():
     uni = Uniparser()
 
     # test simple parse rules
-    rule = ParseRule(
-        'test',
-        [['css', 'a', '@href'], ['udf', '(context, input_object[1])', '']])
+    rule = ParseRule('test', [
+        ['css', 'a', '@href'],
+        ['udf', '(context, input_object[1])', ''],
+    ])
     # test parse with context
     result = uni.parse(HTML, rule, 'mock context')
     # print(result)
@@ -531,8 +484,10 @@ def test_parser_rules():
     assert rule.to_dict() == {
         'id': '098f6bcd4621d373cade4e832627b4f6',
         'name': 'test',
-        'parse_rules': [['css', 'a', '@href'],
-                        ['udf', '(context, input_object[1])', '']]
+        'parse_rules': [
+            ['css', 'a', '@href'],
+            ['udf', '(context, input_object[1])', ''],
+        ]
     }
 
 
@@ -545,8 +500,11 @@ def test_crawl_rules():
             'url': 'http://httpbin.org/get',
             'method': 'get'
         },
-        [['objectpath', 'JSON.url', ''], ['python', 'getitem', '[:4]'],
-         ['udf', '(context.url, input_object)', '']],
+        [
+            ['objectpath', 'JSON.url', ''],
+            ['python', 'getitem', '[:4]'],
+            ['udf', '(context.url, input_object)', ''],
+        ],
     )
     resp = requests.request(timeout=3, **crawl_rule.request_args)
     result = uni.parse(resp.text, rule=crawl_rule, context=resp)
@@ -565,12 +523,3 @@ if __name__ == "__main__":
     test_loader_parser()
     test_parser_rules()
     test_crawl_rules()
-
-```
-
-## TODO
-
-- [x] Release to **pypi.org**
-- [x] Add **github actions** for testing package
-- [ ] Web UI for testing rules
-- [ ] Complete the whole doc

@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
+from time import timezone
+
 import requests
-from uniparser import Uniparser, ParseRule, CrawlerRule, HostRules
+from uniparser import CrawlerRule, HostRules, ParseRule, Uniparser
 from uniparser.parsers import Tag
+import warnings
+
+warnings.filterwarnings('ignore', 'TimeParser')
 
 HTML = '''
 <html><head><title >This is HTML title</title></head>
@@ -464,6 +469,46 @@ def test_loader_parser():
     assert result['age'] == 26
 
 
+def test_time_parser():
+    timestamp = '1580732985.1873155'
+    time_string = '2020-02-03 20:29:45'
+    time_string_timezone = '2020-02-03T20:29:45 +0000'
+
+    uni = Uniparser()
+
+    # translate time_string into timestamp float
+    result = uni.time.parse(time_string, 'encode', '')
+    # print(result)
+    assert result == int(float(timestamp))
+
+    result = uni.time.parse(timestamp, 'decode', '')
+    # print(result)
+    assert result == time_string
+
+    result = uni.time.parse(result, 'encode', '')
+    # print(result)
+    assert result == int(float(timestamp))
+
+    # time.struct_time do not have timezone info, so %z is nonsense, using local timezone
+    result_time_zone = uni.time.parse(time_string_timezone, 'encode',
+                                      '%Y-%m-%dT%H:%M:%S %z')
+    # print(result_time_zone)
+    assert int(result_time_zone) == int(float(timestamp))
+
+    # =============================================
+    # set a new timezone as local timezone +1, time will be 1 hour earlier than local.
+    uni.time.LOCAL_TIME_ZONE = (-timezone / 3600) + 1
+
+    result = uni.time.parse(time_string, 'encode', '')
+    # print(result - int(float(timestamp)))
+    assert result - int(float(timestamp)) == 1 * 3600
+
+    result = uni.time.parse(timestamp, 'decode', '')
+    # print(result)
+    # print(time_string)
+    assert result != time_string
+
+
 def test_parser_rules():
     uni = Uniparser()
 
@@ -600,6 +645,7 @@ if __name__ == "__main__":
     test_python_parser()
     test_udf_parser()
     test_loader_parser()
+    test_time_parser()
     test_parser_rules()
     test_crawler_rules()
     test_default_usage()

@@ -508,7 +508,7 @@ def test_time_parser():
 
     # same time_string, different tz, earlier timestamp is less than the old one.
     new_result = uni.time.parse(time_string, 'encode', '')
-    print(new_result - int(float(timestamp)))
+    # print(new_result - int(float(timestamp)))
     assert new_result - int(float(timestamp)) == -1 * 3600
 
 

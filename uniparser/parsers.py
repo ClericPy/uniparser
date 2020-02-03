@@ -417,26 +417,25 @@ class TimeParser(BaseParser):
     match_int_float = re_compile(r'^-?\d+(\.\d+)?$')
     # EAST8 = +8, WEST8 = -8
     LOCAL_TIME_ZONE: int = -int(timezone / 3600)
+    _OS_LOCAL_TIME_ZONE: int = -int(timezone / 3600)
 
     def _parse(self, input_object, param, value):
         value = value or "%Y-%m-%d %H:%M:%S"
+        tz_fix_seconds = (
+            self.LOCAL_TIME_ZONE - self._OS_LOCAL_TIME_ZONE) * 3600
         if param == 'encode':
             # time string => timestamp
             if '%z' in value:
                 warn(
                     'TimeParser Warning: time.struct_time do not have timezone info, so %z is nonsense'
                 )
-            return mktime(strptime(
-                input_object, value)) + (timezone + self.LOCAL_TIME_ZONE * 3600)
+            return mktime(strptime(input_object, value)) + tz_fix_seconds
         elif param == 'decode':
             if isinstance(input_object,
                           str) and self.match_int_float.match(input_object):
                 input_object = float(input_object)
             # timestamp => time string
-            return strftime(
-                value,
-                localtime(
-                    input_object + (timezone + self.LOCAL_TIME_ZONE * 3600),))
+            return strftime(value, localtime(input_object + tz_fix_seconds))
         else:
             return input_object
 

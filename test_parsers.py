@@ -479,7 +479,7 @@ def test_time_parser():
     # translate time_string into timestamp float
     result = uni.time.parse(time_string, 'encode', '')
     # print(result)
-    assert result == int(float(timestamp))
+    assert int(result) == int(float(timestamp))
 
     result = uni.time.parse(timestamp, 'decode', '')
     # print(result)
@@ -487,7 +487,7 @@ def test_time_parser():
 
     result = uni.time.parse(result, 'encode', '')
     # print(result)
-    assert result == int(float(timestamp))
+    assert int(result) == int(float(timestamp))
 
     # time.struct_time do not have timezone info, so %z is nonsense, using local timezone
     result_time_zone = uni.time.parse(time_string_timezone, 'encode',

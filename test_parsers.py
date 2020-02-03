@@ -475,6 +475,7 @@ def test_time_parser():
     time_string_timezone = '2020-02-03T20:29:45 +0000'
 
     uni = Uniparser()
+    uni.time.LOCAL_TIME_ZONE = +8
 
     # translate time_string into timestamp float
     result = uni.time.parse(time_string, 'encode', '')
@@ -500,12 +501,12 @@ def test_time_parser():
     uni.time.LOCAL_TIME_ZONE = (-timezone / 3600) + 1
 
     result = uni.time.parse(time_string, 'encode', '')
-    # print(result - int(float(timestamp)))
+    print(result - int(float(timestamp)))
     assert result - int(float(timestamp)) == 1 * 3600
 
     result = uni.time.parse(timestamp, 'decode', '')
-    # print(result)
-    # print(time_string)
+    print(result)
+    print(time_string)
     assert result != time_string
 
 

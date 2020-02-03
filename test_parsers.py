@@ -501,12 +501,12 @@ def test_time_parser():
     uni.time.LOCAL_TIME_ZONE = (-timezone / 3600) + 1
 
     result = uni.time.parse(time_string, 'encode', '')
-    print(result - int(float(timestamp)))
+    # print(result - int(float(timestamp)))
     assert result - int(float(timestamp)) == 1 * 3600
 
     result = uni.time.parse(timestamp, 'decode', '')
-    print(result)
-    print(time_string)
+    # print(result)
+    # print(time_string)
     assert result != time_string
 
 

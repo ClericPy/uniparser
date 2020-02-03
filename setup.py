@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+import sys
 
 from setuptools import find_packages, setup
 """
@@ -9,6 +10,10 @@ rm -rf "dist/*";rm -rf "build/*";python3 setup.py bdist_wheel;twine upload "dist
 win32:
 rm -rf dist;rm -rf build;python3 setup.py bdist_wheel;twine upload "dist/*";rm -rf dist;rm -rf build;rm -rf uniparser.egg-info
 """
+
+py_version = sys.version_info
+if py_version.major < 3 or py_version.minor < 6:
+    raise RuntimeError('Only support python3.6+')
 
 install_requires = [
     'jsonpath_ng',

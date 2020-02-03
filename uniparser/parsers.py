@@ -1,24 +1,25 @@
 # -*- coding: utf-8 -*-
-# pip install jsonpath_ng
 
 from abc import ABC, abstractmethod
-from functools import reduce
 from hashlib import md5 as _md5
 from inspect import isgenerator
-from json import loads as json_loads, JSONDecodeError
+from json import JSONDecodeError
+from json import dumps as json_dumps
+from json import loads as json_loads
 from re import compile as re_compile
-from typing import Any, List, NamedTuple
-from warnings import filterwarnings
+from typing import List
 
 from bs4 import BeautifulSoup, Tag
 from jsonpath_ng.ext import parse as jp_parse
 from objectpath import Tree as OP_Tree
 from toml import loads as toml_loads
-from yaml import load as yaml_loads
+from yaml import full_load as yaml_full_load
+from yaml import safe_load as yaml_safe_load
 
 __all__ = [
-    'BaseParser', 'Rule', 'Tag', 'CSSParser', 'XMLParser', 'RegexParser',
-    'JSONPathParser', 'ObjectPathParser', 'PythonParser', 'LoaderParser'
+    'BaseParser', 'ParseRule', 'CrawlRule', 'Tag', 'CSSParser', 'XMLParser',
+    'RegexParser', 'JSONPathParser', 'ObjectPathParser', 'PythonParser',
+    'UDFParser', 'LoaderParser'
 ]
 
 
@@ -44,26 +45,6 @@ def md5(string, n=32, encoding="utf-8", skip_encode=False):
         return _md5(todo).hexdigest()[(32 - n) // 2:(n - 32) // 2]
     elif isinstance(n, (tuple, list)):
         return _md5(todo).hexdigest()[n[0]:n[1]]
-
-
-class Rule(object):
-    __slots__ = ('id', 'name', 'parse_rules', 'context')
-
-    def __init__(
-            self,
-            name: str,
-            request: dict,
-            parse_rules: List,
-            context: dict = None,
-    ):
-        assert name
-        self.id = md5(name)
-        self.name = name
-        self.parse_rules = parse_rules
-        self.context = context or {}
-
-    def add_parse_rule(self, parse_rule: List):
-        pass
 
 
 class BaseParser(ABC):
@@ -188,7 +169,7 @@ class XMLParser(BaseParser):
             return result
         # ensure input_object is instance of BeautifulSoup
         if not isinstance(input_object, Tag):
-            input_object = BeautifulSoup(input_object, 'xml')
+            input_object = BeautifulSoup(input_object, 'lxml-xml')
         operate = self.operations.get(value, return_self)
         if value.startswith('@'):
             result = [
@@ -265,6 +246,8 @@ class JSONPathParser(BaseParser):
             input_object = json_loads(input_object)
         value = value or '$value'
         attr_name = value[1:]
+        if param.startswith('JSON.'):
+            param = '$%s' % param[4:]
         jsonpath_expr = jp_parse(param)
         result = [
             getattr(match, attr_name, match.value)
@@ -290,6 +273,8 @@ class ObjectPathParser(BaseParser):
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
             input_object = json_loads(input_object)
+        if param.startswith('JSON.'):
+            param = '$%s' % param[4:]
         tree = OP_Tree(input_object)
         result = tree.execute(param)
         if isgenerator(result):
@@ -298,7 +283,7 @@ class ObjectPathParser(BaseParser):
 
 
 class UDFParser(BaseParser):
-    """Python source code snippets.
+    """Python source code snippets. globals will contain `input_object` and `context` variables.
 
         param & value:
             param: the python source code to be exec(param), either have the function named `parse`, or will return eval(param)
@@ -311,7 +296,13 @@ class UDFParser(BaseParser):
     _RECURSION_LIST = False
 
     def _parse(self, input_object, param, value=""):
-        context = value
+        if value and isinstance(value, str):
+            try:
+                context = json_loads(value)
+            except JSONDecodeError:
+                context = value
+        else:
+            context = value
         if not self._ALLOW_IMPORT and 'import' in param:
             # cb = re_compile(r'^\s*(from  )?import \w+') # not strict enough
             raise RuntimeError(
@@ -391,7 +382,9 @@ class LoaderParser(BaseParser):
     loaders = {
         'json': json_loads,
         'toml': toml_loads,
-        'yaml': yaml_loads,
+        'yaml': yaml_full_load,
+        'yaml_safe_load': yaml_safe_load,
+        'yaml_full_load': yaml_full_load,
     }
 
     def _parse(self, input_object, param, value=''):
@@ -406,14 +399,52 @@ class LoaderParser(BaseParser):
             return loader(input_object)
 
 
+class ParseRule(dict):
+
+    def __init__(self, name: str, parse_rules: List, **kwargs):
+        super().__init__()
+        self.id = self['id'] = md5(name)
+        self.name = self['name'] = name
+        # ['parser_name', 'param', 'value']
+        self.parse_rules = self['parse_rules'] = parse_rules
+        self.update(kwargs)
+
+    def to_dict(self):
+        return dict(self)
+
+    def to_json(self, *args, **kwargs):
+        return json_dumps(self, *args, **kwargs)
+
+
+class CrawlRule(ParseRule):
+
+    def __init__(self, name: str, request_args: dict, parse_rules: List,
+                 **kwargs):
+        super().__init__(
+            name=name,
+            parse_rules=parse_rules,
+            request_args=request_args,
+            **kwargs)
+        self.request_args = request_args
+
+
 class Uniparser(object):
 
     def __init__(self):
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
 
-    def parse(self, source, rule):
-        assert isinstance(rule, Rule)
+    def parse(self, input_object, rule: ParseRule, context=None):
+
+        for parser_name, param, value in rule['parse_rules']:
+            parser = getattr(self, parser_name)
+            parser = parser.parse if parser else return_self
+            if context and parser_name == 'udf' and not value:
+                _value = context
+            else:
+                _value = value
+            input_object = parser(input_object, param, _value)
+        return input_object
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()

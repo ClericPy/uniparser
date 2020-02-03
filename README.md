@@ -1,6 +1,6 @@
 # uniparser
 
-Provide a universal solution for crawler platforms.
+Provide a universal solution for crawler platforms. Python3.6+ is needed.
 
 ## Install
 

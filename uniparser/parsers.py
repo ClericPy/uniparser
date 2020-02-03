@@ -7,7 +7,7 @@ from json import JSONDecodeError
 from json import dumps as json_dumps
 from json import loads as json_loads
 from re import compile as re_compile
-from typing import List
+from typing import List, Set
 
 from bs4 import BeautifulSoup, Tag
 from jsonpath_ng.ext import parse as jp_parse
@@ -17,9 +17,9 @@ from yaml import full_load as yaml_full_load
 from yaml import safe_load as yaml_safe_load
 
 __all__ = [
-    'BaseParser', 'ParseRule', 'CrawlRule', 'Tag', 'CSSParser', 'XMLParser',
-    'RegexParser', 'JSONPathParser', 'ObjectPathParser', 'PythonParser',
-    'UDFParser', 'LoaderParser'
+    'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRules', 'Tag', 'CSSParser',
+    'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
+    'PythonParser', 'UDFParser', 'LoaderParser'
 ]
 
 
@@ -399,45 +399,13 @@ class LoaderParser(BaseParser):
             return loader(input_object)
 
 
-class JsonSerializable(dict):
-
-    def __init__(self, **kwargs):
-        super().__init__()
-        self.update(kwargs)
-        self.__dict__.update(kwargs)
-
-    def to_dict(self):
-        return dict(self)
-
-    def to_json(self, *args, **kwargs):
-        return json_dumps(self, *args, **kwargs)
-
-
-class ParseRule(JsonSerializable):
-
-    def __init__(self, name: str, parse_rules: List, **kwargs):
-        super().__init__(
-            id=md5(name), name=name, parse_rules=parse_rules, **kwargs)
-
-
-class CrawlRule(JsonSerializable):
-
-    def __init__(self, name: str, request_args: dict, parse_rules: List,
-                 **kwargs):
-        super().__init__(
-            name=name,
-            parse_rules=parse_rules,
-            request_args=request_args,
-            **kwargs)
-
-
 class Uniparser(object):
 
     def __init__(self):
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
 
-    def parse(self, input_object, rule: ParseRule, context=None):
+    def parse(self, input_object, rule: 'ParseRule', context=None):
 
         for parser_name, param, value in rule['parse_rules']:
             parser = getattr(self, parser_name)
@@ -462,3 +430,67 @@ class Uniparser(object):
         for parser in BaseParser.__subclasses__():
             if parser.name not in self.__dict__:
                 self.__dict__[parser.name] = parser()
+
+
+class JsonSerializable(dict):
+
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.update(kwargs)
+
+    def to_dict(self):
+        return dict(self)
+
+    def to_json(self, *args, **kwargs):
+        return json_dumps(self, *args, **kwargs)
+
+    @classmethod
+    def from_json(cls, json_string):
+        return cls(**json_loads(json_string))
+
+
+class ParseRule(JsonSerializable):
+
+    def __init__(self, name: str, parse_rules: List, **kwargs):
+        super().__init__(
+            id=md5(name), name=name, parse_rules=parse_rules, **kwargs)
+
+
+class CrawlerRule(JsonSerializable):
+
+    def __init__(self,
+                 name: str,
+                 request_args: dict,
+                 parse_rules: List,
+                 regex: str = "",
+                 **kwargs):
+        super().__init__(
+            name=name,
+            parse_rules=parse_rules,
+            request_args=request_args,
+            regex=regex,
+            **kwargs)
+
+
+class HostRules(JsonSerializable):
+
+    def __init__(self, host: str, rules: List[CrawlerRule] = None, **kwargs):
+        super().__init__(host=host, rules=rules or [], **kwargs)
+
+    def search(self, url):
+        for rule in self['rules']:
+            if rule['regex'] and re_compile(rule['regex']).search(url):
+                return rule
+
+    def match(self, url):
+        for rule in self['rules']:
+            if rule['regex'] and re_compile(rule['regex']).match(url):
+                return rule
+
+    def add(self, rule: CrawlerRule):
+        if rule not in self['rules']:
+            self['rules'].append(rule)
+
+    def remove(self, rule: CrawlerRule):
+        if rule in self['rules']:
+            self['rules'].remove(rule)

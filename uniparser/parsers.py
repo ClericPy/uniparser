@@ -9,7 +9,7 @@ from json import dumps as json_dumps
 from json import loads as json_loads
 from re import compile as re_compile
 from time import localtime, mktime, strftime, strptime, timezone
-from typing import List
+from typing import List, Union
 from warnings import warn
 
 from bs4 import BeautifulSoup, Tag
@@ -507,10 +507,21 @@ class CrawlerRule(JsonSerializable):
 
     def __init__(self,
                  name: str,
-                 request_args: dict,
+                 request_args: Union[dict, str],
                  parse_rules: List,
                  regex: str = "",
                  **kwargs):
+        if isinstance(request_args, str):
+            if request_args.startswith('http'):
+                request_args = {
+                    "method": "get",
+                    "url": request_args,
+                    "headers": {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
+                    }
+                }
+            else:
+                request_args = json_loads(request_args)
         super().__init__(
             name=name,
             parse_rules=parse_rules,

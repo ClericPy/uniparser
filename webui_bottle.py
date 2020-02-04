@@ -36,7 +36,7 @@ TEMPLATE = r'''<!DOCTYPE html>
     <style>
         @import url("{{cdn_urls['ELEMENT_CSS_CDN']}}");
 
-        html {
+        html>body {
             width: 60%;
             height: 98%;
             margin: 0 0 0 20%;
@@ -71,14 +71,14 @@ TEMPLATE = r'''<!DOCTYPE html>
                         <span style="font-size: 0.7em;color: #606266;">Ctrl+Enter = Parse, Alt+Enter = New rule</span>
                         <br>
                         <div v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
+                            <el-button size="mini" type="info" icon="el-icon-info" circle @click="get_doc(index)">
+                            </el-button>
                             <el-select filterable v-model="rule.parser_name" style="width: 20%;display:inline-block;"
                                 placeholder="Parser Name">
                                 <el-option v-for="item in options" :key="item.value" :label="item.value"
                                     :value="item.value">
                                 </el-option>
                             </el-select>
-                            <el-button size="mini" type="info" icon="el-icon-info" circle @click="get_doc(index)">
-                            </el-button>
                             <el-input @keyup.ctrl.13.native="parse" @keyup.alt.13.native="add_new_rule" type="textarea" style="width: 35%;zoom: 120%;display:inline-block;" :rows="1"
                                 autosize placeholder="Param" v-model="rule.param"></el-input>
                             <el-input @keyup.ctrl.13.native="parse" @keyup.alt.13.native="add_new_rule" type="textarea" style="width: 35%;zoom: 120%;display:inline-block;" :rows="1"

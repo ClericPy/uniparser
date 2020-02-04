@@ -1,4 +1,4 @@
-# uniparser
+# uniparser [![PyPI version](https://badge.fury.io/py/uniparser.svg)](https://badge.fury.io/py/uniparser)
 
 Provide a universal solution for crawler platforms. Python3.6+ is needed.
 
@@ -98,9 +98,19 @@ Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob
 
 **Online Web UI for testing is coming soon...**
 
+## Uniparser Test Console Demo
+
+1. pip install bottle uniparser
+2. python webui_bottle.py
+3. open browser:  http://127.0.0.1:8080/ 
+
+![1.png](1.png)
+
+![2.png](2.png)
+
 ## TODO
 
 - [x] Release to **pypi.org**
 - [x] Add **github actions** for testing package
-- [ ] Web UI for testing rules
+- [x] Web UI for testing rules
 - [ ] Complete the whole doc

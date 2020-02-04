@@ -68,9 +68,10 @@ TEMPLATE = r'''<!DOCTYPE html>
                         </el-input>
                     </el-form-item>
                     <el-form-item label="Rules">
+                        <span style="font-size: 0.7em;color: #606266;">Ctrl+Enter = Parse, Alt+Enter = New rule</span>
                         <br>
                         <div v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
-                            <el-select v-model="rule.parser_name" style="width: 20%;display:inline-block;"
+                            <el-select filterable v-model="rule.parser_name" style="width: 20%;display:inline-block;"
                                 placeholder="Parser Name">
                                 <el-option v-for="item in options" :key="item.value" :label="item.value"
                                     :value="item.value">
@@ -78,9 +79,9 @@ TEMPLATE = r'''<!DOCTYPE html>
                             </el-select>
                             <el-button size="mini" type="info" icon="el-icon-info" circle @click="get_doc(index)">
                             </el-button>
-                            <el-input @keyup.ctrl.13.native="parse" @keyup.alt.13.native="add_new_rule" title="Ctrl+Enter->Submit, Alt+Enter->New" type="textarea" style="width: 35%;zoom: 120%;display:inline-block;" :rows="1"
+                            <el-input @keyup.ctrl.13.native="parse" @keyup.alt.13.native="add_new_rule" type="textarea" style="width: 35%;zoom: 120%;display:inline-block;" :rows="1"
                                 autosize placeholder="Param" v-model="rule.param"></el-input>
-                            <el-input @keyup.ctrl.13.native="parse" @keyup.alt.13.native="add_new_rule" title="Ctrl+Enter->Submit, Alt+Enter->New" type="textarea" style="width: 35%;zoom: 120%;display:inline-block;" :rows="1"
+                            <el-input @keyup.ctrl.13.native="parse" @keyup.alt.13.native="add_new_rule" type="textarea" style="width: 35%;zoom: 120%;display:inline-block;" :rows="1"
                                 autosize placeholder="Value" v-model="rule.value"></el-input>
                             <el-button size="mini" type="danger" icon="el-icon-delete" circle @click="del_rule(index)">
                             </el-button>

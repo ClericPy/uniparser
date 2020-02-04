@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from hashlib import md5 as _md5
 from inspect import isgenerator
+from itertools import chain
 from json import JSONDecodeError
 from json import dumps as json_dumps
 from json import loads as json_loads
@@ -335,6 +336,8 @@ class PythonParser(BaseParser):
                 value: return input_object.split(value or None)
             3.  param: join
                 value: return value.join(input_object)
+            4.  param: chain
+                value: return list(itertools.chain(*input_object))
     """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -346,6 +349,7 @@ class PythonParser(BaseParser):
             'getitem': self._handle_getitem,
             'split': lambda input_object, param, value: input_object.split(value or None),
             'join': lambda input_object, param, value: value.join(input_object),
+            'chain': lambda input_object, param, value: list(chain(*input_object)),
         }
         function = param_functions.get(param, return_self)
         return function(input_object, param, value)
@@ -441,6 +445,7 @@ class TimeParser(BaseParser):
 
 
 class Uniparser(object):
+    parser_classes = BaseParser.__subclasses__()
 
     def __init__(self):
         self._prepare_default_parsers()

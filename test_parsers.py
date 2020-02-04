@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from time import timezone
-
 import requests
 from uniparser import CrawlerRule, HostRules, ParseRule, Uniparser
 from uniparser.parsers import Tag
@@ -490,7 +488,6 @@ def test_time_parser():
     # print(result)
     assert int(result) == int(float(timestamp))
 
-    # time.struct_time do not have timezone info, so %z is nonsense, using local timezone
     result_time_zone = uni.time.parse(time_string_timezone, 'encode',
                                       '%Y-%m-%dT%H:%M:%S %z')
     # print(result_time_zone)

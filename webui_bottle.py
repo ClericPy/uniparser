@@ -2,8 +2,6 @@
 """
 Uniparser Test Console Demo
 """
-import json
-
 import requests
 from bottle import Bottle, request, template
 from uniparser import CrawlerRule, Uniparser

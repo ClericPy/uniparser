@@ -55,7 +55,7 @@ class BaseParser(ABC):
     1. class variable `name`
     2. `_parse` method
     3. use lazy import, maybe
-    4. Each parser subclass will recursion parse list of input_object, except PythonParser (self.)
+    4. Parsers will recursion parse list of input_object if it can only parse `str` object.
     """
     test_url = 'https://github.com/ClericPy/uniparser'
     doc_url = 'https://github.com/ClericPy/uniparser'
@@ -244,6 +244,7 @@ class JSONPathParser(BaseParser):
     name = 'jsonpath'
     doc_url = 'https://github.com/h2non/jsonpath-ng'
     test_url = 'https://jsonpath.com/'
+    _RECURSION_LIST = False
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
@@ -273,6 +274,7 @@ class ObjectPathParser(BaseParser):
     name = 'objectpath'
     doc_url = 'http://github.com/adriank/ObjectPath'
     test_url = 'http://objectpath.org/'
+    _RECURSION_LIST = False
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):

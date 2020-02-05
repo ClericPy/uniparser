@@ -509,97 +509,79 @@ def test_time_parser():
     assert new_result - int(float(timestamp)) == -1 * 3600
 
 
-def test_parser_rules():
-    uni = Uniparser()
-
-    # test simple parse rules
-    rule = ParseRule('test', [
-        ['css', 'a', '@href'],
-        ['udf', '(context, input_object[1])', ''],
-    ])
-    # test parse with context
-    result = uni.parse(HTML, rule, 'mock context')
-    # print(result)
-    assert result == ('mock context', 'http://example.com/2')
-    # test rule.to_json
-    assert rule.to_json(
-    ) == '{"id": "098f6bcd4621d373cade4e832627b4f6", "name": "test", "parse_rules": [["css", "a", "@href"], ["udf", "(context, input_object[1])", ""]]}'
-    # test rule.to_dict
-    # print(rule.to_dict())
-    assert rule.to_dict() == {
-        'id': '098f6bcd4621d373cade4e832627b4f6',
-        'name': 'test',
-        'parse_rules': [
-            ['css', 'a', '@href'],
-            ['udf', '(context, input_object[1])', ''],
-        ]
-    }
-
-
 def test_crawler_rules():
     # Simple usage of Uniparser and CrawlerRule
     uni = Uniparser()
-    crawler_rule = CrawlerRule(
-        'test',
-        {
-            'url': 'http://httpbin.org/get',
-            'method': 'get'
-        },
-        [
+    crawler_rule = CrawlerRule('test', {
+        'url': 'http://httpbin.org/get',
+        'method': 'get'
+    }, [{
+        "name": "rule1",
+        "rules_chain": [
             ['objectpath', 'JSON.url', ''],
             ['python', 'getitem', '[:4]'],
             ['udf', '(context.url, input_object)', ''],
         ],
-    )
+        "child_rules": []
+    }], '')
     resp = requests.request(timeout=3, **crawler_rule['request_args'])
-    result = uni.parse(resp.text, rule=crawler_rule, context=resp)
+    result = uni.parse(resp.text, crawler_rule, context=resp)
     # print(result)
-    assert result == ('http://httpbin.org/get', 'http')
+    assert result == {'test': {'rule1': ('http://httpbin.org/get', 'http')}}
     crawler_rule_json = crawler_rule.to_json()
     # print(crawler_rule_json)
-    assert crawler_rule_json == '{"name": "test", "parse_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": ""}'
-    crawler_rule_json = crawler_rule.to_dict()
-    # print(crawler_rule_json)
-    assert crawler_rule_json == {
-        "name": "test",
-        "parse_rules": [["objectpath", "JSON.url", ""],
-                        ["python", "getitem", "[:4]"],
-                        ["udf", "(context.url, input_object)", ""]],
-        "request_args": {
-            "url": "http://httpbin.org/get",
-            "method": "get"
+    assert crawler_rule_json == r'{"name": "test", "parse_rules": [{"name": "rule1", "rules_chain": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": ""}'
+    crawler_rule_dict = crawler_rule.to_dict()
+    # print(crawler_rule_dict)
+    assert crawler_rule_dict == {
+        'name': 'test',
+        'parse_rules': [{
+            'name': 'rule1',
+            'rules_chain': [['objectpath', 'JSON.url', ''],
+                            ['python', 'getitem', '[:4]'],
+                            ['udf', '(context.url, input_object)', '']],
+            'child_rules': []
+        }],
+        'request_args': {
+            'url': 'http://httpbin.org/get',
+            'method': 'get'
         },
-        "regex": ""
+        'regex': ''
     }
 
 
 def test_default_usage():
     from urllib.parse import urlparse
 
-    # prepare for storage
+    # 1. prepare for storage to save {'host': HostRules}
     uni = Uniparser()
     storage = {}
     test_url = 'http://httpbin.org/get'
     crawler_rule = CrawlerRule(
-        'test',
+        'test_crawler_rule',
         {
             'url': 'http://httpbin.org/get',
             'method': 'get'
         },
-        [
-            ['objectpath', 'JSON.url', ''],
-            ['python', 'getitem', '[:4]'],
-            ['udf', '(context.url, input_object)', ''],
-        ],
+        [{
+            "name": "rule1",
+            "rules_chain": [
+                ['objectpath', 'JSON.url', ''],
+                ['python', 'getitem', '[:4]'],
+                ['udf', '(context.url, input_object)', ''],
+            ],
+            "child_rules": []
+        }],
         'https?://httpbin.org/get',
     )
     host = urlparse(test_url).netloc
     hrs = HostRules(host=host)
     hrs.add(crawler_rule)
-    json_string = hrs.to_json()
+    # same as: json_string = hrs.to_json()
+    json_string = hrs.dumps()
     # print(json_string)
-    assert json_string == '{"host": "httpbin.org", "rules": [{"name": "test", "parse_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": "https?://httpbin.org/get"}]}'
-    # add HostRules to storage, storage sometimes using in redis
+    assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "rules_chain": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": "https?://httpbin.org/get"}]}'
+    # 2. add HostRules to storage, sometimes save on redis
     storage[hrs['host']] = json_string
     # ============================================
     # start to crawl
@@ -608,32 +590,109 @@ def test_default_usage():
     # 2. find the HostRules
     json_string = storage.get(host)
     # 3. HostRules init: load from json
-    hrs = HostRules.from_json(json_string)
+    # same as: hrs = HostRules.from_json(json_string)
+    hrs = HostRules.loads(json_string)
     # print(crawler_rule)
     # 4. now search / match the url with existing rules
-    rule = hrs.search(test_url1)
-    assert rule == {
-        'name': 'test',
-        'parse_rules': [['objectpath', 'JSON.url', ''],
-                        ['python', 'getitem', '[:4]'],
-                        ['udf', '(context.url, input_object)', '']],
+    crawler_rule = hrs.search(test_url1)
+    # print(crawler_rule)
+    assert crawler_rule == {
+        'name': 'test_crawler_rule',
+        'parse_rules': [{
+            'name': 'rule1',
+            'rules_chain': [['objectpath', 'JSON.url', ''],
+                            ['python', 'getitem', '[:4]'],
+                            ['udf', '(context.url, input_object)', '']],
+            'child_rules': []
+        }],
         'request_args': {
             'url': 'http://httpbin.org/get',
             'method': 'get'
         },
         'regex': 'https?://httpbin.org/get'
     }
-    assert rule == hrs.match(test_url1)
-    # 5. download as rule's request_args
-    resp = requests.request(**rule['request_args'])
-    # 6. parse as rule's parse_rules
-    result = uni.parse(resp.text, rule, context=resp)
+    # print(hrs.match(test_url1))
+    assert crawler_rule == hrs.match(test_url1)
+    # 5. send request as crawler_rule's request_args, download the page source code
+    resp = requests.request(**crawler_rule['request_args'])
+    source_code = resp.text
+    # 6. parse the whole crawler_rule as crawler_rule's with uniparser. set context with resp
+    assert isinstance(crawler_rule, CrawlerRule)
+    result = uni.parse(source_code, crawler_rule, context=resp)
     # print(result)
-    assert result == ('http://httpbin.org/get', 'http')
+    assert result == {
+        'test_crawler_rule': {
+            'rule1': ('http://httpbin.org/get', 'http')
+        }
+    }
     # ===================== while search failed =====================
+    # given a url not matched the pattern
     test_url2 = 'http://notmatch.com'
-    rule = hrs.search(test_url2)
-    assert rule is None
+    crawler_rule = hrs.search(test_url2)
+    assert crawler_rule is None
+
+
+def test_uni_parser():
+    uni = Uniparser()
+    # ===================================================
+    # 1. test Uniparser's parse_parse_rule
+    rule1 = ParseRule(
+        'rule1',
+        [['python', 'getitem', '[:7]'],
+         ['udf', 'str(input_object)+" "+context', '']],
+        [],
+    )
+    result = uni.parse(HTML, rule1, 'hello world')
+    # print(result)
+    assert result == {'rule1': '\n<html> hello world'}
+    json_string = r'{"name": "rule1", "rules_chain": [["python", "getitem", "[:7]"], ["udf", "str(input_object)+\" \"+context", ""]], "child_rules": []}'
+    assert rule1.dumps() == rule1.to_json() == json_string
+    loaded_rule = ParseRule.from_json(json_string)
+    assert isinstance(loaded_rule, ParseRule)
+    assert loaded_rule == ParseRule.loads(json_string)
+    # print(loaded_rule)
+    # ===================================================
+    # # 2. test Uniparser's nested parse_parse_rule
+    rule2 = ParseRule('rule2', [['udf', 'input_object[::-1]', '']], [])
+    rule1['child_rules'].append(rule2)
+    parse_rule = ParseRule(
+        'parse_rule',
+        [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
+         ['python', 'getitem', '[0]'], ['python', 'getitem', '[0]']], [rule1])
+    result = uni.parse(HTML, parse_rule, 'hello world')
+    # print(result)
+    assert result == {
+        'parse_rule': 'This is article title',
+        '__child__': {
+            'rule1': 'This is hello world',
+            '__child__': {
+                'rule2': 'dlrow olleh si sihT'
+            }
+        }
+    }
+    # ===================================================
+    # 3. test Uniparser's nested parse_crawler_rule
+    crawler_rule = CrawlerRule('crawler_rule', 'http://example.com',
+                               [parse_rule], '')
+    result = uni.parse(HTML, crawler_rule, 'hello world')
+    # print(result)
+    assert result == {
+        'crawler_rule': {
+            'parse_rule': 'This is article title',
+            '__child__': {
+                'rule1': 'This is hello world',
+                '__child__': {
+                    'rule2': 'dlrow olleh si sihT'
+                }
+            }
+        }
+    }
+    json_string = r'{"name": "crawler_rule", "parse_rules": [{"name": "parse_rule", "rules_chain": [["css", "p", "$outerHTML"], ["css", "b", "$text"], ["python", "getitem", "[0]"], ["python", "getitem", "[0]"]], "child_rules": [{"name": "rule1", "rules_chain": [["python", "getitem", "[:7]"], ["udf", "str(input_object)+\" \"+context", ""]], "child_rules": [{"name": "rule2", "rules_chain": [["udf", "input_object[::-1]", ""]], "child_rules": []}]}]}], "request_args": {"method": "get", "url": "http://example.com", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": ""}'
+    assert crawler_rule.dumps() == crawler_rule.to_json() == json_string
+    loaded_rule = CrawlerRule.from_json(json_string)
+    assert CrawlerRule.loads(json_string) == CrawlerRule.from_json(
+        json_string) == crawler_rule == loaded_rule
+    assert isinstance(loaded_rule['parse_rules'][0], ParseRule)
 
 
 if __name__ == "__main__":
@@ -646,6 +705,6 @@ if __name__ == "__main__":
     test_udf_parser()
     test_loader_parser()
     test_time_parser()
-    test_parser_rules()
+    test_uni_parser()
     test_crawler_rules()
     test_default_usage()

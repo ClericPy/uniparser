@@ -2,6 +2,7 @@
 """
 Uniparser Test Console Demo
 """
+raise NotImplementedError
 import requests
 from bottle import Bottle, request, template
 from uniparser import CrawlerRule, Uniparser
@@ -68,7 +69,7 @@ def parse_rule():
     if not input_object:
         return 'Null input_object?'
     rule_json = kwargs['rule']
-    rule = CrawlerRule.from_json(rule_json)
+    rule = CrawlerRule.loads(rule_json)
     # print(rule)
     result = uni.parse(input_object, rule, GLOBAL_RESP)
     return {'type': str(type(result)), 'data': repr(result)}

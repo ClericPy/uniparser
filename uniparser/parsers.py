@@ -298,6 +298,8 @@ class UDFParser(BaseParser):
     _ALLOW_IMPORT = False
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
+    # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
+    _GLOBALS_ARGS = {'md5': md5}
 
     @staticmethod
     def get_code_mode(code):
@@ -321,6 +323,7 @@ class UDFParser(BaseParser):
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
         local_vars = locals()
+        local_vars.update(self._GLOBALS_ARGS)
         # run code
         code = getattr(param, 'code', param)
         if self.get_code_mode(param) is exec:

@@ -331,6 +331,39 @@ def test_objectpath_parser():
     assert result == [{'type': 'iPhone', 'number': '0123-4567-8888'}]
 
 
+def test_jmespath_parser():
+    uni = Uniparser()
+    # test default value ''
+    result = uni.jmespath.parse(JSON, 'firstName', '')
+    # print(result)
+    assert result == 'John'
+
+    # test absolute path
+    result = uni.jmespath.parse(JSON, 'address.city', '')
+    # print(result)
+    assert result == 'Nara'
+
+    # test filter index
+    result = uni.jmespath.parse(JSON, "prices[1].price", '')
+    # print(result)
+    assert result == 2
+
+    # test filter slice
+    result = uni.jmespath.parse(JSON, "prices[1:3].price", '')
+    # print(result)
+    assert result == [2, 3]
+
+    # test attribute equals filter, use single-quote is ok, double-quote is invalid!
+    result = uni.jmespath.parse(JSON, "phoneNums[?type == 'iPhone'].number", '')
+    # print(result)
+    assert result == ['0123-4567-8888']
+
+    # filt by number, use ``
+    result = uni.jmespath.parse(JSON, "prices[?price > `1`].price", '')
+    # print(result)
+    assert result == [2, 3]
+
+
 def test_python_parser():
     uni = Uniparser()
     # ===================== test getitem =====================
@@ -701,6 +734,7 @@ if __name__ == "__main__":
     test_re_parser()
     test_jsonpath_parser()
     test_objectpath_parser()
+    test_jmespath_parser()
     test_python_parser()
     test_udf_parser()
     test_loader_parser()

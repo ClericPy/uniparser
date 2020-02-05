@@ -24,31 +24,35 @@ from urllib.parse import urlparse
 
 
 def test_default_usage():
-
-    # prepare for storage
+    # 1. prepare for storage to save {'host': HostRules}
     uni = Uniparser()
     storage = {}
     test_url = 'http://httpbin.org/get'
     crawler_rule = CrawlerRule(
-        'test',
+        'test_crawler_rule',
         {
             'url': 'http://httpbin.org/get',
             'method': 'get'
         },
-        [
-            ['objectpath', 'JSON.url', ''],
-            ['python', 'getitem', '[:4]'],
-            ['udf', '(context.url, input_object)', ''],
-        ],
+        [{
+            "name": "rule1",
+            "rules_chain": [
+                ['objectpath', 'JSON.url', ''],
+                ['python', 'getitem', '[:4]'],
+                ['udf', '(context.url, input_object)', ''],
+            ],
+            "child_rules": []
+        }],
         'https?://httpbin.org/get',
     )
     host = urlparse(test_url).netloc
     hrs = HostRules(host=host)
     hrs.add(crawler_rule)
-    json_string = hrs.to_json()
+    # same as: json_string = hrs.to_json()
+    json_string = hrs.dumps()
     # print(json_string)
-    assert json_string == '{"host": "httpbin.org", "rules": [{"name": "test", "parse_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": "https?://httpbin.org/get"}]}'
-    # add HostRules to storage, storage sometimes using in redis
+    assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "rules_chain": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": "https?://httpbin.org/get"}]}'
+    # 2. add HostRules to storage, sometimes save on redis
     storage[hrs['host']] = json_string
     # ============================================
     # start to crawl
@@ -57,38 +61,55 @@ def test_default_usage():
     # 2. find the HostRules
     json_string = storage.get(host)
     # 3. HostRules init: load from json
-    hrs = HostRules.from_json(json_string)
+    # same as: hrs = HostRules.from_json(json_string)
+    hrs = HostRules.loads(json_string)
     # print(crawler_rule)
     # 4. now search / match the url with existing rules
-    rule = hrs.search(test_url1)
-    assert rule == {
-        'name': 'test',
-        'parse_rules': [['objectpath', 'JSON.url', ''],
-                        ['python', 'getitem', '[:4]'],
-                        ['udf', '(context.url, input_object)', '']],
+    crawler_rule = hrs.search(test_url1)
+    # print(crawler_rule)
+    assert crawler_rule == {
+        'name': 'test_crawler_rule',
+        'parse_rules': [{
+            'name': 'rule1',
+            'rules_chain': [['objectpath', 'JSON.url', ''],
+                            ['python', 'getitem', '[:4]'],
+                            ['udf', '(context.url, input_object)', '']],
+            'child_rules': []
+        }],
         'request_args': {
             'url': 'http://httpbin.org/get',
             'method': 'get'
         },
         'regex': 'https?://httpbin.org/get'
     }
-    assert rule == hrs.match(test_url1)
-    # 5. download as rule's request_args
-    resp = requests.request(**rule['request_args'])
-    # 6. parse as rule's parse_rules
-    result = uni.parse(resp.text, rule, context=resp)
+    # print(hrs.match(test_url1))
+    assert crawler_rule == hrs.match(test_url1)
+    # 5. send request as crawler_rule's request_args, download the page source code
+    resp = requests.request(**crawler_rule['request_args'])
+    source_code = resp.text
+    # 6. parse the whole crawler_rule as crawler_rule's with uniparser. set context with resp
+    assert isinstance(crawler_rule, CrawlerRule)
+    result = uni.parse(source_code, crawler_rule, context=resp)
     # print(result)
-    assert result == ('http://httpbin.org/get', 'http')
+    assert result == {
+        'test_crawler_rule': {
+            'rule1': ('http://httpbin.org/get', 'http')
+        }
+    }
     # ===================== while search failed =====================
+    # given a url not matched the pattern
     test_url2 = 'http://notmatch.com'
-    rule = hrs.search(test_url2)
-    assert rule is None
+    crawler_rule = hrs.search(test_url2)
+    assert crawler_rule is None
 
 
 if __name__ == "__main__":
     test_default_usage()
-
 ```
+
+## Parsers Collections
+
+> to be finished...
 
 ## More Usage
 
@@ -97,6 +118,8 @@ if __name__ == "__main__":
 Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
 
 **Online Web UI for testing is coming soon...**
+
+<!-- 
 
 ## Uniparser Test Console Demo
 
@@ -108,9 +131,11 @@ Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob
 
 ![2.png](2.png)
 
+ -->
+
 ## TODO
 
 - [x] Release to **pypi.org**
 - [x] Add **github actions** for testing package
-- [x] Web UI for testing rules
+- [ ] Web UI for testing rules
 - [ ] Complete the whole doc

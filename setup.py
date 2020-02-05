@@ -15,14 +15,8 @@ py_version = sys.version_info
 if py_version.major < 3 or py_version.minor < 6:
     raise RuntimeError('Only support python3.6+')
 
-install_requires = [
-    'jsonpath_ng',
-    'objectpath',
-    'bs4',
-    'toml',
-    'pyyaml',
-    'lxml',
-]
+with open('requirements.txt') as f:
+    install_requires = [line for line in f.read().strip().split('\n')]
 
 with open("README.md", encoding="u8") as f:
     long_description = f.read()

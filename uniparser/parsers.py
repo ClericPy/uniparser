@@ -13,6 +13,7 @@ from typing import List, Union
 from warnings import warn
 
 from bs4 import BeautifulSoup, Tag
+from jmespath import compile as jmespath_compile
 from jsonpath_ng.ext import parse as jp_parse
 from objectpath import Tree as OP_Tree
 from toml import loads as toml_loads
@@ -21,7 +22,7 @@ from yaml import safe_load as yaml_safe_load
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRules', 'Tag', 'CSSParser',
-    'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
+    'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser', 'JMESPathParser',
     'PythonParser', 'UDFParser', 'LoaderParser'
 ]
 
@@ -55,7 +56,7 @@ class BaseParser(ABC):
     1. class variable `name`
     2. `_parse` method
     3. use lazy import, maybe
-    4. Each parser subclass will recursion parse list of input_object, except PythonParser (self.)
+    4. Parsers will recursion parse list of input_object if it can only parse `str` object.
     """
     test_url = 'https://github.com/ClericPy/uniparser'
     doc_url = 'https://github.com/ClericPy/uniparser'
@@ -244,6 +245,7 @@ class JSONPathParser(BaseParser):
     name = 'jsonpath'
     doc_url = 'https://github.com/h2non/jsonpath-ng'
     test_url = 'https://jsonpath.com/'
+    _RECURSION_LIST = False
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
@@ -265,7 +267,7 @@ class ObjectPathParser(BaseParser):
 
         :param input_object: input object, could be str, list, dict.
         :type input_object: [str, list, dict]
-        :param param: JSON path
+        :param param: ObjectPath
         :type param: [str]
         :param value: not to use
         :type value: [Any]
@@ -273,6 +275,7 @@ class ObjectPathParser(BaseParser):
     name = 'objectpath'
     doc_url = 'http://github.com/adriank/ObjectPath'
     test_url = 'http://objectpath.org/'
+    _RECURSION_LIST = False
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
@@ -284,6 +287,31 @@ class ObjectPathParser(BaseParser):
         if isgenerator(result):
             result = list(result)
         return result
+
+
+class JMESPathParser(BaseParser):
+    """JMESPath parser, requires `jmespath` lib.
+
+        :param input_object: input object, could be str, list, dict.
+        :type input_object: [str, list, dict]
+        :param param: JMESPath
+        :type param: [str]
+        :param value: not to use
+        :type value: [Any]
+    """
+    name = 'jmespath'
+    doc_url = 'https://github.com/jmespath/jmespath.py'
+    test_url = 'http://jmespath.org/'
+    _RECURSION_LIST = False
+
+    def _parse(self, input_object, param, value=''):
+        if isinstance(input_object, str):
+            input_object = json_loads(input_object)
+        if isinstance(param, CompiledString):
+            code = param.code
+        else:
+            code = jmespath_compile(param)
+        return code.search(input_object)
 
 
 class UDFParser(BaseParser):
@@ -298,6 +326,8 @@ class UDFParser(BaseParser):
     _ALLOW_IMPORT = False
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
+    # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
+    _GLOBALS_ARGS = {'md5': md5}
 
     @staticmethod
     def get_code_mode(code):
@@ -321,6 +351,7 @@ class UDFParser(BaseParser):
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
         local_vars = locals()
+        local_vars.update(self._GLOBALS_ARGS)
         # run code
         code = getattr(param, 'code', param)
         if self.get_code_mode(param) is exec:
@@ -337,11 +368,14 @@ class UDFParser(BaseParser):
 class CompiledString(str):
     __slots__ = ('operator', 'code')
 
-    def __new__(cls, string, *args, **kwargs):
+    def __new__(cls, string, mode=None, *args, **kwargs):
         obj = str.__new__(cls, string, *args, **kwargs)
-        obj.operator = UDFParser.get_code_mode(string)
-        # for higher performance, pre-compile the code
-        obj.code = compile(string, string, obj.operator.__name__)
+        if mode == 'jmespath':
+            obj.code = jmespath_compile(string)
+        else:
+            obj.operator = UDFParser.get_code_mode(string)
+            # for higher performance, pre-compile the code
+            obj.code = compile(string, string, obj.operator.__name__)
         return obj
 
 
@@ -514,11 +548,17 @@ class ParseRule(JsonSerializable):
             child_rules=child_rules or [],
             **kwargs)
 
+    @staticmethod
+    def compile_rule(rule):
+        parser_name = rule[0]
+        if parser_name == 'udf':
+            rule[1] = CompiledString(rule[1])
+        elif parser_name == 'jmespath':
+            rule[1] = CompiledString(rule[1], mode='jmespath')
+        return rule
+
     def compile_codes(self, rules_chain):
-        return [
-            rule if rule[0] != 'udf' else
-            [rule[0], CompiledString(rule[1]), rule[2]] for rule in rules_chain
-        ]
+        return [self.compile_rule(rule) for rule in rules_chain]
 
 
 class CrawlerRule(JsonSerializable):
@@ -649,6 +689,7 @@ class Uniparser(object):
         self.re = RegexParser()
         self.jsonpath = JSONPathParser()
         self.objectpath = ObjectPathParser()
+        self.jmespath = JMESPathParser()
         self.python = PythonParser()
         self.loader = LoaderParser()
         self.time = TimeParser()

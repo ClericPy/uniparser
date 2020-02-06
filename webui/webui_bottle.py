@@ -2,9 +2,11 @@
 """
 Uniparser Test Console Demo
 """
-raise NotImplementedError
+import sys
+
 import requests
 from bottle import Bottle, request, template
+sys.path.insert(0, '..')
 from uniparser import CrawlerRule, Uniparser
 
 app = Bottle()

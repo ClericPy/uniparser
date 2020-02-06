@@ -107,31 +107,37 @@ if __name__ == "__main__":
     test_default_usage()
 ```
 
-## Parsers Collections
-
-> to be finished...
-
 ## More Usage
 
 > Talk is cheap, code == doc.  ^_^
 
 Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
 
-**Online Web UI for testing is coming soon...**
+## Uniparser Test Console Demo (Web UI)
 
-<!-- 
+### 1. Install the requirements.
 
-## Uniparser Test Console Demo
+    > pip install bottle uniparser
+    > python webui_bottle.py
 
-1. pip install bottle uniparser
-2. python webui_bottle.py
-3. open browser:  http://127.0.0.1:8080/ 
+### 2. open browser:  http://127.0.0.1:8080/ 
+
+#### 2.1 Web UI start page
 
 ![1.png](1.png)
 
+#### 2.2 Prepare the rules
+
 ![2.png](2.png)
 
- -->
+#### 2.3 Read the parse result
+
+![3.png](3.png)
+
+
+## Parsers List
+
+> to be finished...
 
 ## TODO
 

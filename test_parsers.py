@@ -581,6 +581,30 @@ def test_crawler_rules():
         },
         'regex': ''
     }
+    # saving some custom kwargs to crawler_rule
+    crawler_rule['context'] = {'a': 1, 'b': {'c': 2}}
+    # print(crawler_rule)
+    assert crawler_rule == {
+        'name': 'test',
+        'parse_rules': [{
+            'name': 'rule1',
+            'rules_chain': [['objectpath', 'JSON.url', ''],
+                            ['python', 'getitem', '[:4]'],
+                            ['udf', '(context.url, input_object)', '']],
+            'child_rules': []
+        }],
+        'request_args': {
+            'url': 'http://httpbin.org/get',
+            'method': 'get'
+        },
+        'regex': '',
+        'context': {
+            'a': 1,
+            'b': {
+                'c': 2
+            }
+        }
+    }
 
 
 def test_default_usage():

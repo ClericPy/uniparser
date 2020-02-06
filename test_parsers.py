@@ -581,6 +581,30 @@ def test_crawler_rules():
         },
         'regex': ''
     }
+    # saving some custom kwargs to crawler_rule
+    crawler_rule['context'] = {'a': 1, 'b': {'c': 2}}
+    # print(crawler_rule)
+    assert crawler_rule == {
+        'name': 'test',
+        'parse_rules': [{
+            'name': 'rule1',
+            'rules_chain': [['objectpath', 'JSON.url', ''],
+                            ['python', 'getitem', '[:4]'],
+                            ['udf', '(context.url, input_object)', '']],
+            'child_rules': []
+        }],
+        'request_args': {
+            'url': 'http://httpbin.org/get',
+            'method': 'get'
+        },
+        'regex': '',
+        'context': {
+            'a': 1,
+            'b': {
+                'c': 2
+            }
+        }
+    }
 
 
 def test_default_usage():
@@ -688,21 +712,28 @@ def test_uni_parser():
     # # 2. test Uniparser's nested parse_parse_rule
     rule2 = ParseRule('rule2', [['udf', 'input_object[::-1]', '']], [])
     rule1['child_rules'].append(rule2)
+    rule3 = ParseRule(
+        'rule3', [['udf', 'input_object[::-1]', '']],
+        [ParseRule('rule4', [['udf', 'input_object[::-1]', '']], [])])
+    rule1['child_rules'].append(rule3)
     parse_rule = ParseRule(
         'parse_rule',
         [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
          ['python', 'getitem', '[0]'], ['python', 'getitem', '[0]']], [rule1])
+    # print(parse_rule)
     result = uni.parse(HTML, parse_rule, 'hello world')
     # print(result)
     assert result == {
-        'parse_rule': 'This is article title',
-        '__child__': {
-            'rule1': 'This is hello world',
-            '__child__': {
-                'rule2': 'dlrow olleh si sihT'
+        'parse_rule': {
+            'rule1': {
+                'rule2': 'dlrow olleh si sihT',
+                'rule3': {
+                    'rule4': 'This is hello world'
+                }
             }
         }
     }
+
     # ===================================================
     # 3. test Uniparser's nested parse_crawler_rule
     crawler_rule = CrawlerRule('crawler_rule', 'http://example.com',
@@ -711,16 +742,18 @@ def test_uni_parser():
     # print(result)
     assert result == {
         'crawler_rule': {
-            'parse_rule': 'This is article title',
-            '__child__': {
-                'rule1': 'This is hello world',
-                '__child__': {
-                    'rule2': 'dlrow olleh si sihT'
+            'parse_rule': {
+                'rule1': {
+                    'rule2': 'dlrow olleh si sihT',
+                    'rule3': {
+                        'rule4': 'This is hello world'
+                    }
                 }
             }
         }
     }
-    json_string = r'{"name": "crawler_rule", "parse_rules": [{"name": "parse_rule", "rules_chain": [["css", "p", "$outerHTML"], ["css", "b", "$text"], ["python", "getitem", "[0]"], ["python", "getitem", "[0]"]], "child_rules": [{"name": "rule1", "rules_chain": [["python", "getitem", "[:7]"], ["udf", "str(input_object)+\" \"+context", ""]], "child_rules": [{"name": "rule2", "rules_chain": [["udf", "input_object[::-1]", ""]], "child_rules": []}]}]}], "request_args": {"method": "get", "url": "http://example.com", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": ""}'
+    # print(crawler_rule.dumps())
+    json_string = r'{"name": "crawler_rule", "parse_rules": [{"name": "parse_rule", "rules_chain": [["css", "p", "$outerHTML"], ["css", "b", "$text"], ["python", "getitem", "[0]"], ["python", "getitem", "[0]"]], "child_rules": [{"name": "rule1", "rules_chain": [["python", "getitem", "[:7]"], ["udf", "str(input_object)+\" \"+context", ""]], "child_rules": [{"name": "rule2", "rules_chain": [["udf", "input_object[::-1]", ""]], "child_rules": []}, {"name": "rule3", "rules_chain": [["udf", "input_object[::-1]", ""]], "child_rules": [{"name": "rule4", "rules_chain": [["udf", "input_object[::-1]", ""]], "child_rules": []}]}]}]}], "request_args": {"method": "get", "url": "http://example.com", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": ""}'
     assert crawler_rule.dumps() == crawler_rule.to_json() == json_string
     loaded_rule = CrawlerRule.from_json(json_string)
     assert CrawlerRule.loads(json_string) == CrawlerRule.from_json(

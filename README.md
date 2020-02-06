@@ -1,6 +1,6 @@
 # uniparser [![PyPI version](https://badge.fury.io/py/uniparser.svg)](https://badge.fury.io/py/uniparser)
 
-Provide a universal solution for crawler platforms. Python3.6+ is needed.
+Provide a universal solution for crawler platforms, for Python3.6+.
 
 ## Install
 

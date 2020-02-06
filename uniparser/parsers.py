@@ -22,8 +22,8 @@ from yaml import safe_load as yaml_safe_load
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRules', 'Tag', 'CSSParser',
-    'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser', 'JMESPathParser',
-    'PythonParser', 'UDFParser', 'LoaderParser'
+    'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
+    'JMESPathParser', 'PythonParser', 'UDFParser', 'LoaderParser'
 ]
 
 
@@ -532,6 +532,47 @@ class ParseRule(JsonSerializable):
     3. child_rules: a list of ParseRule instances, nested to save different values as named.
 
     Recursion parsing like a matryoshka doll?
+
+    Rule format like:
+        {
+            'name': 'parse_rule',
+            'rules_chain': [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
+                            ['python', 'getitem', '[0]'], ['python', 'getitem', '[0]']],
+            'child_rules': [{
+                'name': 'rule1',
+                'rules_chain': [['python', 'getitem', '[:7]'],
+                                ['udf', 'str(input_object)+" "+context', '']],
+                'child_rules': [{
+                    'name': 'rule2',
+                    'rules_chain': [['udf', 'input_object[::-1]', '']],
+                    'child_rules': []
+                },
+                                {
+                                    'name': 'rule3',
+                                    'rules_chain': [['udf', 'input_object[::-1]', '']],
+                                    'child_rules': [{
+                                        'name': 'rule4',
+                                        'rules_chain': [[
+                                            'udf', 'input_object[::-1]', ''
+                                        ]],
+                                        'child_rules': []
+                                    }]
+                                }]
+            }]
+        }
+
+    Parse Result like:
+        {
+            'parse_rule': {
+                'rule1': {
+                    'rule2': 'dlrow olleh si sihT',
+                    'rule3': {
+                        'rule4': 'This is hello world'
+                    }
+                }
+            }
+        }
+
     """
     __slots__ = ()
 
@@ -542,10 +583,14 @@ class ParseRule(JsonSerializable):
                  **kwargs):
         rules_chain = rules_chain or []
         rules_chain = self.compile_codes(rules_chain)
+        # ensure items of child_rules is ParseRule
+        child_rules = [
+            self.__class__(**parse_rule) for parse_rule in child_rules or []
+        ]
         super().__init__(
             name=name,
             rules_chain=rules_chain,
-            child_rules=child_rules or [],
+            child_rules=child_rules,
             **kwargs)
 
     @staticmethod
@@ -569,6 +614,60 @@ class CrawlerRule(JsonSerializable):
     2. request_args for sending request.
     3. parse_rules: list of [ParseRule: , ...].
     4. regex: regex which can match a given url.
+
+    Rule format like:
+        {
+            'name': 'crawler_rule',
+            'parse_rules': [{
+                'name': 'parse_rule',
+                'rules_chain': [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
+                                ['python', 'getitem', '[0]'],
+                                ['python', 'getitem', '[0]']],
+                'child_rules': [{
+                    'name': 'rule1',
+                    'rules_chain': [['python', 'getitem', '[:7]'],
+                                    ['udf', 'str(input_object)+" "+context', '']],
+                    'child_rules': [
+                        {
+                            'name': 'rule2',
+                            'rules_chain': [['udf', 'input_object[::-1]', '']],
+                            'child_rules': []
+                        },
+                        {
+                            'name': 'rule3',
+                            'rules_chain': [['udf', 'input_object[::-1]', '']],
+                            'child_rules': [{
+                                'name': 'rule4',
+                                'rules_chain': [['udf', 'input_object[::-1]', '']],
+                                'child_rules': []
+                            }]
+                        }
+                    ]
+                }]
+            }],
+            'request_args': {
+                'method': 'get',
+                'url': 'http://example.com',
+                'headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+                }
+            },
+            'regex': ''
+        }
+
+    Parse Result like:
+        {
+            'crawler_rule': {
+                'parse_rule': {
+                    'rule1': {
+                        'rule2': 'dlrow olleh si sihT',
+                        'rule3': {
+                            'rule4': 'This is hello world'
+                        }
+                    }
+                }
+            }
+        }
     """
     __slots__ = ()
 
@@ -656,22 +755,26 @@ class Uniparser(object):
     def parse_crawler_rule(self, input_object, rule: CrawlerRule, context=None):
         parse_rules = rule['parse_rules']
         result = {
-            rule['name']: self.parse_parse_rule(input_object, parse_rule,
-                                                context)
+            parse_rule['name']: self.parse_parse_rule(
+                input_object, parse_rule, context).get(parse_rule['name'])
             for parse_rule in parse_rules
         }
-        return result
+        return {rule['name']: result}
 
     def parse_parse_rule(self, input_object, rule: ParseRule, context=None):
         input_object = self.parse_chain(
             input_object, rule['rules_chain'], context=context)
         result = {rule['name']: input_object}
+        if not rule['child_rules']:
+            return {rule['name']: input_object}
+        else:
+            result = {rule['name']: {}}
         for sub_rule in rule['child_rules']:
-            result['__child__'] = self.parse_parse_rule(
+            result[rule['name']][sub_rule['name']] = self.parse_parse_rule(
                 input_object,
                 sub_rule,
                 context=context,
-            )
+            ).get(sub_rule['name'])
         return result
 
     def parse(self,

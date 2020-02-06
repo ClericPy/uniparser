@@ -254,7 +254,8 @@ class JSONPathParser(BaseParser):
         attr_name = value[1:]
         if param.startswith('JSON.'):
             param = '$%s' % param[4:]
-        jsonpath_expr = jp_parse(param)
+        # try get the compiled jsonpath
+        jsonpath_expr = getattr(param, 'code', jp_parse(param))
         result = [
             getattr(match, attr_name, match.value)
             for match in jsonpath_expr.find(input_object)
@@ -307,10 +308,7 @@ class JMESPathParser(BaseParser):
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
             input_object = json_loads(input_object)
-        if isinstance(param, CompiledString):
-            code = param.code
-        else:
-            code = jmespath_compile(param)
+        code = getattr(param, 'code', jmespath_compile(param))
         return code.search(input_object)
 
 
@@ -372,7 +370,9 @@ class CompiledString(str):
         obj = str.__new__(cls, string, *args, **kwargs)
         if mode == 'jmespath':
             obj.code = jmespath_compile(string)
-        else:
+        elif mode == 'jsonpath':
+            obj.code = jp_parse(string)
+        elif mode == 'code':
             obj.operator = UDFParser.get_code_mode(string)
             # for higher performance, pre-compile the code
             obj.code = compile(string, string, obj.operator.__name__)
@@ -552,9 +552,11 @@ class ParseRule(JsonSerializable):
     def compile_rule(rule):
         parser_name = rule[0]
         if parser_name == 'udf':
-            rule[1] = CompiledString(rule[1])
+            rule[1] = CompiledString(rule[1], mode='code')
         elif parser_name == 'jmespath':
             rule[1] = CompiledString(rule[1], mode='jmespath')
+        elif parser_name == 'jsonpath':
+            rule[1] = CompiledString(rule[1], mode='jsonpath')
         return rule
 
     def compile_codes(self, rules_chain):

@@ -93,7 +93,7 @@
                                 <br>
                                 <div v-if="rule.name">
                                     <div class="sub-title">Rules Chain</div>
-                                    <template v-for="(r, i) in crawler_rule.parse_rules[index].rules_chain"
+                                    <template v-for="(r, i) in crawler_rule.parse_rules[index].chain_rules"
                                         class="rule_chain">
                                         <i v-if="r.parser_name" @click="get_doc(r.parser_name)"
                                             title="Read the parse doc" class="el-icon-info"></i>
@@ -141,13 +141,13 @@
                         <el-input type="textarea" autosize placeholder="" v-model="cr_json">
                         </el-input>
                     </el-form-item>
-                    <el-drawer title="Parse Result" :visible.sync="drawer" size="50%" direction="ttb">
+                    <el-drawer close-on-press-escape="true" title="Parse Result" :visible.sync="drawer" size="50%" direction="ttb">
                         <b style="font-size: 0.8em;">${parse_result.type}</b>
                         <textarea name="doc" id="show_parse_result"
                             style="width: 100%; height: 100%;">${parse_result.data}</textarea>
                     </el-drawer>
 
-                    <el-drawer title="Doc" :visible.sync="doc_drawer" size="50%" direction="ttb">
+                    <el-drawer :close-on-press-escape="false" title="Doc" :visible.sync="doc_drawer" size="50%" direction="ttb">
                         <textarea name="doc" id="show_doc" style="width: 100%; height: 100%;">${current_doc}</textarea>
                     </el-drawer>
                 </el-form>
@@ -232,7 +232,7 @@
                     )
                 },
                 add_new_rule_chain(index) {
-                    this.crawler_rule.parse_rules[index].rules_chain.push({
+                    this.crawler_rule.parse_rules[index].chain_rules.push({
                         'parser_name': '',
                         'param': '',
                         'value': ''
@@ -241,7 +241,7 @@
                 add_new_rule() {
                     this.crawler_rule.parse_rules.push({
                         name: '',
-                        rules_chain: [{
+                        chain_rules: [{
                             'parser_name': '',
                             'param': '',
                             'value': ''
@@ -253,7 +253,7 @@
                     this.crawler_rule.parse_rules.splice(index, 1)
                 },
                 del_rule_chain(index, i) {
-                    this.crawler_rule.parse_rules[index].rules_chain.splice(i, 1)
+                    this.crawler_rule.parse_rules[index].chain_rules.splice(i, 1)
                 },
                 get_doc(name) {
                     this.current_doc = this.docs[name] || 'Not found parser: ' + name
@@ -274,15 +274,15 @@
                             } catch (error) {
                                 childs = item.childs
                             }
-                            var rules_chain = []
-                            item.rules_chain.forEach(i => {
+                            var chain_rules = []
+                            item.chain_rules.forEach(i => {
                                 if (i.parser_name && i.param) {
-                                    rules_chain.push([i.parser_name, i.param, i.value])
+                                    chain_rules.push([i.parser_name, i.param, i.value])
                                 }
                             });
                             rules.push({
                                 'name': item.name,
-                                'rules_chain': rules_chain,
+                                'chain_rules': chain_rules,
                                 'childs': childs
                             })
                         }

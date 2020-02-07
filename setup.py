@@ -38,6 +38,7 @@ setup(
     license="MIT License",
     install_requires=install_requires,
     py_modules=["uniparser"],
+    package_data={'uniparser': ['templates/*.html']},
     extras_require={},
     author="ClericPy",
     author_email="clericpy@gmail.com",

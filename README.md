@@ -156,20 +156,14 @@ if __name__ == "__main__":
 
 ```
 
-## More Usage
-
-> Talk is cheap, code is doc. Poor time to write...
-
-Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
-
 ## Uniparser Test Console Demo (Web UI)
 
-### 1. Install the requirements.
+### 1. Prepare Environment
 
-    > pip install bottle uniparser
-    > python webui_bottle.py
+1. pip install bottle uniparser
+2. python -m uniparser 8080
 
-### 2. open browser:  http://127.0.0.1:8080/ 
+### 2. open browser  http://127.0.0.1:8080/ 
 
 #### 2.1 Web UI start page
 
@@ -183,9 +177,16 @@ Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob
 
 ![3.png](3.png)
 
+## More Usage
+
+> Talk is cheap, code is doc. Poor time to write...
+
+Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
+
 ## TODO
 
-- [x] Release to **pypi.org**
+- [x] Release to pypi.org
+  - [ ] Upload dist with Web UI
 - [x] Add **github actions** for testing package
 - [x] Web UI for testing rules
 - [ ] Complete the whole doc

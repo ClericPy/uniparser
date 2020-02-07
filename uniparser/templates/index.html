@@ -58,7 +58,7 @@
     <div id="app">
         <el-container>
             <el-header style="margin-top: 2em;"><a href="https://github.com/ClericPy/uniparser" target="_blank"
-                    rel="noopener noreferrer">Uniparser Test Console</a></el-header>
+                    rel="noopener noreferrer">Uniparser Test Console v{{version}}</a></el-header>
             <el-main>
                 <el-form :model="crawler_rule">
                     <el-form-item label="Rule Name">
@@ -72,7 +72,8 @@
                             type="textarea" autosize></el-input>
                     </el-form-item>
                     <el-form-item>
-                        <el-button type="primary" @click="download">Send HTTP</el-button>
+                        <el-button type="primary" @click="download"> <i class="el-icon-download"></i> Download
+                        </el-button>
                     </el-form-item>
                     <el-form-item label="Response Body">
                         <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 5}" placeholder="" width="50%"
@@ -83,7 +84,6 @@
                         <br>
                         <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
                             <div class="rule">
-                                <!-- <div class="sub-title">Rule Name</div> -->
                                 <el-input type="text" style="width: 50%;zoom: 100%;" autosize
                                     placeholder="Rule name for saving parse result" v-model="rule.name">
                                     <template slot="prepend" class="sub-title" style="width: 30%;">Rule Name</template>
@@ -95,22 +95,22 @@
                                     <div class="sub-title">Rules Chain</div>
                                     <template v-for="(r, i) in crawler_rule.parse_rules[index].chain_rules"
                                         class="rule_chain">
-                                        <i v-if="r.parser_name" @click="get_doc(r.parser_name)"
-                                            title="Read the parse doc" class="el-icon-info"></i>
+                                        <i v-if="r[0]" @click="get_doc(r[0])" title="Read the parse doc"
+                                            class="el-icon-info"></i>
                                         <el-autocomplete @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" class="inline-input"
-                                            style="width: 10%;zoom: 100%;" v-model="r.parser_name"
+                                            style="width: 10%;zoom: 100%;" v-model="r[0]"
                                             :fetch-suggestions="querySearch" placeholder="Parser Name">
                                         </el-autocomplete>
                                         <el-input @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
                                             style="width: 35%;zoom: 120%;display:inline-block;" :rows="1" autosize
-                                            placeholder="Param. Ctrl+Enter=Submit; Alt+Enter=New" v-model="r.param">
+                                            placeholder="Param. Ctrl+Enter=Submit; Alt+Enter=New" v-model="r[1]">
                                         </el-input>
                                         <el-input @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
                                             style="width: 35%;zoom: 120%;display:inline-block;" :rows="1" autosize
-                                            placeholder="Value. Ctrl+Enter=Submit; Alt+Enter=New" v-model="r.value">
+                                            placeholder="Value. Ctrl+Enter=Submit; Alt+Enter=New" v-model="r[2]">
                                         </el-input>
                                         <i class="el-icon-delete" @click="del_rule_chain(index, i)">
                                         </i>
@@ -127,35 +127,45 @@
                                 </div>
                             </div>
                         </template>
-
-                        <!-- <el-button size="medium" @click="add_new_rule" style="margin: 0.5em 0 0.5em 45%;"
-                            icon="el-icon-plus" circle>
-                        </el-button> -->
                         <i class="el-icon-circle-plus-outline" @click="add_new_rule"
                             style="margin: 0.5em 0 0.5em 45%; zoom: 1.5;"></i>
                     </el-form-item>
                     <el-form-item>
-                        <el-button type="primary" @click="parse">Parse</el-button>
+                        <el-button type="primary" @click="parse"> <i class="el-icon-video-play"> Parse </i>
+                        </el-button>
+                        <el-button type="warning" @click="load_rule_popup"> <i class="el-icon-edit-outline"> Loads </i>
+                        </el-button>
                     </el-form-item>
+                    <hr>
                     <el-form-item label="CrawlerRule JSON" title="Can be loaded by CrawlerRule.from_json">
-                        <el-input type="textarea" autosize placeholder="" v-model="cr_json">
+                        <el-input type="textarea" autosize placeholder="" v-model="current_crawler_rule_json">
                         </el-input>
                     </el-form-item>
-                    <el-drawer close-on-press-escape="true" title="Parse Result" :visible.sync="drawer" size="50%" direction="ttb">
+                    <el-drawer close-on-press-escape="true" title="Parse Result" :visible.sync="drawer" size="50%"
+                        direction="ttb">
                         <b style="font-size: 0.8em;">${parse_result.type}</b>
                         <textarea name="doc" id="show_parse_result"
                             style="width: 100%; height: 100%;">${parse_result.data}</textarea>
                     </el-drawer>
-
-                    <el-drawer :close-on-press-escape="false" title="Doc" :visible.sync="doc_drawer" size="50%" direction="ttb">
-                        <textarea name="doc" id="show_doc" style="width: 100%; height: 100%;">${current_doc}</textarea>
+                    <el-drawer :close-on-press-escape="false" title="Doc" :visible.sync="doc_drawer" size="50%"
+                        direction="ttb">
+                        <textarea name="doc" id="show_doc" style="width: 100%; height: 100%;"
+                            :v-model="current_doc">${current_doc}</textarea>
                     </el-drawer>
                 </el-form>
-
+                <el-dialog title="Input the JSON string" :visible.sync="new_rule_visible">
+                    <el-form>
+                        <el-input v-model="new_rule_json" placeholder="Json dict for Requests" type="textarea"
+                            :autosize="{ minRows: 5, maxRows: 10}" :autofocus="true"></el-input>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="load_rule()"> Cancel </el-button>
+                        <el-button type="primary" @click="load_rule()"> OK </el-button>
+                    </div>
+                </el-dialog>
             </el-main>
         </el-container>
     </div>
-
     <script>
         var Main = {
             data() {
@@ -179,6 +189,8 @@
                     parse_result: '',
                     current_doc: '',
                     doc_drawer: false,
+                    new_rule_visible: false,
+                    new_rule_json: '',
                 }
             },
             methods: {
@@ -214,7 +226,7 @@
                 },
                 parse() {
                     var data = {
-                        'rule': this.cr_json,
+                        'rule': this.current_crawler_rule_json,
                         'input_object': this.input_object,
                     }
                     if (!this.crawler_rule.parse_rules || !this.input_object) {
@@ -232,20 +244,14 @@
                     )
                 },
                 add_new_rule_chain(index) {
-                    this.crawler_rule.parse_rules[index].chain_rules.push({
-                        'parser_name': '',
-                        'param': '',
-                        'value': ''
-                    })
+                    this.crawler_rule.parse_rules[index].chain_rules.push(['', '', ''])
                 },
                 add_new_rule() {
                     this.crawler_rule.parse_rules.push({
                         name: '',
-                        chain_rules: [{
-                            'parser_name': '',
-                            'param': '',
-                            'value': ''
-                        }],
+                        chain_rules: [
+                            ['', '', '']
+                        ],
                         childs: "",
                     })
                 },
@@ -258,13 +264,33 @@
                 get_doc(name) {
                     this.current_doc = this.docs[name] || 'Not found parser: ' + name
                     this.doc_drawer = true
+                },
+                load_rule() {
+                    if (!this.new_rule_json) {
+                        this.new_rule_visible = false
+                        return
+                    }
+                    try {
+                        var new_rule = JSON.parse(this.new_rule_json)
+                        if (new_rule.request_args && new_rule.request_args.url) {
+                            new_rule.request_args = JSON.stringify(new_rule.request_args, null, 2)
+                        }
+                        this.crawler_rule = new_rule
+                        this.new_rule_visible = false
+                    } catch (err) {
+                        alert(err)
+                    }
+                },
+                load_rule_popup() {
+                    this.new_rule_visible = true
+                    if (!this.new_rule_json) {
+                        this.new_rule_json = this.current_crawler_rule_json
+                    }
                 }
             },
-            watch: {
-
-            },
+            watch: {},
             computed: {
-                cr_json: function () {
+                current_crawler_rule_json: function () {
                     var rules = []
                     this.crawler_rule.parse_rules.forEach(item => {
                         if (item.name) {
@@ -276,8 +302,8 @@
                             }
                             var chain_rules = []
                             item.chain_rules.forEach(i => {
-                                if (i.parser_name && i.param) {
-                                    chain_rules.push([i.parser_name, i.param, i.value])
+                                if (i[0] && i[1]) {
+                                    chain_rules.push([i[0], i[1], i[2]])
                                 }
                             });
                             rules.push({

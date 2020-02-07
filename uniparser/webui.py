@@ -2,12 +2,12 @@
 """
 Uniparser Test Console Demo
 """
-import sys
+
+from pathlib import Path
 
 import requests
 from bottle import Bottle, request, template
-sys.path.insert(0, '..')
-from uniparser import CrawlerRule, Uniparser
+from . import CrawlerRule, Uniparser, __version__
 
 app = Bottle()
 uni = Uniparser()
@@ -21,8 +21,8 @@ cdn_urls = dict(
     VUE_RESOURCE_CDN=
     'https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js')
 
-TEMPLATE = r'''
-'''
+index_tpl_path = Path(__file__).parent / 'templates' / 'index.html'
+index_tpl_path = index_tpl_path.as_posix()
 
 
 @app.get('/init_app')
@@ -38,12 +38,7 @@ def init_app():
 
 @app.get("/")
 def index():
-    with open('index.html', encoding='u8') as f:
-        TEMPLATE = f.read()
-    return template(
-        TEMPLATE,
-        cdn_urls=cdn_urls,
-    )
+    return template(index_tpl_path, cdn_urls=cdn_urls, version=__version__)
 
 
 @app.post("/request")

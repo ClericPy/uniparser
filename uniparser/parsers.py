@@ -188,7 +188,7 @@ class XMLParser(BaseParser):
 
 
 class RegexParser(BaseParser):
-    """Parse the input object with standard regex, features from `re`.
+    """RegexParser. Parse the input object with standard regex, features from `re`.
 
         :param input_object: input object, could be str.
         :type input_object: [str]
@@ -315,7 +315,7 @@ class JMESPathParser(BaseParser):
 
 
 class UDFParser(BaseParser):
-    """Python source code snippets. globals will contain `input_object` and `context` variables.
+    """UDFParser. Python source code snippets. globals will contain `input_object` and `context` variables.
 
         param & value:
             param: the python source code to be exec(param), either have the function named `parse`, or will return eval(param)
@@ -393,7 +393,7 @@ class CompiledString(str):
 
 
 class PythonParser(BaseParser):
-    """Some frequently-used utils
+    """PythonParser. Some frequently-used utils.
 
         :param input_object: input object, any object.
         :type input_object: [object]
@@ -443,7 +443,7 @@ class PythonParser(BaseParser):
 
 
 class LoaderParser(BaseParser):
-    """ObjectPath parser, requires `objectpath` lib.
+    """LoaderParser. Loads string with json / yaml / toml standard format.
 
         :param input_object: str match format of json / yaml / toml
         :type input_object: [str]
@@ -475,7 +475,7 @@ class LoaderParser(BaseParser):
 
 
 class TimeParser(BaseParser):
-    """Parse different format of time. Sometimes time string need a preprocessing with regex.
+    """TimeParser. Parse different format of time. Sometimes time string need a preprocessing with regex.
 
         :param input_object: str
         :type input_object: [str]

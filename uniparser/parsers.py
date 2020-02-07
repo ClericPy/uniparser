@@ -337,12 +337,15 @@ class UDFParser(BaseParser):
             return eval
 
     def _parse(self, input_object, param, value=""):
-        context = value
+        # context could be any type, if string, will try to json.loads
+        # if value is null, will use the context dict from CrawlerRule & ParseRule
         if value and isinstance(value, str):
             try:
                 context = json_loads(value)
             except JSONDecodeError:
-                pass
+                context = value
+        else:
+            context = value or {}
         if not self._ALLOW_IMPORT and 'import' in param:
             # cb = re_compile(r'^\s*(from  )?import \w+') # not strict enough
             raise RuntimeError(
@@ -365,14 +368,22 @@ class UDFParser(BaseParser):
 
 class CompiledString(str):
     __slots__ = ('operator', 'code')
+    __support__ = ('jmespath', 'jsonpath', 'udf')
 
     def __new__(cls, string, mode=None, *args, **kwargs):
+        if isinstance(string, cls):
+            return string
         obj = str.__new__(cls, string, *args, **kwargs)
+        obj = cls.compile(obj, string, mode)
+        return obj
+
+    @classmethod
+    def compile(cls, obj, string, mode=None):
         if mode == 'jmespath':
             obj.code = jmespath_compile(string)
         elif mode == 'jsonpath':
             obj.code = jp_parse(string)
-        elif mode == 'code':
+        elif mode == 'udf':
             obj.operator = UDFParser.get_code_mode(string)
             # for higher performance, pre-compile the code
             obj.code = compile(string, string, obj.operator.__name__)
@@ -528,31 +539,32 @@ class JsonSerializable(dict):
 class ParseRule(JsonSerializable):
     """ParseRule should contain this params:
     1. a rule name, will be set as result key.
-    2. rules_chain: a list of [[parser_name, param, value], ...], will be parse one by one.
+    2. chain_rules: a list of [[parser_name, param, value], ...], will be parse one by one.
     3. child_rules: a list of ParseRule instances, nested to save different values as named.
+    4. context: a dict shared values by udf parse of the rules, only when udf value is null. May be shared from upstream CrawlerRule.
 
     Recursion parsing like a matryoshka doll?
 
     Rule format like:
         {
             'name': 'parse_rule',
-            'rules_chain': [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
+            'chain_rules': [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
                             ['python', 'getitem', '[0]'], ['python', 'getitem', '[0]']],
             'child_rules': [{
                 'name': 'rule1',
-                'rules_chain': [['python', 'getitem', '[:7]'],
+                'chain_rules': [['python', 'getitem', '[:7]'],
                                 ['udf', 'str(input_object)+" "+context', '']],
                 'child_rules': [{
                     'name': 'rule2',
-                    'rules_chain': [['udf', 'input_object[::-1]', '']],
+                    'chain_rules': [['udf', 'input_object[::-1]', '']],
                     'child_rules': []
                 },
                                 {
                                     'name': 'rule3',
-                                    'rules_chain': [['udf', 'input_object[::-1]', '']],
+                                    'chain_rules': [['udf', 'input_object[::-1]', '']],
                                     'child_rules': [{
                                         'name': 'rule4',
-                                        'rules_chain': [[
+                                        'chain_rules': [[
                                             'udf', 'input_object[::-1]', ''
                                         ]],
                                         'child_rules': []
@@ -574,38 +586,36 @@ class ParseRule(JsonSerializable):
         }
 
     """
-    __slots__ = ()
+    __slots__ = ('context',)
 
     def __init__(self,
                  name: str,
-                 rules_chain: List[List],
+                 chain_rules: List[List],
                  child_rules: List['ParseRule'] = None,
+                 context: dict = None,
                  **kwargs):
-        rules_chain = rules_chain or []
-        rules_chain = self.compile_codes(rules_chain)
+        chain_rules = self.compile_codes(chain_rules or [])
         # ensure items of child_rules is ParseRule
         child_rules = [
             self.__class__(**parse_rule) for parse_rule in child_rules or []
         ]
+        self.context: dict = context or {}
         super().__init__(
             name=name,
-            rules_chain=rules_chain,
+            chain_rules=chain_rules,
             child_rules=child_rules,
             **kwargs)
 
     @staticmethod
-    def compile_rule(rule):
-        parser_name = rule[0]
-        if parser_name == 'udf':
-            rule[1] = CompiledString(rule[1], mode='code')
-        elif parser_name == 'jmespath':
-            rule[1] = CompiledString(rule[1], mode='jmespath')
-        elif parser_name == 'jsonpath':
-            rule[1] = CompiledString(rule[1], mode='jsonpath')
-        return rule
+    def compile_rule(chain_rule):
+        if isinstance(chain_rule[1], CompiledString):
+            return chain_rule
+        if chain_rule[0] in CompiledString.__support__:
+            chain_rule[1] = CompiledString(chain_rule[1], mode=chain_rule[0])
+        return chain_rule
 
-    def compile_codes(self, rules_chain):
-        return [self.compile_rule(rule) for rule in rules_chain]
+    def compile_codes(self, chain_rules):
+        return [self.compile_rule(chain_rule) for chain_rule in chain_rules]
 
 
 class CrawlerRule(JsonSerializable):
@@ -614,31 +624,32 @@ class CrawlerRule(JsonSerializable):
     2. request_args for sending request.
     3. parse_rules: list of [ParseRule: , ...].
     4. regex: regex which can match a given url.
+    5. context: a dict shared values by udf parse of the rules, only when udf value is null. May be shared to downstream ParseRule.
 
     Rule format like:
         {
             'name': 'crawler_rule',
             'parse_rules': [{
                 'name': 'parse_rule',
-                'rules_chain': [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
+                'chain_rules': [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
                                 ['python', 'getitem', '[0]'],
                                 ['python', 'getitem', '[0]']],
                 'child_rules': [{
                     'name': 'rule1',
-                    'rules_chain': [['python', 'getitem', '[:7]'],
+                    'chain_rules': [['python', 'getitem', '[:7]'],
                                     ['udf', 'str(input_object)+" "+context', '']],
                     'child_rules': [
                         {
                             'name': 'rule2',
-                            'rules_chain': [['udf', 'input_object[::-1]', '']],
+                            'chain_rules': [['udf', 'input_object[::-1]', '']],
                             'child_rules': []
                         },
                         {
                             'name': 'rule3',
-                            'rules_chain': [['udf', 'input_object[::-1]', '']],
+                            'chain_rules': [['udf', 'input_object[::-1]', '']],
                             'child_rules': [{
                                 'name': 'rule4',
-                                'rules_chain': [['udf', 'input_object[::-1]', '']],
+                                'chain_rules': [['udf', 'input_object[::-1]', '']],
                                 'child_rules': []
                             }]
                         }
@@ -669,15 +680,17 @@ class CrawlerRule(JsonSerializable):
             }
         }
     """
-    __slots__ = ()
+    __slots__ = ('context',)
 
     def __init__(self,
                  name: str,
                  request_args: Union[dict, str],
                  parse_rules: List[ParseRule] = None,
                  regex: str = None,
+                 context: dict = None,
                  **kwargs):
         if isinstance(request_args, str):
+            # curl string could be parsed by torequests.utils.curlparse
             if request_args.startswith('http'):
                 request_args = {
                     "method": "get",
@@ -688,15 +701,30 @@ class CrawlerRule(JsonSerializable):
                 }
             else:
                 request_args = json_loads(request_args)
-        parse_rules = parse_rules or []
-        parse_rules = [ParseRule(**parse_rule) for parse_rule in parse_rules]
-        regex = regex or ''
+        self.context = context or {}
+        parse_rules = [
+            ParseRule(context=self.context, **parse_rule)
+            for parse_rule in parse_rules or []
+        ]
         super().__init__(
             name=name,
             parse_rules=parse_rules,
             request_args=request_args or {},
-            regex=regex,
+            regex=regex or '',
             **kwargs)
+
+    def add_parse_rule(self, rule: ParseRule, context: dict = None):
+        rule = ParseRule(context=context or self.context, **rule)
+        self['parse_rules'].append(rule)
+
+    def pop_parse_rule(self, index, default=None):
+        try:
+            return self['parse_rules'].pop(index)
+        except IndexError:
+            return default
+
+    def clear_parse_rules(self):
+        self['parse_rules'].clear()
 
 
 class HostRules(JsonSerializable):
@@ -706,9 +734,8 @@ class HostRules(JsonSerializable):
                  host: str,
                  crawler_rules: List[CrawlerRule] = None,
                  **kwargs):
-        crawler_rules = crawler_rules or []
         crawler_rules = [
-            CrawlerRule(**crawler_rule) for crawler_rule in crawler_rules
+            CrawlerRule(**crawler_rule) for crawler_rule in crawler_rules or []
         ]
         super().__init__(host=host, crawler_rules=crawler_rules, **kwargs)
 
@@ -741,8 +768,8 @@ class Uniparser(object):
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
 
-    def parse_chain(self, input_object, rules_chain: List, context=None):
-        for parser_name, param, value in rules_chain:
+    def parse_chain(self, input_object, chain_rules: List, context=None):
+        for parser_name, param, value in chain_rules:
             parser = getattr(self, parser_name)
             if not parser:
                 warn(f'Skip parsing for unknown name: {parser_name}')
@@ -762,8 +789,11 @@ class Uniparser(object):
         return {rule['name']: result}
 
     def parse_parse_rule(self, input_object, rule: ParseRule, context=None):
+        # if context, use context; else use rule.context
         input_object = self.parse_chain(
-            input_object, rule['rules_chain'], context=context)
+            input_object,
+            rule['chain_rules'],
+            context=context or getattr(rule, 'context', {}))
         result = {rule['name']: input_object}
         if not rule['child_rules']:
             return {rule['name']: input_object}

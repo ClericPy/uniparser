@@ -36,7 +36,7 @@ def test_default_usage():
         },
         [{
             "name": "rule1",
-            "rules_chain": [
+            "chain_rules": [
                 ['objectpath', 'JSON.url', ''],
                 ['python', 'getitem', '[:4]'],
                 ['udf', '(context.url, input_object)', ''],
@@ -51,7 +51,7 @@ def test_default_usage():
     # same as: json_string = hrs.to_json()
     json_string = hrs.dumps()
     # print(json_string)
-    assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "rules_chain": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": "https?://httpbin.org/get"}]}'
+    assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": "https?://httpbin.org/get"}]}'
     # 2. add HostRules to storage, sometimes save on redis
     storage[hrs['host']] = json_string
     # ============================================
@@ -71,7 +71,7 @@ def test_default_usage():
         'name': 'test_crawler_rule',
         'parse_rules': [{
             'name': 'rule1',
-            'rules_chain': [['objectpath', 'JSON.url', ''],
+            'chain_rules': [['objectpath', 'JSON.url', ''],
                             ['python', 'getitem', '[:4]'],
                             ['udf', '(context.url, input_object)', '']],
             'child_rules': []

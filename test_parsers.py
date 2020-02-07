@@ -550,7 +550,7 @@ def test_crawler_rules():
         'method': 'get'
     }, [{
         "name": "rule1",
-        "rules_chain": [
+        "chain_rules": [
             ['objectpath', 'JSON.url', ''],
             ['python', 'getitem', '[:4]'],
             ['udf', '(context.url, input_object)', ''],
@@ -563,14 +563,14 @@ def test_crawler_rules():
     assert result == {'test': {'rule1': ('http://httpbin.org/get', 'http')}}
     crawler_rule_json = crawler_rule.to_json()
     # print(crawler_rule_json)
-    assert crawler_rule_json == r'{"name": "test", "parse_rules": [{"name": "rule1", "rules_chain": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": ""}'
+    assert crawler_rule_json == r'{"name": "test", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": ""}'
     crawler_rule_dict = crawler_rule.to_dict()
     # print(crawler_rule_dict)
     assert crawler_rule_dict == {
         'name': 'test',
         'parse_rules': [{
             'name': 'rule1',
-            'rules_chain': [['objectpath', 'JSON.url', ''],
+            'chain_rules': [['objectpath', 'JSON.url', ''],
                             ['python', 'getitem', '[:4]'],
                             ['udf', '(context.url, input_object)', '']],
             'child_rules': []
@@ -588,7 +588,7 @@ def test_crawler_rules():
         'name': 'test',
         'parse_rules': [{
             'name': 'rule1',
-            'rules_chain': [['objectpath', 'JSON.url', ''],
+            'chain_rules': [['objectpath', 'JSON.url', ''],
                             ['python', 'getitem', '[:4]'],
                             ['udf', '(context.url, input_object)', '']],
             'child_rules': []
@@ -605,6 +605,19 @@ def test_crawler_rules():
             }
         }
     }
+    # !!! use context by updating rule.context variable
+    crawler_rule.context.update({'new_key': 'new_value'})
+    crawler_rule.clear_parse_rules()
+    crawler_rule.add_parse_rule({
+        'name': 'rule1',
+        'chain_rules': [['objectpath', 'JSON.url', ''],
+                        ['python', 'getitem', '[:4]'],
+                        ['udf', '(type(context).__name__, context)', '']],
+        'child_rules': []
+    })
+    result = uni.parse(resp, crawler_rule)
+    # print(result)
+    assert result == {'test': {'rule1': ('dict', {'new_key': 'new_value'})}}
 
 
 def test_default_usage():
@@ -622,7 +635,7 @@ def test_default_usage():
         },
         [{
             "name": "rule1",
-            "rules_chain": [
+            "chain_rules": [
                 ['objectpath', 'JSON.url', ''],
                 ['python', 'getitem', '[:4]'],
                 ['udf', '(context.url, input_object)', ''],
@@ -637,7 +650,7 @@ def test_default_usage():
     # same as: json_string = hrs.to_json()
     json_string = hrs.dumps()
     # print(json_string)
-    assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "rules_chain": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": "https?://httpbin.org/get"}]}'
+    assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": "https?://httpbin.org/get"}]}'
     # 2. add HostRules to storage, sometimes save on redis
     storage[hrs['host']] = json_string
     # ============================================
@@ -657,7 +670,7 @@ def test_default_usage():
         'name': 'test_crawler_rule',
         'parse_rules': [{
             'name': 'rule1',
-            'rules_chain': [['objectpath', 'JSON.url', ''],
+            'chain_rules': [['objectpath', 'JSON.url', ''],
                             ['python', 'getitem', '[:4]'],
                             ['udf', '(context.url, input_object)', '']],
             'child_rules': []
@@ -702,7 +715,7 @@ def test_uni_parser():
     result = uni.parse(HTML, rule1, 'hello world')
     # print(result)
     assert result == {'rule1': '\n<html> hello world'}
-    json_string = r'{"name": "rule1", "rules_chain": [["python", "getitem", "[:7]"], ["udf", "str(input_object)+\" \"+context", ""]], "child_rules": []}'
+    json_string = r'{"name": "rule1", "chain_rules": [["python", "getitem", "[:7]"], ["udf", "str(input_object)+\" \"+context", ""]], "child_rules": []}'
     assert rule1.dumps() == rule1.to_json() == json_string
     loaded_rule = ParseRule.from_json(json_string)
     assert isinstance(loaded_rule, ParseRule)
@@ -753,7 +766,7 @@ def test_uni_parser():
         }
     }
     # print(crawler_rule.dumps())
-    json_string = r'{"name": "crawler_rule", "parse_rules": [{"name": "parse_rule", "rules_chain": [["css", "p", "$outerHTML"], ["css", "b", "$text"], ["python", "getitem", "[0]"], ["python", "getitem", "[0]"]], "child_rules": [{"name": "rule1", "rules_chain": [["python", "getitem", "[:7]"], ["udf", "str(input_object)+\" \"+context", ""]], "child_rules": [{"name": "rule2", "rules_chain": [["udf", "input_object[::-1]", ""]], "child_rules": []}, {"name": "rule3", "rules_chain": [["udf", "input_object[::-1]", ""]], "child_rules": [{"name": "rule4", "rules_chain": [["udf", "input_object[::-1]", ""]], "child_rules": []}]}]}]}], "request_args": {"method": "get", "url": "http://example.com", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": ""}'
+    json_string = r'{"name": "crawler_rule", "parse_rules": [{"name": "parse_rule", "chain_rules": [["css", "p", "$outerHTML"], ["css", "b", "$text"], ["python", "getitem", "[0]"], ["python", "getitem", "[0]"]], "child_rules": [{"name": "rule1", "chain_rules": [["python", "getitem", "[:7]"], ["udf", "str(input_object)+\" \"+context", ""]], "child_rules": [{"name": "rule2", "chain_rules": [["udf", "input_object[::-1]", ""]], "child_rules": []}, {"name": "rule3", "chain_rules": [["udf", "input_object[::-1]", ""]], "child_rules": [{"name": "rule4", "chain_rules": [["udf", "input_object[::-1]", ""]], "child_rules": []}]}]}]}], "request_args": {"method": "get", "url": "http://example.com", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": ""}'
     assert crawler_rule.dumps() == crawler_rule.to_json() == json_string
     loaded_rule = CrawlerRule.from_json(json_string)
     assert CrawlerRule.loads(json_string) == CrawlerRule.from_json(

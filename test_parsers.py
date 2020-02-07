@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+import warnings
+from urllib.parse import urlparse
+
 import requests
 from uniparser import CrawlerRule, HostRules, ParseRule, Uniparser
 from uniparser.parsers import Tag
-import warnings
 
 warnings.filterwarnings('ignore', 'TimeParser')
 
@@ -605,24 +607,9 @@ def test_crawler_rules():
             }
         }
     }
-    # !!! use context by updating rule.context variable
-    crawler_rule.context.update({'new_key': 'new_value'})
-    crawler_rule.clear_parse_rules()
-    crawler_rule.add_parse_rule({
-        'name': 'rule1',
-        'chain_rules': [['objectpath', 'JSON.url', ''],
-                        ['python', 'getitem', '[:4]'],
-                        ['udf', '(type(context).__name__, context)', '']],
-        'child_rules': []
-    })
-    result = uni.parse(resp, crawler_rule)
-    # print(result)
-    assert result == {'test': {'rule1': ('dict', {'new_key': 'new_value'})}}
 
 
 def test_default_usage():
-    from urllib.parse import urlparse
-
     # 1. prepare for storage to save {'host': HostRules}
     uni = Uniparser()
     storage = {}
@@ -698,8 +685,35 @@ def test_default_usage():
     # ===================== while search failed =====================
     # given a url not matched the pattern
     test_url2 = 'http://notmatch.com'
-    crawler_rule = hrs.search(test_url2)
-    assert crawler_rule is None
+    crawler_rule2 = hrs.search(test_url2)
+    assert crawler_rule2 is None
+    # ===================== shared context =====================
+    # !!! use context by updating rule.context variable
+    new_parse = '''
+def parse(input_object):
+    context['new_key'] = 'cleared'
+    return (input_object, context)
+    '''
+    crawler_rule.context.update({'new_key': 'new_value'})
+    crawler_rule.clear_parse_rules()
+    crawler_rule.add_parse_rule({
+        'name': 'rule1',
+        'chain_rules': [['objectpath', 'JSON.url', ''],
+                        ['python', 'getitem', '[:4]'], ['udf', new_parse, '']],
+        'child_rules': []
+    })
+    result = uni.parse(source_code, crawler_rule)
+    # print(result)
+    assert result == {
+        'test_crawler_rule': {
+            'rule1': ('http', {
+                'new_key': 'cleared'
+            })
+        }
+    }
+    # print(crawler_rule.context)
+    # now the crawler_rule.context has been updated.
+    assert crawler_rule.context == {'new_key': 'cleared'}
 
 
 def test_uni_parser():

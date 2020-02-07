@@ -165,7 +165,7 @@ if __name__ == "__main__":
 
 ### 2. open browser  http://127.0.0.1:8080/ 
 
-#### 2.1 Web UI start page
+#### 2.1 Start page
 
 ![1.png](1.png)
 
@@ -175,7 +175,11 @@ if __name__ == "__main__":
 
 #### 2.3 Read the parse result
 
-![3.png](3.png)
+Show result as repr(result)
+
+> {'HelloWorld': {'rule1-get-first-p': 'Customer name: ', 'rule2-get-legends': [' Pizza Size ', ' Pizza Toppings ']}}
+
+As you see, Crawler Rule's name is the root key, and ParseRule's name as the others.
 
 ## More Usage
 

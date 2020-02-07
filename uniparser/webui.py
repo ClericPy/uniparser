@@ -52,9 +52,13 @@ def send_request():
         GLOBAL_RESP = r
         if encoding:
             r.encoding = encoding
-        return r.text
+        return {
+            'text': r.text,
+            'status': f'[{r.status_code}]',
+            'ok': r.status_code in range(200, 300)
+        }
     except requests.RequestException as e:
-        return str(e)
+        return {'text': str(e), 'status': '[-1]', 'ok': False}
 
 
 @app.post("/parse")

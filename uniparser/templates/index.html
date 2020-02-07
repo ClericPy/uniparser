@@ -27,6 +27,10 @@
             font-size: 0.9em;
         }
 
+        #el-drawer__title>span:focus {
+            outline-color: white;
+        }
+
         a:link {
             color: #000000;
             text-decoration: none;
@@ -75,7 +79,7 @@
                         <el-button type="primary" @click="download"> <i class="el-icon-download"></i> Download
                         </el-button>
                     </el-form-item>
-                    <el-form-item label="Response Body">
+                    <el-form-item :label="'Response Body ' + request_status " id="request_status">
                         <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 5}" placeholder="" width="50%"
                             v-model="input_object">
                         </el-input>
@@ -186,6 +190,7 @@
                         }, null, 2),
                     },
                     input_object: '',
+                    request_status: '',
                     parse_result: '',
                     current_doc: '',
                     doc_drawer: false,
@@ -216,7 +221,10 @@
                     var data = this.crawler_rule.request_args
                     this.$http.post('/request', data).then(
                         r => {
-                            this.input_object = r.bodyText
+                            this.input_object = r.body.text
+                            this.request_status = r.body.status
+                            let color = r.body.ok ? 'green' : 'red'
+                            document.querySelector('#request_status>label').style.color = color
                         }, r => {
                             this.status = 'testTask failed, Bad request (' + r.status + ') :' + r
                                 .statusText

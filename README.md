@@ -18,9 +18,10 @@ Provide a universal solution for crawler platforms, for Python3.6+.
 
 ```python
 # -*- coding: utf-8 -*-
-import requests
-from uniparser import Uniparser, CrawlerRule, HostRules
 from urllib.parse import urlparse
+
+import requests
+from uniparser import CrawlerRule, HostRules, Uniparser
 
 
 def test_default_usage():
@@ -99,12 +100,40 @@ def test_default_usage():
     # ===================== while search failed =====================
     # given a url not matched the pattern
     test_url2 = 'http://notmatch.com'
-    crawler_rule = hrs.search(test_url2)
-    assert crawler_rule is None
+    crawler_rule2 = hrs.search(test_url2)
+    assert crawler_rule2 is None
+    # ===================== shared context =====================
+    # !!! use context by updating rule.context variable
+    new_parse = '''
+def parse(input_object):
+    context['new_key'] = 'cleared'
+    return (input_object, context)
+    '''
+    crawler_rule.context.update({'new_key': 'new_value'})
+    crawler_rule.clear_parse_rules()
+    crawler_rule.add_parse_rule({
+        'name': 'rule1',
+        'chain_rules': [['objectpath', 'JSON.url', ''],
+                        ['python', 'getitem', '[:4]'], ['udf', new_parse, '']],
+        'child_rules': []
+    })
+    result = uni.parse(source_code, crawler_rule)
+    # print(result)
+    assert result == {
+        'test_crawler_rule': {
+            'rule1': ('http', {
+                'new_key': 'cleared'
+            })
+        }
+    }
+    # print(crawler_rule.context)
+    # now the crawler_rule.context has been updated.
+    assert crawler_rule.context == {'new_key': 'cleared'}
 
 
 if __name__ == "__main__":
     test_default_usage()
+
 ```
 
 ## More Usage

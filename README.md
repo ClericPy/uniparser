@@ -14,6 +14,22 @@ Provide a universal solution for crawler platforms, for Python3.6+.
 4. Provide a universal solution for crawler platforms.
 5. Summarize common string parsing tools on the market.
 
+## Feature List
+
+0. Each ParseRule / CrawlerRule / HostRules object could be json.dumps for persistence.
+   1. Therefore, they also can be loads from JSON string
+1. Support most of popular parsers for HTML / XML / JSON / AnyString / Python object
+   1. css
+   2. xml
+   3. regex
+   4. jsonpath
+      1. quite slow...
+   5. objectpath
+   6. jmespath
+   7. time
+   8. yaml / toml
+2. 
+
 ## Quick Start
 
 ```python
@@ -162,11 +178,6 @@ Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob
 #### 2.3 Read the parse result
 
 ![3.png](3.png)
-
-
-## Parsers List
-
-> to be finished...
 
 ## TODO
 

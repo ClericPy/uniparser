@@ -20,6 +20,8 @@ from toml import loads as toml_loads
 from yaml import full_load as yaml_full_load
 from yaml import safe_load as yaml_safe_load
 
+from .utils import ensure_request
+
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRules', 'Tag', 'CSSParser',
     'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
@@ -689,18 +691,7 @@ class CrawlerRule(JsonSerializable):
                  regex: str = None,
                  context: dict = None,
                  **kwargs):
-        if isinstance(request_args, str):
-            # curl string could be parsed by torequests.utils.curlparse
-            if request_args.startswith('http'):
-                request_args = {
-                    "method": "get",
-                    "url": request_args,
-                    "headers": {
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
-                    }
-                }
-            else:
-                request_args = json_loads(request_args)
+        request_args = ensure_request(request_args)
         self.context = context or {}
         parse_rules = [
             ParseRule(context=self.context, **parse_rule)
@@ -709,7 +700,7 @@ class CrawlerRule(JsonSerializable):
         super().__init__(
             name=name,
             parse_rules=parse_rules,
-            request_args=request_args or {},
+            request_args=request_args,
             regex=regex or '',
             **kwargs)
 

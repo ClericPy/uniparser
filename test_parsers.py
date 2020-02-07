@@ -565,7 +565,7 @@ def test_crawler_rules():
     assert result == {'test': {'rule1': ('http://httpbin.org/get', 'http')}}
     crawler_rule_json = crawler_rule.to_json()
     # print(crawler_rule_json)
-    assert crawler_rule_json == r'{"name": "test", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": ""}'
+    assert crawler_rule_json == r'{"name": "test", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": ""}'
     crawler_rule_dict = crawler_rule.to_dict()
     # print(crawler_rule_dict)
     assert crawler_rule_dict == {
@@ -579,7 +579,10 @@ def test_crawler_rules():
         }],
         'request_args': {
             'url': 'http://httpbin.org/get',
-            'method': 'get'
+            'method': 'get',
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+            }
         },
         'regex': ''
     }
@@ -597,7 +600,10 @@ def test_crawler_rules():
         }],
         'request_args': {
             'url': 'http://httpbin.org/get',
-            'method': 'get'
+            'method': 'get',
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+            }
         },
         'regex': '',
         'context': {
@@ -637,7 +643,7 @@ def test_default_usage():
     # same as: json_string = hrs.to_json()
     json_string = hrs.dumps()
     # print(json_string)
-    assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get"}, "regex": "https?://httpbin.org/get"}]}'
+    assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": "https?://httpbin.org/get"}]}'
     # 2. add HostRules to storage, sometimes save on redis
     storage[hrs['host']] = json_string
     # ============================================
@@ -664,7 +670,10 @@ def test_default_usage():
         }],
         'request_args': {
             'url': 'http://httpbin.org/get',
-            'method': 'get'
+            'method': 'get',
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+            }
         },
         'regex': 'https?://httpbin.org/get'
     }

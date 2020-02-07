@@ -16,8 +16,6 @@ Provide a universal solution for crawler, **Python3.6+**.
 
 ## Feature List
 
-0. Each ParseRule / CrawlerRule / HostRules object could be json.dumps for persistence.
-   1. Therefore, they also can be loads from JSON string
 1. Support most of popular parsers for HTML / XML / JSON / AnyString / Python object
    1. css (HTML)
    2. xml
@@ -31,7 +29,10 @@ Provide a universal solution for crawler, **Python3.6+**.
    9. *waiting for new ones...*
 2. Request args persistence, support curl-string, single-url, dict, json.
 3. A simple Web UI for generate & test CrawlerRule.
-4. 
+4. Serializable JSON rule class for saving the whole parsing process.
+   1. Each ParseRule / CrawlerRule / HostRules subclass can be json.dumps to JSON for persistence.
+   2. Therefore, they also can be loaded from JSON string.
+   3. Nest relation of rule names will be treat as the result format. (Rule's result will be ignore if has childs.)
 
 ## Quick Start
 

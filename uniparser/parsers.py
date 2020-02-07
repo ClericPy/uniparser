@@ -691,7 +691,12 @@ class CrawlerRule(JsonSerializable):
                  regex: str = None,
                  context: dict = None,
                  **kwargs):
-        request_args = ensure_request(request_args)
+        _request_args: dict = ensure_request(request_args)
+        if _request_args:
+            _request_args["headers"] = _request_args.setdefault(
+                "headers", {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
+                })
         self.context = context or {}
         parse_rules = [
             ParseRule(context=self.context, **parse_rule)
@@ -700,7 +705,7 @@ class CrawlerRule(JsonSerializable):
         super().__init__(
             name=name,
             parse_rules=parse_rules,
-            request_args=request_args,
+            request_args=_request_args,
             regex=regex or '',
             **kwargs)
 

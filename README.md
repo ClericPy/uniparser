@@ -1,6 +1,6 @@
 # uniparser [![PyPI version](https://badge.fury.io/py/uniparser.svg)](https://badge.fury.io/py/uniparser)
 
-Provide a universal solution for crawler platforms, for Python3.6+.
+Provide a universal solution for crawler, **Python3.6+**.
 
 ## Install
 
@@ -19,16 +19,19 @@ Provide a universal solution for crawler platforms, for Python3.6+.
 0. Each ParseRule / CrawlerRule / HostRules object could be json.dumps for persistence.
    1. Therefore, they also can be loads from JSON string
 1. Support most of popular parsers for HTML / XML / JSON / AnyString / Python object
-   1. css
+   1. css (HTML)
    2. xml
    3. regex
    4. jsonpath
-      1. quite slow...
    5. objectpath
    6. jmespath
    7. time
-   8. yaml / toml
-2. 
+   8. loader
+      1. json / yaml / toml
+   9. *waiting for new ones...*
+2. Request args persistence, support curl-string, single-url, dict, json.
+3. A simple Web UI for generate & test CrawlerRule.
+4. 
 
 ## Quick Start
 
@@ -154,7 +157,7 @@ if __name__ == "__main__":
 
 ## More Usage
 
-> Talk is cheap, code == doc.  ^_^
+> Talk is cheap, code is doc. Poor time to write...
 
 Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
 
@@ -183,5 +186,5 @@ Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob
 
 - [x] Release to **pypi.org**
 - [x] Add **github actions** for testing package
-- [ ] Web UI for testing rules
+- [x] Web UI for testing rules
 - [ ] Complete the whole doc

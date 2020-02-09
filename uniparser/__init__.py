@@ -1,4 +1,4 @@
-from .parsers import Uniparser, ParseRule, CrawlerRule, HostRules
+from .parsers import Uniparser, ParseRule, CrawlerRule, HostRule
 
-__all__ = ['Uniparser', 'ParseRule', 'CrawlerRule', 'HostRules']
-__version__ = '0.0.6'
+__all__ = ['Uniparser', 'ParseRule', 'CrawlerRule', 'HostRule']
+__version__ = '0.0.7'

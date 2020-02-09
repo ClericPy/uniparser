@@ -55,6 +55,10 @@
             border: 1px dashed #aaaaaa;
             padding: 5px;
         }
+
+        .el-input-group__prepend {
+            width: 7em;
+        }
     </style>
 </head>
 
@@ -65,12 +69,15 @@
                     rel="noopener noreferrer">Uniparser Test Console v{{version}}</a></el-header>
             <el-main>
                 <el-form :model="crawler_rule">
-                    <el-form-item label="Rule Name">
-                        <el-input v-model="crawler_rule.name" placeholder="Rule Name"></el-input>
-                    </el-form-item>
-                    <el-form-item label="Regex Pattern">
-                        <el-input v-model="crawler_rule.regex" placeholder="regex"></el-input>
-                    </el-form-item>
+                    <el-input v-model="crawler_rule.name" style="width: 40%;zoom: 100%;" placeholder="">
+                        <span slot="prepend">Rule Name</span>
+                    </el-input><br>
+                    <el-input v-model="crawler_rule.regex" style="width: 40%;zoom: 100%;" placeholder="">
+                        <span slot="prepend">Regex Pattern</span>
+                    </el-input><br>
+                    <el-input v-model="crawler_rule.encoding" style="width: 40%;zoom: 100%;" placeholder="">
+                        <span slot="prepend">Encoding</span>
+                    </el-input>
                     <el-form-item label="Request Args">
                         <el-input v-model="crawler_rule.request_args" placeholder="Json dict for Requests"
                             type="textarea" autosize></el-input>
@@ -90,7 +97,7 @@
                             <div class="rule">
                                 <el-input type="text" style="width: 50%;zoom: 100%;" autosize
                                     placeholder="Rule name for saving parse result" v-model="rule.name">
-                                    <template slot="prepend" class="sub-title" style="width: 30%;">Rule Name</template>
+                                    <template slot="prepend" class="sub-title">Rule Name</template>
                                 </el-input>
                                 <i class="el-icon-delete" @click="del_rule(index)">
                                 </i>
@@ -180,6 +187,7 @@
                     crawler_rule: {
                         name: 'HelloWorld',
                         regex: '',
+                        encoding: "",
                         parse_rules: [],
                         request_args: JSON.stringify({
                             "method": "get",
@@ -218,7 +226,7 @@
                     });
                 },
                 download() {
-                    var data = this.crawler_rule.request_args
+                    var data = this.crawler_rule
                     this.$http.post('/request', data).then(
                         r => {
                             this.input_object = r.body.text
@@ -326,6 +334,7 @@
                         request_args: JSON.parse(this.crawler_rule.request_args),
                         parse_rules: rules,
                         regex: this.crawler_rule.regex,
+                        encoding: this.crawler_rule.encoding,
                     }
                     return JSON.stringify(data, null, 2)
                 }

@@ -3,7 +3,7 @@ import warnings
 from urllib.parse import urlparse
 
 import requests
-from uniparser import CrawlerRule, HostRules, ParseRule, Uniparser
+from uniparser import CrawlerRule, HostRule, ParseRule, Uniparser
 from uniparser.parsers import Tag
 
 warnings.filterwarnings('ignore', 'TimeParser')
@@ -616,7 +616,7 @@ def test_crawler_rules():
 
 
 def test_default_usage():
-    # 1. prepare for storage to save {'host': HostRules}
+    # 1. prepare for storage to save {'host': HostRule}
     uni = Uniparser()
     storage = {}
     test_url = 'http://httpbin.org/get'
@@ -638,23 +638,23 @@ def test_default_usage():
         'https?://httpbin.org/get',
     )
     host = urlparse(test_url).netloc
-    hrs = HostRules(host=host)
+    hrs = HostRule(host=host)
     hrs.add(crawler_rule)
     # same as: json_string = hrs.to_json()
     json_string = hrs.dumps()
     # print(json_string)
     assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": "https?://httpbin.org/get"}]}'
-    # 2. add HostRules to storage, sometimes save on redis
+    # 2. add HostRule to storage, sometimes save on redis
     storage[hrs['host']] = json_string
     # ============================================
     # start to crawl
     # 1. set a example url
     test_url1 = test_url
-    # 2. find the HostRules
+    # 2. find the HostRule
     json_string = storage.get(host)
-    # 3. HostRules init: load from json
-    # same as: hrs = HostRules.from_json(json_string)
-    hrs = HostRules.loads(json_string)
+    # 3. HostRule init: load from json
+    # same as: hrs = HostRule.from_json(json_string)
+    hrs = HostRule.loads(json_string)
     # print(crawler_rule)
     # 4. now search / match the url with existing rules
     crawler_rule = hrs.search(test_url1)

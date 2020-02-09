@@ -6,9 +6,12 @@ Uniparser Test Console Demo
 from pathlib import Path
 
 import requests
-from bottle import Bottle, request, template
+from bottle import BaseRequest, Bottle, request, template
+
 from . import CrawlerRule, Uniparser, __version__
 
+# 10MB
+BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
 app = Bottle()
 uni = Uniparser()
 GLOBAL_RESP = None
@@ -44,11 +47,11 @@ def index():
 @app.post("/request")
 def send_request():
     global GLOBAL_RESP
-    # kwargs = request.body.read().decode('u8')
-    kwargs = request.json
-    encoding = kwargs.pop('encoding', None)
+    rule = CrawlerRule(**request.json)
+    encoding = rule.get('encoding')
     try:
-        r = requests.request(**kwargs)
+        request_args = rule['request_args']
+        r = requests.request(**request_args)
         GLOBAL_RESP = r
         if encoding:
             r.encoding = encoding

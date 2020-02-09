@@ -23,7 +23,7 @@ from yaml import safe_load as yaml_safe_load
 from .utils import ensure_request
 
 __all__ = [
-    'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRules', 'Tag', 'CSSParser',
+    'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'Tag', 'CSSParser',
     'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
     'JMESPathParser', 'PythonParser', 'UDFParser', 'LoaderParser'
 ]
@@ -627,6 +627,7 @@ class CrawlerRule(JsonSerializable):
     3. parse_rules: list of [ParseRule: , ...].
     4. regex: regex which can match a given url.
     5. context: a dict shared values by udf parse of the rules, only when udf value is null. May be shared to downstream ParseRule.
+    6 **kwargs: some extra kwargs, sometimes contains encoding param.
 
     Rule format like:
         {
@@ -709,6 +710,12 @@ class CrawlerRule(JsonSerializable):
             regex=regex or '',
             **kwargs)
 
+    def get_request(self, **request):
+        for k, v in self['request_args'].items():
+            if k not in request:
+                request[k] = v
+        return request
+
     def add_parse_rule(self, rule: ParseRule, context: dict = None):
         rule = ParseRule(context=context or self.context, **rule)
         self['parse_rules'].append(rule)
@@ -722,8 +729,14 @@ class CrawlerRule(JsonSerializable):
     def clear_parse_rules(self):
         self['parse_rules'].clear()
 
+    def search(self, url):
+        return not self['regex'] or re_compile(self['regex']).search(url)
 
-class HostRules(JsonSerializable):
+    def match(self, url):
+        return not self['regex'] or re_compile(self['regex']).match(url)
+
+
+class HostRule(JsonSerializable):
     __slots__ = ()
 
     def __init__(self,
@@ -740,12 +753,12 @@ class HostRules(JsonSerializable):
 
     def search(self, url):
         for rule in self['crawler_rules']:
-            if rule['regex'] and re_compile(rule['regex']).search(url):
+            if rule.search(url):
                 return rule
 
     def match(self, url):
         for rule in self['crawler_rules']:
-            if rule['regex'] and re_compile(rule['regex']).match(url):
+            if rule.match(url):
                 return rule
 
     def add(self, rule: CrawlerRule):

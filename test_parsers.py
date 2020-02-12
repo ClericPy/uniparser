@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import warnings
 from urllib.parse import urlparse
 
 import requests
 from uniparser import CrawlerRule, HostRule, ParseRule, Uniparser
 from uniparser.parsers import Tag
+from uniparser.utils import (AiohttpAsyncAdapter, HTTPXAsyncAdapter,
+                             HTTPXSyncAdapter, RequestsAdapter,
+                             TorequestsAsyncAdapter, TorequestsSyncAdapter)
 
 warnings.filterwarnings('ignore', 'TimeParser')
 
@@ -795,6 +799,84 @@ def test_uni_parser():
     assert CrawlerRule.loads(json_string) == CrawlerRule.from_json(
         json_string) == crawler_rule == loaded_rule
     assert isinstance(loaded_rule['parse_rules'][0], ParseRule)
+
+    # ===================================================
+    # 4. test Uniparser.crawl & Uniparser.acrawl
+    crawler_rule = CrawlerRule(
+        **{
+            'name': 'test_crawler_rule',
+            'parse_rules': [{
+                'name': 'rule1',
+                'chain_rules': [[
+                    'objectpath', 'JSON.url', ''
+                ], ['python', 'getitem', '[:4]'
+                   ], ['udf', '(context["resp"].url, input_object)', '']],
+                'child_rules': []
+            }],
+            'request_args': {
+                'url': 'http://httpbin.org/get',
+                'method': 'get',
+                'headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+                }
+            },
+            'regex': 'https?://httpbin.org/get'
+        })
+    result = uni.crawl(crawler_rule, RequestsAdapter(), None)
+    # print(result)
+    assert result == {
+        'test_crawler_rule': {
+            'rule1': ('http://httpbin.org/get', 'http')
+        }
+    }
+
+    async def _a_test():
+        result = await uni.acrawl(crawler_rule, HTTPXAsyncAdapter(), None)
+        # print(result)
+        assert result == {
+            'test_crawler_rule': {
+                'rule1': ('http://httpbin.org/get', 'http')
+            }
+        }
+
+    asyncio.get_event_loop().run_until_complete(_a_test())
+
+
+def test_sync_adapters():
+    with RequestsAdapter() as req:
+        text, r = req.request(method='get', url='http://httpbin.org/get')
+        assert 'url' in text
+        assert r.status_code == 200
+    with HTTPXSyncAdapter() as req:
+        text, r = req.request(method='get', url='http://httpbin.org/get')
+        assert 'url' in text
+        assert r.status_code == 200
+    with TorequestsSyncAdapter() as req:
+        text, r = req.request(method='get', url='http://httpbin.org/get')
+        assert 'url' in text
+        assert r.status_code == 200
+
+
+def test_async_adapters():
+
+    async def _a_test():
+        async with HTTPXAsyncAdapter() as req:
+            text, r = await req.request(
+                method='get', url='http://httpbin.org/get')
+            assert 'url' in text
+            assert r.status_code == 200
+        async with AiohttpAsyncAdapter() as req:
+            text, r = await req.request(
+                method='get', url='http://httpbin.org/get')
+            assert 'url' in text
+            assert r.status == 200
+        async with TorequestsAsyncAdapter() as req:
+            text, r = await req.request(
+                method='get', url='http://httpbin.org/get')
+            assert 'url' in text
+            assert r.status == 200
+
+    asyncio.get_event_loop().run_until_complete(_a_test())
 
 
 if __name__ == "__main__":

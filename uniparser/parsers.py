@@ -20,7 +20,7 @@ from toml import loads as toml_loads
 from yaml import full_load as yaml_full_load
 from yaml import safe_load as yaml_safe_load
 
-from .utils import ensure_request
+from .utils import ensure_request, SyncRequestAdapter, AsyncRequestAdapter
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'Tag', 'CSSParser',
@@ -773,9 +773,12 @@ class HostRule(JsonSerializable):
 class Uniparser(object):
     parser_classes = BaseParser.__subclasses__()
 
-    def __init__(self):
+    def __init__(self,
+                 request_adapter: Union[AsyncRequestAdapter,
+                                        SyncRequestAdapter] = None):
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
+        self.request_adapter = request_adapter
 
     def parse_chain(self, input_object, chain_rules: List, context=None):
         for parser_name, param, value in chain_rules:
@@ -842,3 +845,30 @@ class Uniparser(object):
         for parser in BaseParser.__subclasses__():
             if parser.name not in self.__dict__:
                 self.__dict__[parser.name] = parser()
+
+    def crawl(self,
+              crawler_rule: CrawlerRule,
+              request_adapter: SyncRequestAdapter = None,
+              context=None):
+        request_adapter = request_adapter or self.request_adapter
+        context = context or {}
+        if not isinstance(request_adapter, SyncRequestAdapter):
+            raise RuntimeError('bad request_adapter type')
+        with request_adapter as req:
+            input_object, resp = req.request(**crawler_rule['request_args'])
+            context['resp'] = resp
+        return self.parse(input_object, crawler_rule, context)
+
+    async def acrawl(self,
+                     crawler_rule: CrawlerRule,
+                     request_adapter: AsyncRequestAdapter = None,
+                     context=None):
+        request_adapter = request_adapter or self.request_adapter
+        context = context or {}
+        if not isinstance(request_adapter, AsyncRequestAdapter):
+            raise RuntimeError('bad request_adapter type')
+        async with request_adapter as req:
+            input_object, resp = await req.request(
+                **crawler_rule['request_args'])
+            context['resp'] = resp
+        return self.parse(input_object, crawler_rule, context)

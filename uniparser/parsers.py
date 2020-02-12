@@ -853,27 +853,47 @@ class Uniparser(object):
               request_adapter=None,
               context=None,
               **request):
-        request_adapter = request_adapter or self.request_adapter
+        input_object, resp = self.download(crawler_rule, request_adapter,
+                                           **request)
         context = context or {}
+        if crawler_rule.context:
+            context.update(crawler_rule.context)
+        context['resp'] = resp
+        return self.parse(input_object, crawler_rule, context)
+
+    def download(self,
+                 crawler_rule: CrawlerRule,
+                 request_adapter=None,
+                 **request):
+        request_adapter = request_adapter or self.request_adapter
         if not isinstance(request_adapter, SyncRequestAdapter):
             raise RuntimeError('bad request_adapter type')
         request_args = crawler_rule.get_request(**request)
         with request_adapter as req:
             input_object, resp = req.request(**request_args)
-            context['resp'] = resp
-        return self.parse(input_object, crawler_rule, context)
+        return input_object, resp
+
+    async def adownload(self,
+                        crawler_rule: CrawlerRule,
+                        request_adapter=None,
+                        **request):
+        request_adapter = request_adapter or self.request_adapter
+        if not isinstance(request_adapter, AsyncRequestAdapter):
+            raise RuntimeError('bad request_adapter type')
+        request_args = crawler_rule.get_request(**request)
+        async with request_adapter as req:
+            input_object, resp = await req.request(**request_args)
+        return input_object, resp
 
     async def acrawl(self,
                      crawler_rule: CrawlerRule,
                      request_adapter=None,
                      context=None,
                      **request):
-        request_adapter = request_adapter or self.request_adapter
+        input_object, resp = await self.adownload(crawler_rule, request_adapter,
+                                                  **request)
         context = context or {}
-        if not isinstance(request_adapter, AsyncRequestAdapter):
-            raise RuntimeError('bad request_adapter type')
-        request_args = crawler_rule.get_request(**request)
-        async with request_adapter as req:
-            input_object, resp = await req.request(**request_args)
-            context['resp'] = resp
+        if crawler_rule.context:
+            context.update(context)
+        context['resp'] = resp
         return self.parse(input_object, crawler_rule, context)

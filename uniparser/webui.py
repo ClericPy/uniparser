@@ -9,11 +9,17 @@ import requests
 from bottle import BaseRequest, Bottle, request, template
 
 from . import CrawlerRule, Uniparser, __version__
+from .utils import get_available_sync_request
 
 # 10MB
 BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
 app = Bottle()
-uni = Uniparser()
+adapter = get_available_sync_request()
+if not adapter:
+    raise RuntimeError(
+        "one of these libs should be installed: ('requests', 'httpx', 'torequests')"
+    )
+uni = Uniparser(adapter())
 GLOBAL_RESP = None
 
 cdn_urls = dict(
@@ -48,15 +54,11 @@ def index():
 def send_request():
     global GLOBAL_RESP
     rule = CrawlerRule(**request.json)
-    encoding = rule.get('encoding')
     try:
-        request_args = rule['request_args']
-        r = requests.request(**request_args)
+        body, r = uni.download(rule)
         GLOBAL_RESP = r
-        if encoding:
-            r.encoding = encoding
         return {
-            'text': r.text,
+            'text': body,
             'status': f'[{r.status_code}]',
             'ok': r.status_code in range(200, 300)
         }

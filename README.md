@@ -51,7 +51,7 @@ Provide a universal solution for crawler, **Python3.6+**.
 import asyncio
 
 import httpx
-from uniparser import CrawlerRule, Uniparser
+from uniparser import CrawlerRule, Uniparser, HTTPXAsyncAdapter
 
 try:
     import uvloop
@@ -142,37 +142,23 @@ class CrawlerTask(object):
 
     async def crawl(self):
         # 1. get url list
-        async with httpx.AsyncClient() as req:
-            resp = await req.request(**self.list_crawler_rule['request_args'])
-            # sometimes will has `encoding` arg
-            if self.list_crawler_rule.get('encoding'):
-                resp.encoding = self.list_crawler_rule.get('encoding')
-            scode = resp.text
-            result = self.uni.parse(scode, self.list_crawler_rule, '')
-            # print(result)
-            # {'SeedParser': {'links': ['https://www.python.org/dev/peps/pep-0001', 'https://www.python.org/dev/peps/pep-0004', 'https://www.python.org/dev/peps/pep-0005', 'https://www.python.org/dev/peps/pep-0006', 'https://www.python.org/dev/peps/pep-0007', 'https://www.python.org/dev/peps/pep-0008', 'https://www.python.org/dev/peps/pep-0010', 'https://www.python.org/dev/peps/pep-0011', 'https://www.python.org/dev/peps/pep-0012']}}
-            links = result['SeedParser']['links']
-            tasks = [
-                asyncio.ensure_future(
-                    req.request(**self.detail_crawler_rule.get_request(
-                        url=link)))
-                for link in links
-                if self.detail_crawler_rule.match(link)
-            ]
-            # print(tasks)
-            results = []
-            for task in tasks:
-                resp = await task
-                if self.detail_crawler_rule.get('encoding'):
-                    resp.encoding = self.detail_crawler_rule.get('encoding')
-                scode = resp.text
-                result = self.uni.parse(scode, self.detail_crawler_rule, '')
-                results.append(result)
-            return results
+        result = await self.uni.acrawl(self.list_crawler_rule)
+        # print(result)
+        # {'SeedParser': {'links': ['https://www.python.org/dev/peps/pep-0001', 'https://www.python.org/dev/peps/pep-0004', 'https://www.python.org/dev/peps/pep-0005', 'https://www.python.org/dev/peps/pep-0006', 'https://www.python.org/dev/peps/pep-0007', 'https://www.python.org/dev/peps/pep-0008', 'https://www.python.org/dev/peps/pep-0010', 'https://www.python.org/dev/peps/pep-0011', 'https://www.python.org/dev/peps/pep-0012']}}
+        links = result['SeedParser']['links']
+        tasks = [
+            asyncio.ensure_future(
+                self.uni.acrawl(self.detail_crawler_rule, url=link))
+            for link in links
+            if self.detail_crawler_rule.match(link)
+        ]
+        # print(tasks)
+        results = [await task for task in tasks]
+        return results
 
 
 async def main():
-    uni = Uniparser()
+    uni = Uniparser(HTTPXAsyncAdapter())
     crawler = CrawlerTask(uni, list_crawler_json, detail_crawler_json)
     results = await crawler.crawl()
     for result in results:
@@ -186,6 +172,8 @@ if __name__ == "__main__":
     loop.run_until_complete(main())
 
 ```
+
+#### Print result
 
 > Title : PEP 1 -- PEP Purpose and Guidelines
 >
@@ -235,7 +223,7 @@ Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob
 ## TODO
 
 - [x] Release to pypi.org
-  - [ ] Upload dist with Web UI
+  - [x] Upload dist with Web UI
 - [x] Add **github actions** for testing package
 - [x] Web UI for testing rules
 - [ ] Complete the whole doc

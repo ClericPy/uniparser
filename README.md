@@ -44,20 +44,15 @@ Provide a universal solution for crawler, **Python3.6+**.
 ## Quick Start
 
 > Crawl python [Meta-PEPs](https://www.python.org/dev/peps/#id6)
+>
+> Only 25 lines necessary code besides the rules, which can be saved outside.
 
 ```python
 # -*- coding: utf-8 -*-
 
 import asyncio
 
-import httpx
 from uniparser import CrawlerRule, Uniparser, HTTPXAsyncAdapter
-
-try:
-    import uvloop
-    uvloop.install()
-except ImportError:
-    pass
 
 list_crawler_json = r'''
 {

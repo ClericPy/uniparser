@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+
 from argparse import ArgumentParser
 from json import JSONDecodeError
 from json import loads as json_loads
 from shlex import split as shlex_split
+from abc import ABC, abstractmethod
 
 
 class _Curl:
@@ -118,3 +120,188 @@ def ensure_request(request):
     if result:
         result["method"] = result.setdefault("method", "get").lower()
     return result
+
+
+class SyncRequestAdapter(ABC):
+    """Only one purpose: accept request_args, sending request, return Response object or Request Exception.
+    Usage:
+
+        with XXAdapter() as req:
+            text, resp = req.request(**request_args)
+    """
+
+    def request(self, **request_args):
+        text, resp = '', None
+        retry = request_args.pop('retry', 0)
+        encoding = request_args.pop('encoding', None)
+        for _ in range(retry + 1):
+            try:
+                resp = self.session.request(**request_args)
+                if encoding:
+                    text = resp.content.decode(encoding)
+                else:
+                    text = resp.text
+                break
+            except self.error:
+                continue
+        return text, resp
+
+    @abstractmethod
+    def __enter__(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def __exit__(self, *args):
+        raise NotImplementedError
+
+
+class AsyncRequestAdapter(ABC):
+    """Only one purpose: accept request_args, sending request, return Response object or Request Exception.
+    Usage:
+
+        async with XXAdapter() as req:
+            text, resp = await req.request(**request_args)
+            """
+
+    @abstractmethod
+    async def __aenter__(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def __aexit__(self, *args):
+        raise NotImplementedError
+
+    async def request(self, **request_args):
+        text, resp = '', None
+        retry = request_args.pop('retry', 0)
+        encoding = request_args.pop('encoding', None)
+        for _ in range(retry + 1):
+            try:
+                resp = await self.session.request(**request_args)
+                if encoding:
+                    text = resp.content.decode(encoding)
+                else:
+                    text = resp.text
+                break
+            except self.error:
+                continue
+        return text, resp
+
+
+class RequestsAdapter(SyncRequestAdapter):
+
+    def __init__(self, session=None, **kwargs):
+        self.session = session
+        from requests import RequestException, Session
+        if session:
+            self.session = session
+        else:
+            self.session = Session(**kwargs)
+        self.error = RequestException
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.session.close()
+
+
+class HTTPXSyncAdapter(SyncRequestAdapter):
+
+    def __init__(self, session=None, **kwargs):
+        self.session = session
+        from httpx import Client, HTTPError
+        if session:
+            self.session = session
+        else:
+            self.session = Client(**kwargs)
+        self.error = HTTPError
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.session.close()
+
+
+class TorequestsSyncAdapter(SyncRequestAdapter):
+
+    def __init__(self, session=None, **kwargs):
+        self.session = session
+        from torequests.main import tPool, FailureException
+        if session:
+            self.session = session
+        else:
+            self.session = tPool(**kwargs)
+        self.error = FailureException
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.session.close()
+
+
+class HTTPXAsyncAdapter(AsyncRequestAdapter):
+
+    def __init__(self, session=None, **kwargs):
+        from httpx import AsyncClient, HTTPError
+        self.session = session
+        self.session_class = AsyncClient(**kwargs)
+        self.error = HTTPError
+
+    async def __aenter__(self):
+        if not self.session:
+            self.session = await self.session_class.__aenter__()
+        return self
+
+    async def __aexit__(self, *args):
+        await self.session.aclose()
+
+
+class AiohttpAsyncAdapter(AsyncRequestAdapter):
+
+    def __init__(self, session=None, **kwargs):
+        from aiohttp import ClientSession, ClientError
+        self.session = session
+        self.session_class = ClientSession(**kwargs)
+        self.error = ClientError
+
+    async def __aenter__(self):
+        if not self.session:
+            self.session = await self.session_class.__aenter__()
+        return self
+
+    async def __aexit__(self, *args):
+        await self.session.close()
+
+    async def request(self, **request_args):
+        """non-request-like api"""
+        text, resp = '', None
+        retry = request_args.pop('retry', 0)
+        encoding = request_args.pop('encoding', None)
+        for _ in range(retry + 1):
+            try:
+                resp = await self.session.request(**request_args)
+                text = await resp.text(encoding=encoding)
+                break
+            except self.error:
+                continue
+        return text, resp
+
+
+class TorequestsAsyncAdapter(AsyncRequestAdapter):
+
+    def __init__(self, session=None, **kwargs):
+        from torequests.dummy import Requests, FailureException
+        self.session = session
+        self.session_class = Requests(**kwargs)
+        self.error = FailureException
+
+    async def __aenter__(self):
+        if not self.session:
+            self.session = await self.session_class.__aenter__()
+        return self
+
+    async def __aexit__(self, *args):
+        await self.session.close()

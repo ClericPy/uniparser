@@ -305,3 +305,35 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
 
     async def __aexit__(self, *args):
         await self.session.close()
+
+
+def get_available_async_request():
+    """Try to import a lib in ('httpx', 'aiohttp', 'torequests'), return the suitable adapter or None."""
+    from importlib import import_module
+    choice = {
+        'httpx': HTTPXAsyncAdapter,
+        'aiohttp': AiohttpAsyncAdapter,
+        'torequests': TorequestsAsyncAdapter,
+    }
+    for name, adapter in choice.items():
+        try:
+            import_module(name)
+            return adapter
+        except ModuleNotFoundError:
+            continue
+
+
+def get_available_sync_request():
+    """Try to import a lib in ('requests', 'httpx', 'torequests'), return the suitable adapter or None."""
+    from importlib import import_module
+    choice = {
+        'requests': RequestsAdapter,
+        'httpx': HTTPXSyncAdapter,
+        'torequests': TorequestsSyncAdapter,
+    }
+    for name, adapter in choice.items():
+        try:
+            import_module(name)
+            return adapter
+        except ModuleNotFoundError:
+            continue

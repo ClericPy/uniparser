@@ -848,19 +848,6 @@ class Uniparser(object):
             if parser.name not in self.__dict__:
                 self.__dict__[parser.name] = parser()
 
-    def crawl(self,
-              crawler_rule: CrawlerRule,
-              request_adapter=None,
-              context=None,
-              **request):
-        input_object, resp = self.download(crawler_rule, request_adapter,
-                                           **request)
-        context = context or {}
-        if crawler_rule.context:
-            context.update(crawler_rule.context)
-        context['resp'] = resp
-        return self.parse(input_object, crawler_rule, context)
-
     def download(self,
                  crawler_rule: CrawlerRule,
                  request_adapter=None,
@@ -872,6 +859,20 @@ class Uniparser(object):
         with request_adapter as req:
             input_object, resp = req.request(**request_args)
         return input_object, resp
+
+    def crawl(self,
+              crawler_rule: CrawlerRule,
+              request_adapter=None,
+              context=None,
+              **request):
+        input_object, resp = self.download(crawler_rule, request_adapter,
+                                           **request)
+        context = context or {}
+        for k, v in crawler_rule.context.items():
+            if k not in context:
+                context[k] = v
+        context['resp'] = resp
+        return self.parse(input_object, crawler_rule, context)
 
     async def adownload(self,
                         crawler_rule: CrawlerRule,
@@ -893,7 +894,8 @@ class Uniparser(object):
         input_object, resp = await self.adownload(crawler_rule, request_adapter,
                                                   **request)
         context = context or {}
-        if crawler_rule.context:
-            context.update(context)
+        for k, v in crawler_rule.context.items():
+            if k not in context:
+                context[k] = v
         context['resp'] = resp
         return self.parse(input_object, crawler_rule, context)

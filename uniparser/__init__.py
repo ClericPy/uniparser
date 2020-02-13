@@ -5,4 +5,4 @@ from .utils import (AiohttpAsyncAdapter, AsyncRequestAdapter, HTTPXAsyncAdapter,
                     get_available_sync_request)
 
 __all__ = ['Uniparser', 'ParseRule', 'CrawlerRule', 'HostRule']
-__version__ = '0.1.0'
+__version__ = '0.1.1'

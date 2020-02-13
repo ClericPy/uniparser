@@ -17,23 +17,33 @@ Provide a universal solution for crawler, **Python3.6+**.
 ## Feature List
 
 1. Support most of popular parsers for HTML / XML / JSON / AnyString / Python object
-   1. css (HTML)
-      1. bs4
-   2. xml
-      1. lxml
-   3. regex
-   4. jsonpath
-      1. jsonpath_ng
-   5. objectpath
-      1. objectpath
-   6. jmespath
-      1. jmespath
-   7. time
-   8. loader
-      1. json / yaml / toml
-         1. toml
-         2. pyyaml
-   9. *waiting for new ones...*
+   1. <details>
+        <summary>parser list</summary>
+      
+            1. css (HTML)
+                1. bs4
+            2. xml
+                1. lxml
+            3. regex
+            4. jsonpath
+                1. jsonpath_ng
+            5. objectpath
+                1. objectpath
+            6. jmespath
+                1. jmespath
+            7. time
+            8. loader
+                1. json / yaml / toml
+                    1. toml
+                    2. pyyaml
+            9. udf
+                1. source code for exec & eval which named as **parse**
+            10. python
+                1. some  common python methods, getitem, split, join...
+            11. *waiting for new ones...*
+      
+      </details>
+      
 2. Request args persistence, support curl-string, single-url, dict, json.
 3. A simple Web UI for generate & test CrawlerRule.
 4. Serializable JSON rule class for saving the whole parsing process.
@@ -45,15 +55,12 @@ Provide a universal solution for crawler, **Python3.6+**.
 
 > Crawl python [Meta-PEPs](https://www.python.org/dev/peps/#id6)
 >
-> Only 25 lines necessary code besides the rules, which can be saved outside.
+> Only 25 lines necessary code besides the rules(which can be saved outside).
+
+<details>
+    <summary>JSON Rule</summary>
 
 ```python
-# -*- coding: utf-8 -*-
-
-import asyncio
-
-from uniparser import CrawlerRule, Uniparser, HTTPXAsyncAdapter
-
 list_crawler_json = r'''
 {
     "name": "SeedParser",
@@ -126,6 +133,20 @@ detail_crawler_json = r'''
 }
 '''
 
+```
+
+</details>
+
+<details>
+  <summary>Crawler Code</summary>
+
+```python
+# -*- coding: utf-8 -*-
+
+import asyncio
+
+from uniparser import CrawlerRule, Uniparser, HTTPXAsyncAdapter
+
 
 class CrawlerTask(object):
 
@@ -156,33 +177,80 @@ async def main():
     uni = Uniparser(HTTPXAsyncAdapter())
     crawler = CrawlerTask(uni, list_crawler_json, detail_crawler_json)
     results = await crawler.crawl()
-    for result in results:
-        print('Title :', result['SeedParser']['title'])
-        print('Author:', result['SeedParser']['author'].strip())
-        print('=' * 30)
+    print(json.dumps(results, indent=2, ensure_ascii=0))
 
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
-
 ```
 
-#### Print result
+</details>
 
-> Title : PEP 1 -- PEP Purpose and Guidelines
->
-> Author: Barry Warsaw, Jeremy Hylton, David Goodger, Nick Coghlan
->
-> ==============================
->
-> Title : PEP 4 -- Deprecation of Standard Modules
->
-> Author: Brett Cannon <brett at python.org>, Martin von LÃ¶wis <martin at v.loewis.de>
->
-> ==============================
->
-> ...
+<details>
+    <summary>Print Result</summary>
+
+```
+[
+  {
+    "SeedParser": {
+      "title": "PEP 1 -- PEP Purpose and Guidelines",
+      "author": "Barry Warsaw, Jeremy Hylton, David Goodger, Nick Coghlan"
+    }
+  },
+  {
+    "SeedParser": {
+      "title": "PEP 4 -- Deprecation of Standard Modules",
+      "author": "Brett Cannon <brett at python.org>, Martin von LÃ¶wis <martin at v.loewis.de>"
+    }
+  },
+  {
+    "SeedParser": {
+      "title": "PEP 5 -- Guidelines for Language Evolution",
+      "author": "paul at prescod.net (Paul Prescod)"
+    }
+  },
+  {
+    "SeedParser": {
+      "title": "PEP 6 -- Bug Fix Releases",
+      "author": "aahz at pythoncraft.com (Aahz), anthony at interlink.com.au (Anthony Baxter)"
+    }
+  },
+  {
+    "SeedParser": {
+      "title": "PEP 7 -- Style Guide for C Code",
+      "author": "Guido van Rossum <guido at python.org>, Barry Warsaw <barry at python.org>"
+    }
+  },
+  {
+    "SeedParser": {
+      "title": "PEP 8 -- Style Guide for Python Code",
+      "author": "Guido van Rossum <guido at python.org>,\nBarry Warsaw <barry at python.org>,\nNick Coghlan <ncoghlan at gmail.com>"
+    }
+  },
+  {
+    "SeedParser": {
+      "title": "PEP 10 -- Voting Guidelines",
+      "author": "barry at python.org (Barry Warsaw)"
+    }
+  },
+  {
+    "SeedParser": {
+      "title": "PEP 11 -- Removing support for little used platforms",
+      "author": "Martin von LÃ¶wis <martin at v.loewis.de>,\nBrett Cannon <brett at python.org>"
+    }
+  },
+  {
+    "SeedParser": {
+      "title": "PEP 12 -- Sample reStructuredText PEP Template",
+      "author": "David Goodger <goodger at python.org>,\nBarry Warsaw <barry at python.org>,\nBrett Cannon <brett at python.org>"
+    }
+  }
+]
+```
+
+</details>
+
 
 ## Uniparser Test Console Demo (Web UI)
 
@@ -211,9 +279,9 @@ As you see, Crawler Rule's name is the root key, and ParseRule's name as the oth
 
 ## More Usage
 
-> Talk is cheap, code is doc. Poor time to write...
+> Talk is cheap, code is doc(means poor time to write)
 
-Watch the examples: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
+Test code: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
 
 ## TODO
 

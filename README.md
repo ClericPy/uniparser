@@ -264,14 +264,14 @@ if __name__ == "__main__":
 <details>
     <summary>Start page</summary>
 
-![1.png](1.png)
+![1.png](imgs/1.png)
 
 </details>
 
 <details>
     <summary>Prepare the rules</summary>
 
-![2.png](2.png)
+![2.png](imgs/2.png)
 
 </details>
 

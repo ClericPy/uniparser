@@ -261,21 +261,31 @@ if __name__ == "__main__":
 
 ### 2. open browser  http://127.0.0.1:8080/ 
 
-#### 2.1 Start page
+<details>
+    <summary>Start page</summary>
 
 ![1.png](1.png)
 
-#### 2.2 Prepare the rules
+</details>
+
+<details>
+    <summary>Prepare the rules</summary>
 
 ![2.png](2.png)
 
-#### 2.3 Read the parse result
+</details>
+
+<details>
+    <summary>Read the parse result</summary>
 
 Show result as repr(result)
 
 > {'HelloWorld': {'rule1-get-first-p': 'Customer name: ', 'rule2-get-legends': [' Pizza Size ', ' Pizza Toppings ']}}
 
-As you see, Crawler Rule's name is the root key, and ParseRule's name as the others.
+As we can see, CrawlerRule's name is the root key, and ParseRule's name as the others.
+
+</details>
+
 
 ## More Usage
 

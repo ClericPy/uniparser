@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 
+from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from json import JSONDecodeError
 from json import loads as json_loads
 from shlex import split as shlex_split
-from abc import ABC, abstractmethod
+from urllib.parse import urlparse
+
+
+def get_host(url):
+    if url:
+        return urlparse(url).netloc
+
 
 
 class _Curl:

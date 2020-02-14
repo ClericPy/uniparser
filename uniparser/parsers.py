@@ -55,6 +55,8 @@ def md5(string, n=32, encoding="utf-8", skip_encode=False):
 
 class BaseParser(ABC):
     """Sub class of BaseParser should have these features:
+    Since most input object always should be string, _RECURSION_LIST will be True.
+
     1. class variable `name`
     2. `_parse` method
     3. use lazy import, maybe
@@ -85,6 +87,7 @@ class BaseParser(ABC):
 
 class CSSParser(BaseParser):
     """CSS selector parser, requires `bs4` and `lxml`(optional).
+    Since HTML input object always should be string, _RECURSION_LIST will be True.
 
     Parse the input object with standard css selector, features from `BeautifulSoup`.
 
@@ -137,6 +140,7 @@ class CSSParser(BaseParser):
 
 class XMLParser(BaseParser):
     """XML parser, requires `bs4` and `lxml`(necessary).
+    Since XML input object always should be string, _RECURSION_LIST will be True.
 
     Parse the input object with css selector, `BeautifulSoup` with features='xml'.
 
@@ -189,6 +193,7 @@ class XMLParser(BaseParser):
 
 class RegexParser(BaseParser):
     """RegexParser. Parse the input object with standard regex, features from `re`.
+    Since regex input object always should be string, _RECURSION_LIST will be True.
 
         :param input_object: input object, could be str.
         :type input_object: [str]
@@ -234,6 +239,7 @@ class RegexParser(BaseParser):
 
 class JSONPathParser(BaseParser):
     """JSONPath parser, requires `jsonpath_ng` lib.
+    Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
         :type input_object: [str, list, dict]
@@ -267,6 +273,7 @@ class JSONPathParser(BaseParser):
 
 class ObjectPathParser(BaseParser):
     """ObjectPath parser, requires `objectpath` lib.
+    Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
         :type input_object: [str, list, dict]
@@ -294,6 +301,7 @@ class ObjectPathParser(BaseParser):
 
 class JMESPathParser(BaseParser):
     """JMESPath parser, requires `jmespath` lib.
+    Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
         :type input_object: [str, list, dict]
@@ -316,6 +324,7 @@ class JMESPathParser(BaseParser):
 
 class UDFParser(BaseParser):
     """UDFParser. Python source code snippets. globals will contain `input_object` and `context` variables.
+    Since python input object may be any type, _RECURSION_LIST will be False.
 
         param & value:
             param: the python source code to be exec(param), either have the function named `parse`, or will return eval(param)
@@ -394,6 +403,7 @@ class CompiledString(str):
 
 class PythonParser(BaseParser):
     """PythonParser. Some frequently-used utils.
+    Since python input object may be any type, _RECURSION_LIST will be False.
 
         :param input_object: input object, any object.
         :type input_object: [object]
@@ -444,6 +454,7 @@ class PythonParser(BaseParser):
 
 class LoaderParser(BaseParser):
     """LoaderParser. Loads string with json / yaml / toml standard format.
+    Since input object should be string, _RECURSION_LIST will be True.
 
         :param input_object: str match format of json / yaml / toml
         :type input_object: [str]
@@ -453,7 +464,7 @@ class LoaderParser(BaseParser):
         :type value: [str]
     """
     name = 'loader'
-    _RECURSION_LIST = False
+    _RECURSION_LIST = True
     loaders = {
         'json': json_loads,
         'toml': toml_loads,
@@ -476,6 +487,7 @@ class LoaderParser(BaseParser):
 
 class TimeParser(BaseParser):
     """TimeParser. Parse different format of time. Sometimes time string need a preprocessing with regex.
+    Since input object can not be list, _RECURSION_LIST will be True.
 
         :param input_object: str
         :type input_object: [str]
@@ -531,6 +543,8 @@ class JsonSerializable(dict):
 
     @classmethod
     def loads(cls, json_string):
+        if isinstance(json_string, cls):
+            return json_string
         return cls(**json_loads(json_string))
 
     @classmethod
@@ -773,7 +787,15 @@ class HostRule(JsonSerializable):
 
 
 class Uniparser(object):
+    """Parsers collection.
+
+    Constraint Schema:
+
+        1. If result's name is request_args, will recursion call crawl/acrawl (_RECURSION_CRAWL=True), context as {'context': upstream_result}.
+        2. If same url with different post-data, use nonsense param in url's tail to distinguish.
+    """
     parser_classes = BaseParser.__subclasses__()
+    _RECURSION_CRAWL = True
 
     def __init__(self,
                  request_adapter: Union[AsyncRequestAdapter,

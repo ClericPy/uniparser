@@ -4,7 +4,7 @@ import warnings
 from urllib.parse import urlparse
 
 import requests
-from uniparser import CrawlerRule, HostRule, ParseRule, Uniparser
+from uniparser import CrawlerRule, HostRule, ParseRule, Uniparser, Crawler
 from uniparser.parsers import Tag
 from uniparser.utils import (AiohttpAsyncAdapter, HTTPXAsyncAdapter,
                              HTTPXSyncAdapter, RequestsAdapter,
@@ -548,7 +548,7 @@ def test_time_parser():
     assert new_result - int(float(timestamp)) == -1 * 3600
 
 
-def test_crawler_rules():
+def test_crawler_rule():
     # Simple usage of Uniparser and CrawlerRule
     uni = Uniparser()
     crawler_rule = CrawlerRule('test', {
@@ -647,7 +647,7 @@ def test_default_usage():
     # same as: json_string = hrs.to_json()
     json_string = hrs.dumps()
     # print(json_string)
-    assert json_string == r'{"host": "httpbin.org", "crawler_rules": [{"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": "https?://httpbin.org/get"}]}'
+    assert json_string == r'{"host": "httpbin.org", "crawler_rules": {"test_crawler_rule": {"name": "test_crawler_rule", "parse_rules": [{"name": "rule1", "chain_rules": [["objectpath", "JSON.url", ""], ["python", "getitem", "[:4]"], ["udf", "(context.url, input_object)", ""]], "child_rules": []}], "request_args": {"url": "http://httpbin.org/get", "method": "get", "headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}}, "regex": "https?://httpbin.org/get"}}}'
     # 2. add HostRule to storage, sometimes save on redis
     storage[hrs['host']] = json_string
     # ============================================
@@ -833,11 +833,7 @@ def test_uni_parser():
     async def _a_test():
         result = await uni.acrawl(crawler_rule, HTTPXAsyncAdapter(), None)
         # print(result)
-        assert result == {
-            'test_crawler_rule': {
-                'rule1': ('http://httpbin.org/get', 'http')
-            }
-        }
+        assert result['test_crawler_rule']['rule1'][1] == 'http'
 
     asyncio.get_event_loop().run_until_complete(_a_test())
 
@@ -879,6 +875,33 @@ def test_async_adapters():
     asyncio.get_event_loop().run_until_complete(_a_test())
 
 
+def test_crawler_storage():
+    crawler = Crawler()
+    crawler_rule = CrawlerRule(
+        **{
+            'name': 'test_crawler_rule',
+            'parse_rules': [{
+                'name': 'rule1',
+                'chain_rules': [[
+                    'objectpath', 'JSON.url', ''
+                ], ['python', 'getitem', '[:4]'
+                   ], ['udf', '(context["resp"].url, input_object)', '']],
+                'child_rules': []
+            }],
+            'request_args': {
+                'url': 'http://httpbin.org/get',
+                'method': 'get',
+                'headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+                }
+            },
+            'regex': 'https?://httpbin.org/get'
+        })
+    crawler.storage.add_rule(crawler_rule, commit=1)
+    new_crawler = Crawler()
+    assert new_crawler.storage['httpbin.org']
+
+
 if __name__ == "__main__":
     test_css_parser()
     test_xml_parser()
@@ -891,5 +914,6 @@ if __name__ == "__main__":
     test_loader_parser()
     test_time_parser()
     test_uni_parser()
-    test_crawler_rules()
+    test_crawler_rule()
     test_default_usage()
+    test_crawler_storage()

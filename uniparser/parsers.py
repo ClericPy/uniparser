@@ -9,7 +9,7 @@ from json import dumps as json_dumps
 from json import loads as json_loads
 from re import compile as re_compile
 from time import localtime, mktime, strftime, strptime, timezone
-from typing import List, Union
+from typing import Dict, List, Union
 from warnings import warn
 
 from bs4 import BeautifulSoup, Tag
@@ -20,7 +20,7 @@ from toml import loads as toml_loads
 from yaml import full_load as yaml_full_load
 from yaml import safe_load as yaml_safe_load
 
-from .utils import ensure_request, SyncRequestAdapter, AsyncRequestAdapter
+from .utils import AsyncRequestAdapter, SyncRequestAdapter, ensure_request
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'Tag', 'CSSParser',
@@ -757,42 +757,40 @@ class HostRule(JsonSerializable):
 
     def __init__(self,
                  host: str,
-                 crawler_rules: List[CrawlerRule] = None,
+                 crawler_rules: Dict[str, CrawlerRule] = None,
                  **kwargs):
-        crawler_rules = [
-            CrawlerRule(**crawler_rule) for crawler_rule in crawler_rules or []
-        ]
+        crawler_rules = {
+            crawler_rule['name']: CrawlerRule(**crawler_rule)
+            for crawler_rule in (crawler_rules or {}).values()
+        }
         super().__init__(host=host, crawler_rules=crawler_rules, **kwargs)
 
     def find(self, url):
         return self.search(url)
 
     def search(self, url):
-        for rule in self['crawler_rules']:
-            if rule.search(url):
-                return rule
+        rules = [rule for rule in self['crawler_rules'].values() if rule.search(url)]
+        if len(rules) > 1:
+            raise RuntimeError(f'{url} matched more than 1 rule. {rules}')
+        if rules:
+            return rules[0]
 
     def match(self, url):
-        for rule in self['crawler_rules']:
-            if rule.match(url):
-                return rule
+        rules = [rule for rule in self['crawler_rules'].values() if rule.match(url)]
+        if len(rules) > 1:
+            raise RuntimeError(f'{url} matched more than 1 rule. {rules}')
+        if rules:
+            return rules[0]
 
-    def add(self, rule: CrawlerRule):
-        if rule not in self['crawler_rules']:
-            self['crawler_rules'].append(rule)
+    def add_crawler_rule(self, rule: CrawlerRule):
+        self['crawler_rules'][rule['name']] = rule
 
-    def remove(self, rule: CrawlerRule):
-        if rule in self['crawler_rules']:
-            self['crawler_rules'].remove(rule)
+    def pop_crawler_rule(self, rule: CrawlerRule):
+        return self['crawler_rules'].pop(rule['name'], None)
 
 
 class Uniparser(object):
     """Parsers collection.
-
-    Constraint Schema:
-
-        1. If result's name is request_args, will recursion call crawl/acrawl (_RECURSION_CRAWL=True), context as {'context': upstream_result}.
-        2. If same url with different post-data, use nonsense param in url's tail to distinguish.
     """
     parser_classes = BaseParser.__subclasses__()
     _RECURSION_CRAWL = True

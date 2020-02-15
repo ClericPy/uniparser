@@ -8,10 +8,16 @@ from shlex import split as shlex_split
 from urllib.parse import urlparse
 
 
+class NotSet(object):
+    __slots__ = ()
+
+    def __bool__(self):
+        return None
+
+
 def get_host(url):
     if url:
         return urlparse(url).netloc
-
 
 
 class _Curl:
@@ -314,6 +320,10 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
         await self.session.close()
 
 
+def no_adapter():
+    return None
+
+
 def get_available_async_request():
     """Try to import a lib in ('httpx', 'aiohttp', 'torequests'), return the suitable adapter or None."""
     from importlib import import_module
@@ -328,6 +338,7 @@ def get_available_async_request():
             return adapter
         except ModuleNotFoundError:
             continue
+    return no_adapter
 
 
 def get_available_sync_request():
@@ -344,3 +355,4 @@ def get_available_sync_request():
             return adapter
         except ModuleNotFoundError:
             continue
+    return no_adapter

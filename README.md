@@ -55,12 +55,15 @@ Provide a universal solution for crawler, **Python3.6+**.
 
 > Mission: Crawl python [Meta-PEPs](https://www.python.org/dev/peps/#id6)
 >
-> Only 25 lines necessary code besides the rules(which can be saved outside).
+> Only less than 25 lines necessary code besides the rules(which can be saved outside and auto loaded).
+> 
+> HostRules could be saved at `$HOME/host_rules.json` by default, not need to init next time.
 
 <details>
     <summary>CrawlerRule JSON & Expected Result</summary>
 
 ```python
+# These rules will be saved at `$HOME/host_rules.json`
 crawler = Crawler(
     storage=JSONRuleStorage.loads(
         r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"main": {"name":"list","request_args":{"method":"get","url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "subs": {"name":"detail","request_args":{"method":"get","url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'

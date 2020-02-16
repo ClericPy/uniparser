@@ -907,30 +907,23 @@ def test_crawler():
         storage=JSONRuleStorage.loads(
             r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"main": {"name":"list","request_args":{"method":"get","url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "subs": {"name":"detail","request_args":{"method":"get","url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
         ))
+    # yapf: disable
+    expected_result = {'list': {'__request__': ['https://www.python.org/dev/peps/pep-0001', 'https://www.python.org/dev/peps/pep-0004', 'https://www.python.org/dev/peps/pep-0005'], '__result__': [{'detail': {'title': 'PEP 1 -- PEP Purpose and Guidelines'}}, {'detail': {'title': 'PEP 4 -- Deprecation of Standard Modules'}}, {'detail': {'title': 'PEP 5 -- Guidelines for Language Evolution'}}]}}
+    # yapf: enable
 
     def test_sync_crawler():
         # JSON will be saved if file_path!=None
 
         result = crawler.crawl('https://www.python.org/dev/peps/')
         # print(result)
-        # yapf: disable
-        assert result == {'list': {'__request__': ['https://www.python.org/dev/peps/pep-0001', 'https://www.python.org/dev/peps/pep-0004', 'https://www.python.org/dev/peps/pep-0005'], '__result__': [{'detail': {'title': 'PEP 1 -- PEP Purpose and Guidelines'}}, {'detail': {'title': 'PEP 4 -- Deprecation of Standard Modules'}}, {'detail': {'title': 'PEP 5 -- Guidelines for Language Evolution'}}]}}
-        # yapf: enable
+        assert result == expected_result
 
     def test_async_crawler():
 
         async def _test():
-            # JSON will be saved if file_path!=None
-            crawler = Crawler(
-                storage=JSONRuleStorage.loads(
-                    r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"main": {"name":"list","request_args":{"method":"get","url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "subs": {"name":"detail","request_args":{"method":"get","url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
-                ))
-
             result = await crawler.acrawl('https://www.python.org/dev/peps/')
             # print(result)
-            # yapf: disable
-            assert result == {'list': {'__request__': ['https://www.python.org/dev/peps/pep-0001', 'https://www.python.org/dev/peps/pep-0004', 'https://www.python.org/dev/peps/pep-0005'], '__result__': [{'detail': {'title': 'PEP 1 -- PEP Purpose and Guidelines'}}, {'detail': {'title': 'PEP 4 -- Deprecation of Standard Modules'}}, {'detail': {'title': 'PEP 5 -- Guidelines for Language Evolution'}}]}}
-            # yapf: enable
+            assert result == expected_result
 
         asyncio.run(_test())
 

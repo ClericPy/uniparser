@@ -549,7 +549,7 @@ class JsonSerializable(dict):
 
     @classmethod
     def from_json(cls, json_string):
-        return cls(**cls.loads(json_string))
+        return cls.loads(json_string)
 
 
 class ParseRule(JsonSerializable):
@@ -766,27 +766,33 @@ class HostRule(JsonSerializable):
         super().__init__(host=host, crawler_rules=crawler_rules, **kwargs)
 
     def find(self, url):
-        return self.search(url)
+        return self.match(url)
 
     def search(self, url):
         rules = [rule for rule in self['crawler_rules'].values() if rule.search(url)]
         if len(rules) > 1:
-            raise RuntimeError(f'{url} matched more than 1 rule. {rules}')
+            raise ValueError(f'{url} matched more than 1 rule. {rules}')
         if rules:
             return rules[0]
 
     def match(self, url):
         rules = [rule for rule in self['crawler_rules'].values() if rule.match(url)]
         if len(rules) > 1:
-            raise RuntimeError(f'{url} matched more than 1 rule. {rules}')
+            raise ValueError(f'{url} matched more than 1 rule. {rules}')
         if rules:
             return rules[0]
 
     def add_crawler_rule(self, rule: CrawlerRule):
         self['crawler_rules'][rule['name']] = rule
+        try:
+            self.search(rule['request_args']['url'])
+            self.match(rule['request_args']['url'])
+        except (ValueError, KeyError) as e:
+            self['crawler_rules'].pop(rule['name'], None)
+            raise e
 
-    def pop_crawler_rule(self, rule: CrawlerRule):
-        return self['crawler_rules'].pop(rule['name'], None)
+    def pop_crawler_rule(self, rule_name: str):
+        return self['crawler_rules'].pop(rule_name, None)
 
 
 class Uniparser(object):

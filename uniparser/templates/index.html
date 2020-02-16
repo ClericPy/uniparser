@@ -149,6 +149,7 @@
                     </el-form-item>
                     <hr>
                     <el-form-item label="CrawlerRule JSON" title="Can be loaded by CrawlerRule.from_json">
+                        <el-checkbox v-model="pretty_json">Pretty</el-checkbox>
                         <el-input type="textarea" autosize placeholder="" v-model="current_crawler_rule_json">
                         </el-input>
                     </el-form-item>
@@ -181,6 +182,7 @@
         var Main = {
             data() {
                 return {
+                    pretty_json: true,
                     drawer: false,
                     options: '',
                     docs: '',
@@ -336,7 +338,11 @@
                         regex: this.crawler_rule.regex,
                         encoding: this.crawler_rule.encoding,
                     }
-                    return JSON.stringify(data, null, 2)
+                    if (this.pretty_json) {
+                        return JSON.stringify(data, null, 2)
+                    } else {
+                        return JSON.stringify(data)
+                    }
                 }
             }
         }

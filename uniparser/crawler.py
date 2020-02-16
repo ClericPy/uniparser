@@ -5,12 +5,12 @@ from asyncio import ensure_future
 from concurrent.futures import ThreadPoolExecutor
 from json import dump
 from pathlib import Path
-from typing import List, Union
 from warnings import warn
 
 from .parsers import (CrawlerRule, HostRule, JsonSerializable, Uniparser,
                       json_loads)
-from .utils import (NotSet, ensure_request, get_available_async_request,
+from .utils import (AsyncRequestAdapter, NotSet, SyncRequestAdapter,
+                    ensure_request, get_available_async_request,
                     get_available_sync_request, get_host)
 
 
@@ -135,7 +135,11 @@ class Crawler(object):
 
     def ensure_adapter(self, sync=True):
         if self.uniparser.request_adapter:
-            return True
+            request_adapter = self.uniparser.request_adapter
+            if sync and isinstance(request_adapter, SyncRequestAdapter) or (
+                    not sync) and isinstance(request_adapter,
+                                             AsyncRequestAdapter):
+                return True
         if sync:
             self.uniparser.request_adapter = get_available_sync_request()()
         else:

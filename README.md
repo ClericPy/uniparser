@@ -53,200 +53,105 @@ Provide a universal solution for crawler, **Python3.6+**.
 
 ## Quick Start
 
-> Crawl python [Meta-PEPs](https://www.python.org/dev/peps/#id6)
+> Mission: Crawl python [Meta-PEPs](https://www.python.org/dev/peps/#id6)
 >
-> Only 25 lines necessary code besides the rules(which can be saved outside).
+> Only less than 25 lines necessary code besides the rules(which can be saved outside and auto loaded).
+> 
+> HostRules will be saved at `$HOME/host_rules.json` by default, not need to init every time.
 
 <details>
-    <summary>JSON Rule</summary>
+    <summary>CrawlerRule JSON & Expected Result</summary>
 
 ```python
-list_crawler_json = r'''
-{
-    "name": "SeedParser",
-    "request_args": {
-        "method": "get",
-        "url": "https://www.python.org/dev/peps/",
-        "headers": {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
-        }
-    },
-    "parse_rules": [{
-        "name": "links",
-        "chain_rules": [[
-            "css",
-            "#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a",
-            "@href"
-        ], ["re", "^/", "@https://www.python.org/"]],
-        "childs": ""
-    }],
-    "regex": "^https?://www.python.org/dev/peps/$"
-}
-
-'''
-
-detail_crawler_json = r'''
-{
-  "name": "SeedParser",
-  "request_args": {
-    "method": "get",
-    "url": "https://www.python.org/dev/peps/pep-0001/",
-    "headers": {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
-    }
-  },
-  "parse_rules": [
-    {
-      "name": "title",
-      "chain_rules": [
-        [
-          "css",
-          "h1.page-title",
-          "$text"
+# These rules will be saved at `$HOME/host_rules.json`
+crawler = Crawler(
+    storage=JSONRuleStorage.loads(
+        r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"main": {"name":"list","request_args":{"method":"get","url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "subs": {"name":"detail","request_args":{"method":"get","url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
+    ))
+expected_result = {
+    'list': {
+        '__request__': [
+            'https://www.python.org/dev/peps/pep-0001',
+            'https://www.python.org/dev/peps/pep-0004',
+            'https://www.python.org/dev/peps/pep-0005'
         ],
-        [
-          "python",
-          "getitem",
-          "[0]"
-        ]
-      ],
-      "childs": ""
-    },
-    {
-      "name": "author",
-      "chain_rules": [
-        [
-          "css",
-          "#content > div > section > article > table > tbody > tr:nth-child(3) > td",
-          "$text"
-        ],
-        [
-          "python",
-          "getitem",
-          "[0]"
-        ]
-      ],
-      "childs": ""
+        '__result__': [{
+            'detail': {
+                'title': 'PEP 1 -- PEP Purpose and Guidelines'
+            }
+        }, {
+            'detail': {
+                'title': 'PEP 4 -- Deprecation of Standard Modules'
+            }
+        }, {
+            'detail': {
+                'title': 'PEP 5 -- Guidelines for Language Evolution'
+            }
+        }]
     }
-  ],
-  "regex": "^https?://www.python.org/dev/peps/pep-\\d+/?$"
 }
-'''
 
 ```
 
 </details>
 
 <details>
-  <summary>Crawler Code</summary>
+  <summary>The Whole Source Code</summary>
 
 ```python
-# -*- coding: utf-8 -*-
-
+from uniparser import Crawler, JSONRuleStorage
 import asyncio
 
-from uniparser import CrawlerRule, Uniparser, HTTPXAsyncAdapter
-
-
-class CrawlerTask(object):
-
-    def __init__(self, uniparser: Uniparser, list_crawler_json,
-                 detail_crawler_json):
-        self.uni = uniparser
-        self.list_crawler_rule = CrawlerRule.loads(list_crawler_json)
-        self.detail_crawler_rule = CrawlerRule.loads(detail_crawler_json)
-
-    async def crawl(self):
-        # 1. get url list
-        result = await self.uni.acrawl(self.list_crawler_rule)
-        # print(result)
-        # {'SeedParser': {'links': ['https://www.python.org/dev/peps/pep-0001', 'https://www.python.org/dev/peps/pep-0004', 'https://www.python.org/dev/peps/pep-0005', 'https://www.python.org/dev/peps/pep-0006', 'https://www.python.org/dev/peps/pep-0007', 'https://www.python.org/dev/peps/pep-0008', 'https://www.python.org/dev/peps/pep-0010', 'https://www.python.org/dev/peps/pep-0011', 'https://www.python.org/dev/peps/pep-0012']}}
-        links = result['SeedParser']['links']
-        tasks = [
-            asyncio.ensure_future(
-                self.uni.acrawl(self.detail_crawler_rule, url=link))
-            for link in links
-            if self.detail_crawler_rule.match(link)
-        ]
-        # print(tasks)
-        results = [await task for task in tasks]
-        return results
-
-
-async def main():
-    uni = Uniparser(HTTPXAsyncAdapter())
-    crawler = CrawlerTask(uni, list_crawler_json, detail_crawler_json)
-    results = await crawler.crawl()
-    print(json.dumps(results, indent=2, ensure_ascii=0))
-
-
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-```
-
-</details>
-
-<details>
-    <summary>Print Result</summary>
-
-```
-[
-  {
-    "SeedParser": {
-      "title": "PEP 1 -- PEP Purpose and Guidelines",
-      "author": "Barry Warsaw, Jeremy Hylton, David Goodger, Nick Coghlan"
+crawler = Crawler(
+    storage=JSONRuleStorage.loads(
+        r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"main": {"name":"list","request_args":{"method":"get","url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "subs": {"name":"detail","request_args":{"method":"get","url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
+    ))
+expected_result = {
+    'list': {
+        '__request__': [
+            'https://www.python.org/dev/peps/pep-0001',
+            'https://www.python.org/dev/peps/pep-0004',
+            'https://www.python.org/dev/peps/pep-0005'
+        ],
+        '__result__': [{
+            'detail': {
+                'title': 'PEP 1 -- PEP Purpose and Guidelines'
+            }
+        }, {
+            'detail': {
+                'title': 'PEP 4 -- Deprecation of Standard Modules'
+            }
+        }, {
+            'detail': {
+                'title': 'PEP 5 -- Guidelines for Language Evolution'
+            }
+        }]
     }
-  },
-  {
-    "SeedParser": {
-      "title": "PEP 4 -- Deprecation of Standard Modules",
-      "author": "Brett Cannon <brett at python.org>, Martin von LÃ¶wis <martin at v.loewis.de>"
-    }
-  },
-  {
-    "SeedParser": {
-      "title": "PEP 5 -- Guidelines for Language Evolution",
-      "author": "paul at prescod.net (Paul Prescod)"
-    }
-  },
-  {
-    "SeedParser": {
-      "title": "PEP 6 -- Bug Fix Releases",
-      "author": "aahz at pythoncraft.com (Aahz), anthony at interlink.com.au (Anthony Baxter)"
-    }
-  },
-  {
-    "SeedParser": {
-      "title": "PEP 7 -- Style Guide for C Code",
-      "author": "Guido van Rossum <guido at python.org>, Barry Warsaw <barry at python.org>"
-    }
-  },
-  {
-    "SeedParser": {
-      "title": "PEP 8 -- Style Guide for Python Code",
-      "author": "Guido van Rossum <guido at python.org>,\nBarry Warsaw <barry at python.org>,\nNick Coghlan <ncoghlan at gmail.com>"
-    }
-  },
-  {
-    "SeedParser": {
-      "title": "PEP 10 -- Voting Guidelines",
-      "author": "barry at python.org (Barry Warsaw)"
-    }
-  },
-  {
-    "SeedParser": {
-      "title": "PEP 11 -- Removing support for little used platforms",
-      "author": "Martin von LÃ¶wis <martin at v.loewis.de>,\nBrett Cannon <brett at python.org>"
-    }
-  },
-  {
-    "SeedParser": {
-      "title": "PEP 12 -- Sample reStructuredText PEP Template",
-      "author": "David Goodger <goodger at python.org>,\nBarry Warsaw <barry at python.org>,\nBrett Cannon <brett at python.org>"
-    }
-  }
-]
+}
+
+
+def test_sync_crawler():
+    # JSON will be saved if file_path!=None
+
+    result = crawler.crawl('https://www.python.org/dev/peps/')
+    print('sync result:', result)
+    assert result == expected_result
+
+
+def test_async_crawler():
+
+    async def _test():
+        # JSON will be saved if file_path!=None
+        result = await crawler.acrawl('https://www.python.org/dev/peps/')
+        print('sync result:', result)
+        assert result == expected_result
+
+    asyncio.run(_test())
+
+
+test_sync_crawler()
+test_async_crawler()
+
 ```
 
 </details>

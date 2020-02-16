@@ -131,8 +131,6 @@ expected_result = {
 
 
 def test_sync_crawler():
-    # JSON will be saved if file_path!=None
-
     result = crawler.crawl('https://www.python.org/dev/peps/')
     print('sync result:', result)
     assert result == expected_result
@@ -141,7 +139,6 @@ def test_sync_crawler():
 def test_async_crawler():
 
     async def _test():
-        # JSON will be saved if file_path!=None
         result = await crawler.acrawl('https://www.python.org/dev/peps/')
         print('sync result:', result)
         assert result == expected_result
@@ -204,4 +201,4 @@ Test code: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/t
   - [x] Upload dist with Web UI
 - [x] Add **github actions** for testing package
 - [x] Web UI for testing rules
-- [ ] Complete the whole doc
+- [ ] Complete the doc in detail

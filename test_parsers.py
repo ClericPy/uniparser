@@ -925,7 +925,7 @@ def test_crawler():
             # print(result)
             assert result == expected_result
 
-        asyncio.run(_test())
+        asyncio.get_event_loop().run_until_complete(_test())
 
     test_sync_crawler()
     test_async_crawler()

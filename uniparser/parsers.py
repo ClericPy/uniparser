@@ -9,7 +9,7 @@ from json import dumps as json_dumps
 from json import loads as json_loads
 from re import compile as re_compile
 from time import localtime, mktime, strftime, strptime, timezone
-from typing import List, Union
+from typing import Dict, List, Union
 from warnings import warn
 
 from bs4 import BeautifulSoup, Tag
@@ -20,7 +20,7 @@ from toml import loads as toml_loads
 from yaml import full_load as yaml_full_load
 from yaml import safe_load as yaml_safe_load
 
-from .utils import ensure_request, SyncRequestAdapter, AsyncRequestAdapter
+from .utils import AsyncRequestAdapter, SyncRequestAdapter, ensure_request
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'Tag', 'CSSParser',
@@ -55,6 +55,8 @@ def md5(string, n=32, encoding="utf-8", skip_encode=False):
 
 class BaseParser(ABC):
     """Sub class of BaseParser should have these features:
+    Since most input object always should be string, _RECURSION_LIST will be True.
+
     1. class variable `name`
     2. `_parse` method
     3. use lazy import, maybe
@@ -85,6 +87,7 @@ class BaseParser(ABC):
 
 class CSSParser(BaseParser):
     """CSS selector parser, requires `bs4` and `lxml`(optional).
+    Since HTML input object always should be string, _RECURSION_LIST will be True.
 
     Parse the input object with standard css selector, features from `BeautifulSoup`.
 
@@ -137,6 +140,7 @@ class CSSParser(BaseParser):
 
 class XMLParser(BaseParser):
     """XML parser, requires `bs4` and `lxml`(necessary).
+    Since XML input object always should be string, _RECURSION_LIST will be True.
 
     Parse the input object with css selector, `BeautifulSoup` with features='xml'.
 
@@ -189,6 +193,7 @@ class XMLParser(BaseParser):
 
 class RegexParser(BaseParser):
     """RegexParser. Parse the input object with standard regex, features from `re`.
+    Since regex input object always should be string, _RECURSION_LIST will be True.
 
         :param input_object: input object, could be str.
         :type input_object: [str]
@@ -234,6 +239,7 @@ class RegexParser(BaseParser):
 
 class JSONPathParser(BaseParser):
     """JSONPath parser, requires `jsonpath_ng` lib.
+    Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
         :type input_object: [str, list, dict]
@@ -267,6 +273,7 @@ class JSONPathParser(BaseParser):
 
 class ObjectPathParser(BaseParser):
     """ObjectPath parser, requires `objectpath` lib.
+    Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
         :type input_object: [str, list, dict]
@@ -294,6 +301,7 @@ class ObjectPathParser(BaseParser):
 
 class JMESPathParser(BaseParser):
     """JMESPath parser, requires `jmespath` lib.
+    Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
         :type input_object: [str, list, dict]
@@ -316,6 +324,7 @@ class JMESPathParser(BaseParser):
 
 class UDFParser(BaseParser):
     """UDFParser. Python source code snippets. globals will contain `input_object` and `context` variables.
+    Since python input object may be any type, _RECURSION_LIST will be False.
 
         param & value:
             param: the python source code to be exec(param), either have the function named `parse`, or will return eval(param)
@@ -394,6 +403,7 @@ class CompiledString(str):
 
 class PythonParser(BaseParser):
     """PythonParser. Some frequently-used utils.
+    Since python input object may be any type, _RECURSION_LIST will be False.
 
         :param input_object: input object, any object.
         :type input_object: [object]
@@ -444,6 +454,7 @@ class PythonParser(BaseParser):
 
 class LoaderParser(BaseParser):
     """LoaderParser. Loads string with json / yaml / toml standard format.
+    Since input object should be string, _RECURSION_LIST will be True.
 
         :param input_object: str match format of json / yaml / toml
         :type input_object: [str]
@@ -453,7 +464,7 @@ class LoaderParser(BaseParser):
         :type value: [str]
     """
     name = 'loader'
-    _RECURSION_LIST = False
+    _RECURSION_LIST = True
     loaders = {
         'json': json_loads,
         'toml': toml_loads,
@@ -476,6 +487,7 @@ class LoaderParser(BaseParser):
 
 class TimeParser(BaseParser):
     """TimeParser. Parse different format of time. Sometimes time string need a preprocessing with regex.
+    Since input object can not be list, _RECURSION_LIST will be True.
 
         :param input_object: str
         :type input_object: [str]
@@ -531,11 +543,13 @@ class JsonSerializable(dict):
 
     @classmethod
     def loads(cls, json_string):
+        if isinstance(json_string, cls):
+            return json_string
         return cls(**json_loads(json_string))
 
     @classmethod
     def from_json(cls, json_string):
-        return cls(**cls.loads(json_string))
+        return cls.loads(json_string)
 
 
 class ParseRule(JsonSerializable):
@@ -743,37 +757,49 @@ class HostRule(JsonSerializable):
 
     def __init__(self,
                  host: str,
-                 crawler_rules: List[CrawlerRule] = None,
+                 crawler_rules: Dict[str, CrawlerRule] = None,
                  **kwargs):
-        crawler_rules = [
-            CrawlerRule(**crawler_rule) for crawler_rule in crawler_rules or []
-        ]
+        crawler_rules = {
+            crawler_rule['name']: CrawlerRule(**crawler_rule)
+            for crawler_rule in (crawler_rules or {}).values()
+        }
         super().__init__(host=host, crawler_rules=crawler_rules, **kwargs)
 
     def find(self, url):
-        return self.search(url)
+        return self.match(url)
 
     def search(self, url):
-        for rule in self['crawler_rules']:
-            if rule.search(url):
-                return rule
+        rules = [rule for rule in self['crawler_rules'].values() if rule.search(url)]
+        if len(rules) > 1:
+            raise ValueError(f'{url} matched more than 1 rule. {rules}')
+        if rules:
+            return rules[0]
 
     def match(self, url):
-        for rule in self['crawler_rules']:
-            if rule.match(url):
-                return rule
+        rules = [rule for rule in self['crawler_rules'].values() if rule.match(url)]
+        if len(rules) > 1:
+            raise ValueError(f'{url} matched more than 1 rule. {rules}')
+        if rules:
+            return rules[0]
 
-    def add(self, rule: CrawlerRule):
-        if rule not in self['crawler_rules']:
-            self['crawler_rules'].append(rule)
+    def add_crawler_rule(self, rule: CrawlerRule):
+        self['crawler_rules'][rule['name']] = rule
+        try:
+            self.search(rule['request_args']['url'])
+            self.match(rule['request_args']['url'])
+        except (ValueError, KeyError) as e:
+            self['crawler_rules'].pop(rule['name'], None)
+            raise e
 
-    def remove(self, rule: CrawlerRule):
-        if rule in self['crawler_rules']:
-            self['crawler_rules'].remove(rule)
+    def pop_crawler_rule(self, rule_name: str):
+        return self['crawler_rules'].pop(rule_name, None)
 
 
 class Uniparser(object):
+    """Parsers collection.
+    """
     parser_classes = BaseParser.__subclasses__()
+    _RECURSION_CRAWL = True
 
     def __init__(self,
                  request_adapter: Union[AsyncRequestAdapter,

@@ -57,7 +57,7 @@ Provide a universal solution for crawler, **Python3.6+**.
 >
 > Only less than 25 lines necessary code besides the rules(which can be saved outside and auto loaded).
 > 
-> HostRules could be saved at `$HOME/host_rules.json` by default, not need to init next time.
+> HostRules will be saved at `$HOME/host_rules.json` by default, not need to init every time.
 
 <details>
     <summary>CrawlerRule JSON & Expected Result</summary>

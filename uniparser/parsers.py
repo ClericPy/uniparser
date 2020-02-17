@@ -418,7 +418,7 @@ class PythonParser(BaseParser):
             4.  param: chain
                 value: return list(itertools.chain(*input_object))
             5.  param: const
-                value: return raw string as value
+                value: return value if value else input_object
     """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'

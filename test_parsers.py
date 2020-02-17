@@ -403,6 +403,16 @@ def test_python_parser():
     # print(result)
     assert result == 'abcd'
 
+    # ===================== test const =====================
+    # const as input_object
+    result = uni.python.parse(['a', 'b', 'c', 'd'], 'const', '')
+    # print(result)
+    assert result == ['a', 'b', 'c', 'd']
+    # const as value
+    result = uni.python.parse(['a', 'b', 'c', 'd'], 'const', 'abcd')
+    # print(result)
+    assert result == 'abcd'
+
 
 def test_udf_parser():
     uni = Uniparser()

@@ -417,6 +417,8 @@ class PythonParser(BaseParser):
                 value: return value.join(input_object)
             4.  param: chain
                 value: return list(itertools.chain(*input_object))
+            5.  param: const
+                value: return raw string as value
     """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -429,6 +431,7 @@ class PythonParser(BaseParser):
             'split': lambda input_object, param, value: input_object.split(value or None),
             'join': lambda input_object, param, value: value.join(input_object),
             'chain': lambda input_object, param, value: list(chain(*input_object)),
+            'const': lambda input_object, param, value: value if value else input_object,
         }
         function = param_functions.get(param, return_self)
         return function(input_object, param, value)

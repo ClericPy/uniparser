@@ -9,7 +9,7 @@ import requests
 from bottle import BaseRequest, Bottle, request, template
 
 from . import CrawlerRule, Uniparser, __version__
-from .utils import get_available_sync_request
+from .utils import curlparse, get_available_sync_request
 
 # 10MB
 BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -64,6 +64,16 @@ def send_request():
         }
     except requests.RequestException as e:
         return {'text': str(e), 'status': '[-1]', 'ok': False}
+
+
+@app.post("/curl_parse")
+def curl_parse():
+    curl = request.body.read().decode('u8')
+    try:
+        result = curlparse(curl)
+        return {'result': result, 'ok': True}
+    except requests.RequestException as e:
+        return {'result': str(e), 'ok': False}
 
 
 @app.post("/parse")

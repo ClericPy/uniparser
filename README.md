@@ -10,7 +10,7 @@ Provide a universal solution for crawler, **Python3.6+**.
 
 1. Reduced the code quantity from plenty of similar crawlers & parsers.  Don't Repeat Yourself.
 2. Make the parsing process of different parsers persistent.
-3. Separating parsing processes from the downloading.
+3. Separating the crawler code from main app code, no need to redeploy app when adding a new crawler.
 4. Provide a universal solution for crawler platforms.
 5. Summarize common string parsing tools on the market.
 
@@ -156,12 +156,10 @@ test_async_crawler()
 
 ## Uniparser Test Console Demo (Web UI)
 
-### 1. Prepare Environment
-
-1. pip install bottle uniparser
-2. python -m uniparser 8080
-
-### 2. open browser  http://127.0.0.1:8080/ 
+> 1. Prepare Environment
+> 2. pip install bottle uniparser
+> 3. python -m uniparser 8080
+> 4. open browser => http://127.0.0.1:8080/
 
 <details>
     <summary>Start page</summary>

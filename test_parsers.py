@@ -403,6 +403,26 @@ def test_python_parser():
     # print(result)
     assert result == 'abcd'
 
+    # ===================== test const =====================
+    # const as input_object
+    result = uni.python.parse(['a', 'b', 'c', 'd'], 'const', '')
+    # print(result)
+    assert result == ['a', 'b', 'c', 'd']
+    # const as value
+    result = uni.python.parse(['a', 'b', 'c', 'd'], 'const', 'abcd')
+    # print(result)
+    assert result == 'abcd'
+
+    # ===================== test template =====================
+    # const as input_object
+    result = uni.python.parse(['a', 'b', 'c', 'd'], 'template', '1 $input_object 2')
+    # print(result)
+    assert result == "1 ['a', 'b', 'c', 'd'] 2"
+    # const as value
+    result = uni.python.parse({'a': 'aaaa', 'b': 'bbbb'}, 'template', '$a + $b = ?')
+    # print(result)
+    assert result == 'aaaa + bbbb = ?'
+
 
 def test_udf_parser():
     uni = Uniparser()

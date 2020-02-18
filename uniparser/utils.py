@@ -2,10 +2,13 @@
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
+from functools import partial
 from json import JSONDecodeError
 from json import loads as json_loads
 from shlex import split as shlex_split
 from urllib.parse import urlparse
+
+GLOBAL_TIMEOUT = 60
 
 
 class NotSet(object):
@@ -147,6 +150,7 @@ class SyncRequestAdapter(ABC):
         text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
+        request_args.setdefault('timeout', GLOBAL_TIMEOUT)
         for _ in range(retry + 1):
             try:
                 resp = self.session.request(**request_args)
@@ -188,6 +192,7 @@ class AsyncRequestAdapter(ABC):
         text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
+        request_args.setdefault('timeout', GLOBAL_TIMEOUT)
         for _ in range(retry + 1):
             try:
                 resp = await self.session.request(**request_args)
@@ -216,6 +221,9 @@ class RequestsAdapter(SyncRequestAdapter):
         return self
 
     def __exit__(self, *args):
+        pass
+
+    def __del__(self, *args):
         self.session.close()
 
 
@@ -234,13 +242,16 @@ class HTTPXSyncAdapter(SyncRequestAdapter):
         return self
 
     def __exit__(self, *args):
-        self.session.close()
+        pass
+
+    def __del__(self):
+        if self.session:
+            self.session.close()
 
 
 class TorequestsSyncAdapter(SyncRequestAdapter):
 
     def __init__(self, session=None, **kwargs):
-        self.session = session
         from torequests.main import tPool, FailureException
         if session:
             self.session = session
@@ -252,7 +263,7 @@ class TorequestsSyncAdapter(SyncRequestAdapter):
         return self
 
     def __exit__(self, *args):
-        self.session.close()
+        pass
 
 
 class HTTPXAsyncAdapter(AsyncRequestAdapter):
@@ -277,22 +288,30 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
     def __init__(self, session=None, **kwargs):
         from aiohttp import ClientSession, ClientError
         self.session = session
-        self.session_class = ClientSession(**kwargs)
+        self.session_class = partial(ClientSession, **kwargs)
         self.error = ClientError
 
     async def __aenter__(self):
         if not self.session:
-            self.session = await self.session_class.__aenter__()
+            self.session = self.session_class()
         return self
 
     async def __aexit__(self, *args):
-        await self.session.close()
+        pass
+
+    async def close(self):
+        if self.session and not self.session.closed:
+            await self.session.close()
+
+    def __del__(self, *args):
+        _exhaust_simple_coro(self.close())
 
     async def request(self, **request_args):
         """non-request-like api"""
         text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
+        request_args.setdefault('timeout', GLOBAL_TIMEOUT)
         for _ in range(retry + 1):
             try:
                 resp = await self.session.request(**request_args)
@@ -307,38 +326,38 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
 
     def __init__(self, session=None, **kwargs):
         from torequests.dummy import Requests, FailureException
-        self.session = session
-        self.session_class = Requests(**kwargs)
+        if session:
+            kwargs['session'] = session
+        self.req = Requests(**kwargs)
         self.error = FailureException
 
     async def __aenter__(self):
-        if not self.session:
-            self.session = await self.session_class.__aenter__()
+        await self.req.session
         return self
 
     async def __aexit__(self, *args):
-        await self.session.close()
+        pass
+
+    async def request(self, **request_args):
+        text, resp = '', None
+        retry = request_args.pop('retry', 0)
+        encoding = request_args.pop('encoding', None)
+        request_args.setdefault('timeout', GLOBAL_TIMEOUT)
+        for _ in range(retry + 1):
+            try:
+                resp = await self.req.request(**request_args)
+                if encoding:
+                    text = resp.content.decode(encoding)
+                else:
+                    text = resp.text
+                break
+            except self.error:
+                continue
+        return text, resp
 
 
 def no_adapter():
     return None
-
-
-def get_available_async_request():
-    """Try to import a lib in ('httpx', 'aiohttp', 'torequests'), return the suitable adapter or None."""
-    from importlib import import_module
-    choice = {
-        'httpx': HTTPXAsyncAdapter,
-        'aiohttp': AiohttpAsyncAdapter,
-        'torequests': TorequestsAsyncAdapter,
-    }
-    for name, adapter in choice.items():
-        try:
-            import_module(name)
-            return adapter
-        except ModuleNotFoundError:
-            continue
-    return no_adapter
 
 
 def get_available_sync_request():
@@ -356,3 +375,30 @@ def get_available_sync_request():
         except ModuleNotFoundError:
             continue
     return no_adapter
+
+
+def get_available_async_request():
+    """Try to import a lib in ('httpx', 'aiohttp', 'torequests'), return the suitable adapter or None."""
+    from importlib import import_module
+    choice = {
+        'torequests': TorequestsAsyncAdapter,
+        'aiohttp': AiohttpAsyncAdapter,
+        'httpx': HTTPXAsyncAdapter,
+    }
+    for name, adapter in choice.items():
+        try:
+            import_module(name)
+            return adapter
+        except ModuleNotFoundError:
+            continue
+    return no_adapter
+
+
+def _exhaust_simple_coro(coro):
+    """Run coroutines without event loop, only support simple coroutines which can run without future.
+    Or it will raise RuntimeError: await wasn't used with future."""
+    while True:
+        try:
+            coro.send(None)
+        except StopIteration as e:
+            return e.value

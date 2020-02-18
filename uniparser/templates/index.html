@@ -79,6 +79,7 @@
                         <span slot="prepend">Encoding</span>
                     </el-input>
                     <el-form-item label="Request Args">
+                        <el-button type="text" @click="input_curl">cURL Parse</el-button>
                         <el-input v-model="crawler_rule.request_args" placeholder="Json dict for Requests"
                             type="textarea" autosize></el-input>
                     </el-form-item>
@@ -304,6 +305,41 @@
                     if (!this.new_rule_json) {
                         this.new_rule_json = this.current_crawler_rule_json
                     }
+                },
+                input_curl() {
+                    this.$prompt('Input cURL string', '', {
+                        confirmButtonText: 'OK',
+                        cancelButtonText: 'Cancel',
+                        inputPattern: /^curl .*/,
+                        inputErrorMessage: 'cURL string should start with curl'
+                    }).then(({
+                        value
+                    }) => {
+                        this.$http.post('/curl_parse', value).then(
+                            r => {
+                                if (r.body.ok) {
+                                    console.log(r.body.result)
+                                    this.crawler_rule.request_args = JSON.stringify(r.body.result, null,
+                                        2)
+                                } else {
+                                    this.$message({
+                                        type: 'error',
+                                        message: 'cURL parse failed: ' + r.body.result
+                                    });
+                                }
+                            }, r => {
+                                this.$message({
+                                    type: 'error',
+                                    message: 'cURL parse failed'
+                                });
+                            }
+                        );
+                    }).catch(() => {
+                        this.$message({
+                            type: 'info',
+                            message: 'Cancel'
+                        });
+                    });
                 }
             },
             watch: {},

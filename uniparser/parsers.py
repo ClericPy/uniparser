@@ -8,6 +8,7 @@ from json import JSONDecodeError
 from json import dumps as json_dumps
 from json import loads as json_loads
 from re import compile as re_compile
+from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
 from typing import Dict, List, Union
 from warnings import warn
@@ -419,6 +420,8 @@ class PythonParser(BaseParser):
                 value: return list(itertools.chain(*input_object))
             5.  param: const
                 value: return value if value else input_object
+            6.  param: template
+                value: Template.safe_substitute(input_object=input_object, **input_object if isinstance(input_object, dict))
     """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -432,9 +435,17 @@ class PythonParser(BaseParser):
             'join': lambda input_object, param, value: value.join(input_object),
             'chain': lambda input_object, param, value: list(chain(*input_object)),
             'const': lambda input_object, param, value: value if value else input_object,
+            'template': self._handle_template,
         }
         function = param_functions.get(param, return_self)
         return function(input_object, param, value)
+
+    def _handle_template(self, input_object, param, value):
+        if isinstance(input_object, dict):
+            return Template(value).safe_substitute(
+                input_object=input_object, **input_object)
+        else:
+            return Template(value).safe_substitute(input_object=input_object)
 
     def _handle_getitem(self, input_object, param, value):
         value = value[1:-1]
@@ -772,14 +783,18 @@ class HostRule(JsonSerializable):
         return self.match(url)
 
     def search(self, url):
-        rules = [rule for rule in self['crawler_rules'].values() if rule.search(url)]
+        rules = [
+            rule for rule in self['crawler_rules'].values() if rule.search(url)
+        ]
         if len(rules) > 1:
             raise ValueError(f'{url} matched more than 1 rule. {rules}')
         if rules:
             return rules[0]
 
     def match(self, url):
-        rules = [rule for rule in self['crawler_rules'].values() if rule.match(url)]
+        rules = [
+            rule for rule in self['crawler_rules'].values() if rule.match(url)
+        ]
         if len(rules) > 1:
             raise ValueError(f'{url} matched more than 1 rule. {rules}')
         if rules:

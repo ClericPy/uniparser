@@ -788,6 +788,7 @@ class HostRule(JsonSerializable):
     def add_crawler_rule(self, rule: CrawlerRule):
         self['crawler_rules'][rule['name']] = rule
         try:
+            assert rule['request_args']['url']
             self.search(rule['request_args']['url'])
             self.match(rule['request_args']['url'])
         except (ValueError, KeyError) as e:

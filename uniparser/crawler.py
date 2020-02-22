@@ -10,8 +10,7 @@ from warnings import warn
 from .parsers import (CrawlerRule, HostRule, JsonSerializable, Uniparser,
                       json_loads)
 from .utils import (AsyncRequestAdapter, NotSet, SyncRequestAdapter,
-                    ensure_request, get_available_async_request,
-                    get_available_sync_request, get_host)
+                    ensure_request, get_host)
 
 
 class RuleStorage(ABC):
@@ -134,17 +133,13 @@ class Crawler(object):
         self.storage = storage or JSONRuleStorage()
 
     def ensure_adapter(self, sync=True):
-        if self.uniparser.request_adapter:
-            request_adapter = self.uniparser.request_adapter
-            if sync and isinstance(request_adapter, SyncRequestAdapter) or (
-                    not sync) and isinstance(request_adapter,
-                                             AsyncRequestAdapter):
-                return True
+        self.uniparser.ensure_adapter(sync=sync)
         if sync:
-            self.uniparser.request_adapter = get_available_sync_request()()
+            return isinstance(self.uniparser.request_adapter,
+                              SyncRequestAdapter)
         else:
-            self.uniparser.request_adapter = get_available_async_request()()
-        return bool(self.uniparser.request_adapter)
+            return isinstance(self.uniparser.request_adapter,
+                              AsyncRequestAdapter)
 
     def crawl(self, request, context=None):
         """
@@ -163,7 +158,7 @@ class Crawler(object):
         result = self.uniparser.crawl(
             crawler_rule, context=context, **request_args)
         __request__ = result[crawler_rule['name']].get('__request__')
-        if __request__:
+        if __request__ and self.uniparser._RECURSION_CRAWL:
             if isinstance(__request__, (list, tuple)):
                 with ThreadPoolExecutor() as pool:
                     tasks = [
@@ -195,7 +190,7 @@ class Crawler(object):
         result = await self.uniparser.acrawl(
             crawler_rule, context=context, **request_args)
         __request__ = result[crawler_rule['name']].get('__request__')
-        if __request__:
+        if __request__ and self.uniparser._RECURSION_CRAWL:
             if isinstance(__request__, (list, tuple)):
                 tasks = [
                     ensure_future(self.acrawl(request, context=context))

@@ -5,3 +5,4 @@ toml
 pyyaml
 lxml
 jmespath
+frequency-controller>=0.0.2

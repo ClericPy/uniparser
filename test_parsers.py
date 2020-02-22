@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import time
 import warnings
 from urllib.parse import urlparse
 
 import requests
-from uniparser import CrawlerRule, HostRule, ParseRule, Uniparser, Crawler, JSONRuleStorage
+from uniparser import (Crawler, CrawlerRule, HostRule, JSONRuleStorage,
+                       ParseRule, Uniparser)
 from uniparser.parsers import Tag
 from uniparser.utils import (AiohttpAsyncAdapter, HTTPXAsyncAdapter,
                              HTTPXSyncAdapter, RequestsAdapter,
@@ -415,11 +417,15 @@ def test_python_parser():
 
     # ===================== test template =====================
     # const as input_object
-    result = uni.python.parse(['a', 'b', 'c', 'd'], 'template', '1 $input_object 2')
+    result = uni.python.parse(['a', 'b', 'c', 'd'], 'template',
+                              '1 $input_object 2')
     # print(result)
     assert result == "1 ['a', 'b', 'c', 'd'] 2"
     # const as value
-    result = uni.python.parse({'a': 'aaaa', 'b': 'bbbb'}, 'template', '$a + $b = ?')
+    result = uni.python.parse({
+        'a': 'aaaa',
+        'b': 'bbbb'
+    }, 'template', '$a + $b = ?')
     # print(result)
     assert result == 'aaaa + bbbb = ?'
 
@@ -951,6 +957,57 @@ def test_crawler():
     test_async_crawler()
 
 
+def test_uni_parser_frequency():
+
+    def test_sync_crawl():
+        from concurrent.futures import ThreadPoolExecutor
+        Uniparser.pop_frequency('http://p.3.cn/')
+        uni = Uniparser()
+        crawler_rule = CrawlerRule.loads(
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"http://p.3.cn/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['http://p.3.cn/1'] * 4",""]],"childs":""}],"regex":"^http.*p.3.cn/","encoding":""}'''
+        )
+        start_time = time.time()
+        pool = ThreadPoolExecutor()
+        tasks = [pool.submit(uni.download, crawler_rule) for _ in range(5)]
+        [task.result() for task in tasks]
+        cost_time = time.time() - start_time
+        # print(cost_time)
+        assert cost_time < 2
+        # set Frequency, download 2 times each 1 sec
+        uni.set_frequency('http://p.3.cn/', 2, 1)
+        start_time = time.time()
+        pool = ThreadPoolExecutor()
+        tasks = [pool.submit(uni.download, crawler_rule) for _ in range(5)]
+        [task.result() for task in tasks]
+        cost_time = time.time() - start_time
+        # print(cost_time)
+        assert cost_time > 2
+
+    async def test_async_crawl():
+        uni = Uniparser()
+        uni.pop_frequency('http://p.3.cn/')
+        crawler_rule = CrawlerRule.loads(
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"http://p.3.cn/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['http://p.3.cn/1'] * 4",""]],"childs":""}],"regex":"^http.*p.3.cn/","encoding":""}'''
+        )
+        start_time = time.time()
+        tasks = [asyncio.ensure_future(uni.adownload(crawler_rule)) for _ in range(5)]
+        [await task for task in tasks]
+        cost_time = time.time() - start_time
+        # print(cost_time)
+        assert cost_time < 2
+        # set Frequency, download 2 times each 1 sec
+        uni.set_async_frequency('http://p.3.cn/', 2, 1)
+        start_time = time.time()
+        tasks = [asyncio.ensure_future(uni.adownload(crawler_rule)) for _ in range(5)]
+        [await task for task in tasks]
+        cost_time = time.time() - start_time
+        # print(cost_time)
+        assert cost_time > 2
+
+    test_sync_crawl()
+    asyncio.get_event_loop().run_until_complete(test_async_crawl())
+
+
 if __name__ == "__main__":
     test_css_parser()
     test_xml_parser()
@@ -963,6 +1020,7 @@ if __name__ == "__main__":
     test_loader_parser()
     test_time_parser()
     test_uni_parser()
+    test_uni_parser_frequency()
     test_crawler_rule()
     test_default_usage()
     test_crawler_storage()

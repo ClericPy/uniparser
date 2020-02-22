@@ -18,9 +18,11 @@ class NotSet(object):
         return None
 
 
-def get_host(url):
-    if url:
+def get_host(url, default=None):
+    if url and url.startswith('http'):
         return urlparse(url).netloc
+    else:
+        return None
 
 
 class _Curl:

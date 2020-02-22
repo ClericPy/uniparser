@@ -14,6 +14,7 @@ from typing import Dict, List, Union
 from warnings import warn
 
 from bs4 import BeautifulSoup, Tag
+from frequency_controller import AsyncFrequency, Frequency
 from jmespath import compile as jmespath_compile
 from jsonpath_ng.ext import parse as jp_parse
 from objectpath import Tree as OP_Tree
@@ -21,7 +22,9 @@ from toml import loads as toml_loads
 from yaml import full_load as yaml_full_load
 from yaml import safe_load as yaml_safe_load
 
-from .utils import AsyncRequestAdapter, SyncRequestAdapter, ensure_request
+from .utils import (AsyncRequestAdapter, SyncRequestAdapter, ensure_request,
+                    get_available_async_request, get_available_sync_request,
+                    get_host)
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'Tag', 'CSSParser',
@@ -819,6 +822,9 @@ class Uniparser(object):
     """
     parser_classes = BaseParser.__subclasses__()
     _RECURSION_CRAWL = True
+    _DEFAULT_FREQUENCY = Frequency()
+    _DEFAULT_ASYNC_FREQUENCY = AsyncFrequency()
+    _HOST_FREQUENCIES: Dict[str, Union[Frequency, AsyncFrequency]] = {}
 
     def __init__(self,
                  request_adapter: Union[AsyncRequestAdapter,
@@ -893,16 +899,32 @@ class Uniparser(object):
             if parser.name not in self.__dict__:
                 self.__dict__[parser.name] = parser()
 
+    def ensure_adapter(self, sync=True):
+        if self.request_adapter:
+            request_adapter = self.request_adapter
+            if sync and isinstance(request_adapter, SyncRequestAdapter) or (
+                    not sync) and isinstance(request_adapter,
+                                             AsyncRequestAdapter):
+                return self.request_adapter
+        if sync:
+            self.request_adapter = get_available_sync_request()()
+        else:
+            self.request_adapter = get_available_async_request()()
+        return self.request_adapter
+
     def download(self,
                  crawler_rule: CrawlerRule,
                  request_adapter=None,
                  **request):
-        request_adapter = request_adapter or self.request_adapter
+        request_adapter = request_adapter or self.ensure_adapter(sync=True)
         if not isinstance(request_adapter, SyncRequestAdapter):
             raise RuntimeError('bad request_adapter type')
         request_args = crawler_rule.get_request(**request)
-        with request_adapter as req:
-            input_object, resp = req.request(**request_args)
+        host = get_host(request_args['url'])
+        freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_FREQUENCY)
+        with freq:
+            with request_adapter as req:
+                input_object, resp = req.request(**request_args)
         return input_object, resp
 
     def crawl(self,
@@ -923,12 +945,15 @@ class Uniparser(object):
                         crawler_rule: CrawlerRule,
                         request_adapter=None,
                         **request):
-        request_adapter = request_adapter or self.request_adapter
+        request_adapter = request_adapter or self.ensure_adapter(sync=False)
         if not isinstance(request_adapter, AsyncRequestAdapter):
             raise RuntimeError('bad request_adapter type')
         request_args = crawler_rule.get_request(**request)
-        async with request_adapter as req:
-            input_object, resp = await req.request(**request_args)
+        host = get_host(request_args['url'])
+        freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_ASYNC_FREQUENCY)
+        async with freq:
+            async with request_adapter as req:
+                input_object, resp = await req.request(**request_args)
         return input_object, resp
 
     async def acrawl(self,
@@ -944,3 +969,18 @@ class Uniparser(object):
                 context[k] = v
         context['resp'] = resp
         return self.parse(input_object, crawler_rule, context)
+
+    @classmethod
+    def set_frequency(cls, host_or_url: str, n=0, interval=0):
+        host = get_host(host_or_url, host_or_url)
+        cls._HOST_FREQUENCIES[host] = Frequency(n, interval)
+
+    @classmethod
+    def set_async_frequency(cls, host_or_url: str, n=0, interval=0):
+        host = get_host(host_or_url, host_or_url)
+        cls._HOST_FREQUENCIES[host] = AsyncFrequency(n, interval)
+
+    @classmethod
+    def pop_frequency(cls, host_or_url: str, default=None):
+        host = get_host(host_or_url, host_or_url)
+        return cls._HOST_FREQUENCIES.pop(host, default)

@@ -63,6 +63,7 @@ Provide a universal solution for crawler, **Python3.6+**.
     1. **HostRule** contains a dict like: {CrawlerRule['name']: CrawlerRule}, with the *find* method it can get the specified CrawlerRule with a given url.
     1. **JSONRuleStorage** is a simple storage way, which saved the HostRules in a JSON file. On the production environment this is not a good choice, maybe redis / mysql / mongodb can give a hand. 
 6. **Uniparser** is the center console for the entire crawler process. It handled download middleware, parse middleware. Detail usage can be find at *uniparser.crawler.Crawler*, or have a loot at [Quick Start].
+7. For custom settings, such as json loader, please update the uniparser.config.GlobalConfig.
 
 ## Quick Start
 

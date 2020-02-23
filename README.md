@@ -47,9 +47,22 @@ Provide a universal solution for crawler, **Python3.6+**.
 2. Request args persistence, support curl-string, single-url, dict, json.
 3. A simple Web UI for generate & test CrawlerRule.
 4. Serializable JSON rule class for saving the whole parsing process.
-   1. Each ParseRule / CrawlerRule / HostRule subclass can be json.dumps to JSON for persistence.
-   2. Therefore, they also can be loaded from JSON string.
-   3. Nest relation of rule names will be treat as the result format. (Rule's result will be ignore if has childs.)
+    1. Each ParseRule / CrawlerRule / HostRule subclass can be json.dumps to JSON for persistence.
+    2. Therefore, they also can be loaded from JSON string.
+    3. Nest relation of rule names will be treat as the result format. (Rule's result will be ignore if has childs.)
+5. Rule Class List (all the rules is **JsonSerializable**)
+    1. **JsonSerializable** is the base class for all the rules.
+        1. dumps classmethod can dump self as a standard JSON string.
+        1. loads classmethod can load self from a standard JSON string, which means the new object will has the new methods as a rule.
+    1. **ParseRule** is the lowest level for a parse mission, which contains how to parse a input_object. Sometimes it also has a list of ParseRule as child rules.
+        1. Parse result is a dict that rule_name as key and result as value.
+    1. **CrawlerRule** contains some ParseRules, which has 3 attributes besides the rule name:
+        1. request_args tell the http-downloader how to send the request.
+        2. parse_rules is a list of ParseRule, and the parsing result format is like {CrawlerRule_name: {ParseRule1['name']: ParseRule1_result, ParseRule2['name']: ParseRule2_result}}.
+        3. regex tells how to find the crawler_rule with a given url.
+    1. **HostRule** contains a dict like: {CrawlerRule['name']: CrawlerRule}, with the *find* method it can get the specified CrawlerRule with a given url.
+    1. **JSONRuleStorage** is a simple storage way, which saved the HostRules in a JSON file. On the production environment this is not a good choice, maybe redis / mysql / mongodb can give a hand. 
+6. **Uniparser** is the center console for the entire crawler process. It handled download middleware, parse middleware. Detail usage can be find at *uniparser.crawler.Crawler*, or have a loot at [Quick Start].
 
 ## Quick Start
 

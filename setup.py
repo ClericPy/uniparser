@@ -20,7 +20,7 @@ with open('requirements.txt') as f:
     install_requires = [line for line in f.read().strip().split('\n')]
 
 # for webui
-if not re.search('requests|httpx|torequests|\[all\]', str(sys.argv)):
+if not re.search(r'requests|httpx|torequests|\[all\]', str(sys.argv)):
     install_requires.append('requests')
 
 with open("README.md", encoding="u8") as f:

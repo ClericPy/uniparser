@@ -7,8 +7,8 @@ from json import dump
 from pathlib import Path
 from warnings import warn
 
-from .parsers import (CrawlerRule, HostRule, JsonSerializable, Uniparser,
-                      json_loads)
+from .config import GlobalConfig
+from .parsers import CrawlerRule, HostRule, JsonSerializable, Uniparser
 from .utils import (AsyncRequestAdapter, NotSet, SyncRequestAdapter,
                     ensure_request, get_host)
 
@@ -55,7 +55,8 @@ class JSONRuleStorage(JsonSerializable, RuleStorage):
                 with open(self.file_path, 'r') as f:
                     json_string = f.read()
                     if json_string:
-                        for host, host_rule in json_loads(json_string).items():
+                        for host, host_rule in GlobalConfig.json_loads(
+                                json_string).items():
                             self[host] = HostRule(**host_rule)
             else:
                 warn(f'create storage file at {self.file_path}.')

@@ -3,12 +3,9 @@
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from functools import partial
-from json import JSONDecodeError
-from json import loads as json_loads
 from shlex import split as shlex_split
 from urllib.parse import urlparse
-
-GLOBAL_TIMEOUT = 60
+from .config import GlobalConfig
 
 
 class NotSet(object):
@@ -130,8 +127,8 @@ def ensure_request(request):
             result = curlparse(request)
         else:
             try:
-                result = json_loads(request)
-            except JSONDecodeError:
+                result = GlobalConfig.json_loads(request)
+            except GlobalConfig.JSONDecodeError:
                 pass
     else:
         return result
@@ -152,7 +149,7 @@ class SyncRequestAdapter(ABC):
         text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
-        request_args.setdefault('timeout', GLOBAL_TIMEOUT)
+        request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
         for _ in range(retry + 1):
             try:
                 resp = self.session.request(**request_args)
@@ -194,7 +191,7 @@ class AsyncRequestAdapter(ABC):
         text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
-        request_args.setdefault('timeout', GLOBAL_TIMEOUT)
+        request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
         for _ in range(retry + 1):
             try:
                 resp = await self.session.request(**request_args)
@@ -211,7 +208,6 @@ class AsyncRequestAdapter(ABC):
 class RequestsAdapter(SyncRequestAdapter):
 
     def __init__(self, session=None, **kwargs):
-        self.session = session
         from requests import RequestException, Session
         if session:
             self.session = session
@@ -313,7 +309,7 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
         text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
-        request_args.setdefault('timeout', GLOBAL_TIMEOUT)
+        request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
         for _ in range(retry + 1):
             try:
                 resp = await self.session.request(**request_args)
@@ -344,7 +340,7 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
         text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
-        request_args.setdefault('timeout', GLOBAL_TIMEOUT)
+        request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
         for _ in range(retry + 1):
             try:
                 resp = await self.req.request(**request_args)

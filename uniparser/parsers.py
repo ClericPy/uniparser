@@ -4,9 +4,6 @@ from abc import ABC, abstractmethod
 from hashlib import md5 as _md5
 from inspect import isgenerator
 from itertools import chain
-from json import JSONDecodeError
-from json import dumps as json_dumps
-from json import loads as json_loads
 from re import compile as re_compile
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
@@ -22,6 +19,7 @@ from toml import loads as toml_loads
 from yaml import full_load as yaml_full_load
 from yaml import safe_load as yaml_safe_load
 
+from .config import GlobalConfig
 from .utils import (AsyncRequestAdapter, SyncRequestAdapter, ensure_request,
                     get_available_async_request, get_available_sync_request,
                     get_host)
@@ -29,7 +27,7 @@ from .utils import (AsyncRequestAdapter, SyncRequestAdapter, ensure_request,
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'Tag', 'CSSParser',
     'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
-    'JMESPathParser', 'PythonParser', 'UDFParser', 'LoaderParser'
+    'JMESPathParser', 'PythonParser', 'UDFParser', 'LoaderParser', 'Uniparser'
 ]
 
 
@@ -261,7 +259,7 @@ class JSONPathParser(BaseParser):
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
-            input_object = json_loads(input_object)
+            input_object = GlobalConfig.json_loads(input_object)
         value = value or '$value'
         attr_name = value[1:]
         if param.startswith('JSON.'):
@@ -293,7 +291,7 @@ class ObjectPathParser(BaseParser):
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
-            input_object = json_loads(input_object)
+            input_object = GlobalConfig.json_loads(input_object)
         if param.startswith('JSON.'):
             param = '$%s' % param[4:]
         tree = OP_Tree(input_object)
@@ -321,7 +319,7 @@ class JMESPathParser(BaseParser):
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
-            input_object = json_loads(input_object)
+            input_object = GlobalConfig.json_loads(input_object)
         code = getattr(param, 'code', jmespath_compile(param))
         return code.search(input_object)
 
@@ -356,8 +354,8 @@ class UDFParser(BaseParser):
         # if value is null, will use the context dict from CrawlerRule & ParseRule
         if value and isinstance(value, str):
             try:
-                context = json_loads(value)
-            except JSONDecodeError:
+                context = GlobalConfig.json_loads(value)
+            except GlobalConfig.JSONDecodeError:
                 context = value
         else:
             context = value or {}
@@ -482,21 +480,24 @@ class LoaderParser(BaseParser):
     """
     name = 'loader'
     _RECURSION_LIST = True
-    loaders = {
-        'json': json_loads,
-        'toml': toml_loads,
-        'yaml': yaml_full_load,
-        'yaml_safe_load': yaml_safe_load,
-        'yaml_full_load': yaml_full_load,
-    }
+
+    def __init__(self):
+        self.loaders = {
+            'json': GlobalConfig.json_loads,
+            'toml': toml_loads,
+            'yaml': yaml_full_load,
+            'yaml_safe_load': yaml_safe_load,
+            'yaml_full_load': yaml_full_load,
+        }
+        super().__init__()
 
     def _parse(self, input_object, param, value=''):
         loader = self.loaders.get(param, return_self)
         if value:
             try:
-                kwargs = json_loads(value)
+                kwargs = GlobalConfig.json_loads(value)
                 return loader(input_object, **kwargs)
-            except JSONDecodeError as err:
+            except GlobalConfig.JSONDecodeError as err:
                 return err
         else:
             return loader(input_object)
@@ -553,7 +554,7 @@ class JsonSerializable(dict):
         return dict(self)
 
     def dumps(self, *args, **kwargs):
-        return json_dumps(self, *args, **kwargs)
+        return GlobalConfig.json_dumps(self, *args, **kwargs)
 
     def to_json(self, *args, **kwargs):
         return self.dumps(*args, **kwargs)
@@ -562,7 +563,7 @@ class JsonSerializable(dict):
     def loads(cls, json_string):
         if isinstance(json_string, cls):
             return json_string
-        return cls(**json_loads(json_string))
+        return cls(**GlobalConfig.json_loads(json_string))
 
     @classmethod
     def from_json(cls, json_string):

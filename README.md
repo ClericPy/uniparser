@@ -50,10 +50,10 @@ Provide a universal solution for crawler, **Python3.6+**.
     1. Each ParseRule / CrawlerRule / HostRule subclass can be json.dumps to JSON for persistence.
     2. Therefore, they also can be loaded from JSON string.
     3. Nest relation of rule names will be treat as the result format. (Rule's result will be ignore if has childs.)
-5. Rule Class List (all the rules is **JsonSerializable**)
+5. Rule Classes
     1. **JsonSerializable** is the base class for all the rules.
         1. dumps classmethod can dump self as a standard JSON string.
-        1. loads classmethod can load self from a standard JSON string, which means the new object will has the new methods as a rule.
+        1. loads classmethod can load self from a standard JSON string, which means the new object will has the methods as a rule.
     1. **ParseRule** is the lowest level for a parse mission, which contains how to parse a input_object. Sometimes it also has a list of ParseRule as child rules.
         1. Parse result is a dict that rule_name as key and result as value.
     1. **CrawlerRule** contains some ParseRules, which has 3 attributes besides the rule name:
@@ -167,12 +167,11 @@ test_async_crawler()
 </details>
 
 
-## Uniparser Test Console Demo (Web UI)
+## Uniparser Rule Test Console (Web UI)
 
-> 1. Prepare Environment
-> 2. pip install bottle uniparser
-> 3. python -m uniparser 8080
-> 4. open browser => http://127.0.0.1:8080/
+> 1. pip install bottle uniparser
+> 2. python -m uniparser 8080
+> 3. open browser => http://127.0.0.1:8080/
 
 <details>
     <summary>Start page</summary>

@@ -4,7 +4,7 @@ import re
 import sys
 
 from setuptools import find_packages, setup
-from uniparser.utils import get_available_sync_request
+
 """
 linux:
 rm -rf "dist/*";rm -rf "build/*";python3 setup.py bdist_wheel;twine upload "dist/*;rm -rf "dist/*";rm -rf "build/*""
@@ -20,8 +20,7 @@ with open('requirements.txt') as f:
     install_requires = [line for line in f.read().strip().split('\n')]
 
 # for webui
-if not (get_available_sync_request() or
-        re.search('requests|httpx|torequests', str(sys.argv))):
+if not re.search('requests|httpx|torequests', str(sys.argv)):
     install_requires.append('requests')
 
 with open("README.md", encoding="u8") as f:

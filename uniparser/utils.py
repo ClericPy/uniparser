@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from functools import partial
 from shlex import split as shlex_split
 from urllib.parse import urlparse
+
 from .config import GlobalConfig
 
 
@@ -158,7 +159,8 @@ class SyncRequestAdapter(ABC):
                 else:
                     text = resp.text
                 break
-            except self.error:
+            except self.error as e:
+                text = str(e)
                 continue
         return text, resp
 
@@ -200,7 +202,8 @@ class AsyncRequestAdapter(ABC):
                 else:
                     text = resp.text
                 break
-            except self.error:
+            except self.error as e:
+                text = str(e)
                 continue
         return text, resp
 
@@ -315,7 +318,8 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
                 resp = await self.session.request(**request_args)
                 text = await resp.text(encoding=encoding)
                 break
-            except self.error:
+            except self.error as e:
+                text = str(e)
                 continue
         return text, resp
 
@@ -349,7 +353,8 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
                 else:
                     text = resp.text
                 break
-            except self.error:
+            except self.error as e:
+                text = str(e)
                 continue
         return text, resp
 

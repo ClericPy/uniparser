@@ -57,8 +57,8 @@ def send_request():
     GLOBAL_RESP = r
     return {
         'text': body,
-        'status': f'[{r.status_code}]',
-        'ok': r.status_code in range(200, 300)
+        'status': f'[{getattr(r, "status_code", 0)}]',
+        'ok': getattr(r, "status_code", 0) in range(200, 300)
     }
 
 

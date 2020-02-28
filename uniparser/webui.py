@@ -5,7 +5,6 @@ Uniparser Test Console Demo
 
 from pathlib import Path
 
-import requests
 from bottle import BaseRequest, Bottle, request, template
 
 from . import CrawlerRule, Uniparser, __version__
@@ -54,26 +53,20 @@ def index():
 def send_request():
     global GLOBAL_RESP
     rule = CrawlerRule(**request.json)
-    try:
-        body, r = uni.download(rule)
-        GLOBAL_RESP = r
-        return {
-            'text': body,
-            'status': f'[{r.status_code}]',
-            'ok': r.status_code in range(200, 300)
-        }
-    except requests.RequestException as e:
-        return {'text': str(e), 'status': '[-1]', 'ok': False}
+    body, r = uni.download(rule)
+    GLOBAL_RESP = r
+    return {
+        'text': body,
+        'status': f'[{r.status_code}]',
+        'ok': r.status_code in range(200, 300)
+    }
 
 
 @app.post("/curl_parse")
 def curl_parse():
     curl = request.body.read().decode('u8')
-    try:
-        result = curlparse(curl)
-        return {'result': result, 'ok': True}
-    except requests.RequestException as e:
-        return {'result': str(e), 'ok': False}
+    result = curlparse(curl)
+    return {'result': result, 'ok': True}
 
 
 @app.post("/parse")

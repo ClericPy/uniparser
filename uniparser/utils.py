@@ -23,14 +23,6 @@ def get_host(url, default=None):
         return None
 
 
-class FakeResponse:
-    __slots__ = ('status_code', 'text')
-
-    def __init__(self):
-        self.status_code = -1
-        self.text = ''
-
-
 class _Curl:
     """Curl args parser. **Use curlparse function directly.**
     Copy from torequests.
@@ -155,7 +147,7 @@ class SyncRequestAdapter(ABC):
     """
 
     def request(self, **request_args):
-        text, resp = '', FakeResponse()
+        text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
@@ -169,7 +161,6 @@ class SyncRequestAdapter(ABC):
                 break
             except self.error as e:
                 text = str(e)
-                resp.text = text
                 continue
         return text, resp
 
@@ -199,7 +190,7 @@ class AsyncRequestAdapter(ABC):
         raise NotImplementedError
 
     async def request(self, **request_args):
-        text, resp = '', FakeResponse()
+        text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
@@ -213,7 +204,6 @@ class AsyncRequestAdapter(ABC):
                 break
             except self.error as e:
                 text = str(e)
-                resp.text = text
                 continue
         return text, resp
 
@@ -319,7 +309,7 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
 
     async def request(self, **request_args):
         """non-request-like api"""
-        text, resp = '', FakeResponse()
+        text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
@@ -330,7 +320,6 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
                 break
             except self.error as e:
                 text = str(e)
-                resp.text = text
                 continue
         return text, resp
 
@@ -352,7 +341,7 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
         pass
 
     async def request(self, **request_args):
-        text, resp = '', FakeResponse()
+        text, resp = '', None
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
@@ -366,7 +355,6 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
                 break
             except self.error as e:
                 text = str(e)
-                resp.text = text
                 continue
         return text, resp
 

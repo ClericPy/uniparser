@@ -199,6 +199,33 @@ As we can see, CrawlerRule's name is the root key, and ParseRule's name as the o
 
 </details>
 
+### Async environment usage: [Fastapi](https://github.com/tiangolo/fastapi)
+
+```python
+import uvicorn
+from uniparser.fastapi_ui import app
+
+if __name__ == "__main__":
+    uvicorn.run(app, port=8080)
+    # http://127.0.0.1:8080
+```
+
+### Fastapi subapp usage
+
+```python
+import uvicorn
+from fastapi import FastAPI
+from uniparser.fastapi_ui import app as sub_app
+
+app = FastAPI()
+
+app.mount('/uniparser', sub_app)
+
+if __name__ == "__main__":
+    uvicorn.run(app, port=8080)
+    # http://127.0.0.1:8080/uniparser/
+
+```
 
 ## More Usage
 

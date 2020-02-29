@@ -1,26 +1,27 @@
 # -*- coding: utf-8 -*-
-"""
-Uniparser Test Console Demo
-"""
 
+# pip install fastapi uvicorn
 from pathlib import Path
 
-from bottle import BaseRequest, Bottle, request, template
+from fastapi import FastAPI
+from starlette.requests import Request
+from starlette.templating import Jinja2Templates
 
-from . import CrawlerRule, Uniparser, __version__
-from .utils import ensure_request, get_available_sync_request
+from .. import CrawlerRule, Uniparser, __version__
+from ..utils import ensure_request, get_available_async_request
 
-# 10MB
-BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
-app = Bottle()
-adapter = get_available_sync_request()
+app = FastAPI(openapi_prefix="/watchdog")
+
+adapter = get_available_async_request()
 if not adapter:
     raise RuntimeError(
         "one of these libs should be installed: ('requests', 'httpx', 'torequests')"
     )
 uni = Uniparser(adapter())
-GLOBAL_RESP = None
 
+GLOBAL_RESP = None
+templates = Jinja2Templates(
+    directory=str((Path(__file__).parent.parent / 'templates').absolute()))
 cdn_urls = {
     'VUE_JS_CDN': 'https://cdn.staticfile.org/vue/2.6.11/vue.min.js',
     'ELEMENT_CSS_CDN': 'https://cdn.staticfile.org/element-ui/2.13.0/theme-chalk/index.css',
@@ -28,9 +29,6 @@ cdn_urls = {
     'VUE_RESOURCE_CDN': 'https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js',
     'CLIPBOARDJS_CDN': 'https://cdn.staticfile.org/clipboard.js/2.0.4/clipboard.min.js',
 }
-
-index_tpl_path = Path(__file__).parent / 'templates' / 'index.html'
-index_tpl_path = index_tpl_path.as_posix()
 
 
 @app.get('/init_app')
@@ -45,15 +43,17 @@ def init_app():
 
 
 @app.get("/")
-def index():
-    return template(index_tpl_path, cdn_urls=cdn_urls, version=__version__)
+def index(request: Request):
+    return templates.TemplateResponse(
+        'index.html',
+        dict(cdn_urls=cdn_urls, version=__version__, request=request))
 
 
 @app.post("/request")
-def send_request():
+async def send_request(request_args: dict):
     global GLOBAL_RESP
-    rule = CrawlerRule(**request.json)
-    body, r = uni.download(rule)
+    rule = CrawlerRule(**request_args)
+    body, r = await uni.adownload(rule)
     GLOBAL_RESP = r
     return {
         'text': body,
@@ -63,17 +63,14 @@ def send_request():
 
 
 @app.post("/curl_parse")
-def curl_parse():
-    curl = request.body.read().decode('u8')
-    result = ensure_request(curl)
+async def curl_parse(request: Request):
+    req = (await request.body()).decode('u8')
+    result = ensure_request(req)
     return {'result': result, 'ok': True}
 
 
 @app.post("/parse")
-def parse_rule():
-    # kwargs = request.body.read().decode('u8')
-    kwargs = request.json
-    # print(kwargs)
+def parse_rule(kwargs: dict):
     input_object = kwargs['input_object']
     if not input_object:
         return 'Null input_object?'
@@ -82,7 +79,3 @@ def parse_rule():
     # print(rule)
     result = uni.parse(input_object, rule, GLOBAL_RESP)
     return {'type': str(type(result)), 'data': repr(result)}
-
-
-if __name__ == "__main__":
-    app.run(port=8080)

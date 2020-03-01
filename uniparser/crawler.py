@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABC, abstractmethod
-from asyncio import ensure_future, iscoroutine
+from asyncio import ensure_future
 from concurrent.futures import ThreadPoolExecutor
+from inspect import isawaitable
 from json import dump
 from pathlib import Path
 from warnings import warn
@@ -186,7 +187,7 @@ class Crawler(object):
         request_args = ensure_request(request)
         url = request_args['url']
         coro_or_result = self.storage.find_crawler_rule(url)
-        if iscoroutine(coro_or_result):
+        if isawaitable(coro_or_result):
             crawler_rule = await coro_or_result
         else:
             crawler_rule = coro_or_result

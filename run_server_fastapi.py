@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# pip install fastapi uvicorn
+# pip install fastapi uvicorn jinja2
 
 from uniparser.fastapi_ui import app
 import uvicorn

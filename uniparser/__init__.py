@@ -6,4 +6,4 @@ from .utils import (AiohttpAsyncAdapter, AsyncRequestAdapter,
                     get_available_async_request, get_available_sync_request)
 
 __all__ = ['Uniparser', 'ParseRule', 'CrawlerRule', 'HostRule']
-__version__ = '1.0.2'
+__version__ = '1.0.3'

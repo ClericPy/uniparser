@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from asyncio import ensure_future
 from concurrent.futures import ThreadPoolExecutor
+from inspect import isawaitable
 from json import dump
 from pathlib import Path
 from warnings import warn
@@ -185,7 +186,11 @@ class Crawler(object):
         assert self.ensure_adapter(sync=False)
         request_args = ensure_request(request)
         url = request_args['url']
-        crawler_rule = self.storage.find_crawler_rule(url)
+        coro_or_result = self.storage.find_crawler_rule(url)
+        if isawaitable(coro_or_result):
+            crawler_rule = await coro_or_result
+        else:
+            crawler_rule = coro_or_result
         if not crawler_rule:
             return
         result = await self.uniparser.acrawl(

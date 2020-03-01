@@ -554,7 +554,7 @@ class JsonSerializable(dict):
         return dict(self)
 
     def dumps(self, *args, **kwargs):
-        return GlobalConfig.json_dumps(self, *args, **kwargs)
+        return GlobalConfig.json_dumps(self.to_dict(), *args, **kwargs)
 
     def to_json(self, *args, **kwargs):
         return self.dumps(*args, **kwargs)

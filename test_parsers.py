@@ -643,6 +643,18 @@ def test_crawler_rule():
             }
         }
     }
+    rule = HostRule('importpython.com')
+    crawler_rule_json = '{"name":"C-1583501370","request_args":{"method":"get","url":"https://importpython.com/blog/feed/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"text","chain_rules":[["xml","channel>item>title","$text"],["python","getitem","[0]"]],"childs":""},{"name":"url","chain_rules":[["xml","channel>item>link","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"https://asdfa.com/blog/feed/$","encoding":""}'
+    try:
+        rule.add_crawler_rule(crawler_rule_json)
+        assert NotImplementedError
+    except AssertionError as err:
+        assert err
+    assert rule['crawler_rules'] == {}
+    crawler_rule = CrawlerRule.loads(crawler_rule_json)
+    crawler_rule['regex'] = 'https://importpython.com/blog/feed/'
+    rule.add_crawler_rule(crawler_rule)
+    assert rule['crawler_rules']
 
 
 def test_default_usage():
@@ -964,7 +976,7 @@ def test_uni_parser_frequency():
         Uniparser.pop_frequency('https://api.github.com')
         uni = Uniparser()
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://api.github.com/user","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://api.github.com/user1'] * 4",""]],"childs":""}],"regex":"^http.*p.3.cn/","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://api.github.com/user","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://api.github.com/user1'] * 4",""]],"childs":""}],"regex":"^http.*api.github.com/user","encoding":""}'''
         )
         start_time = time.time()
         pool = ThreadPoolExecutor()
@@ -987,7 +999,7 @@ def test_uni_parser_frequency():
         uni = Uniparser()
         uni.pop_frequency('https://api.github.com/user')
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://api.github.com/user","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://api.github.com/user1'] * 4",""]],"childs":""}],"regex":"^http.*p.3.cn/","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://api.github.com/user","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://api.github.com/user1'] * 4",""]],"childs":""}],"regex":"^http.*api.github.com/user","encoding":""}'''
         )
         start_time = time.time()
         tasks = [

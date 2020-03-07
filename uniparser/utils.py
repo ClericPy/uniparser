@@ -20,7 +20,7 @@ def get_host(url, default=None):
     if url and url.startswith('http'):
         return urlparse(url).netloc
     else:
-        return None
+        return default
 
 
 class _Curl:

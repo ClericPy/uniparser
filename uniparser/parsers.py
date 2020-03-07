@@ -240,7 +240,7 @@ class RegexParser(BaseParser):
 
 
 class JSONPathParser(BaseParser):
-    """JSONPath parser, requires `jsonpath_ng` lib.
+    """JSONPath parser, requires `jsonpath-rw-ext` lib.
     Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.

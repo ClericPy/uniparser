@@ -13,7 +13,7 @@ from warnings import warn
 from bs4 import BeautifulSoup, Tag
 from frequency_controller import AsyncFrequency, Frequency
 from jmespath import compile as jmespath_compile
-from jsonpath_ng.ext import parse as jp_parse
+from jsonpath_rw_ext import parse as jp_parse
 from objectpath import Tree as OP_Tree
 from toml import loads as toml_loads
 from yaml import full_load as yaml_full_load
@@ -240,7 +240,7 @@ class RegexParser(BaseParser):
 
 
 class JSONPathParser(BaseParser):
-    """JSONPath parser, requires `jsonpath_ng` lib.
+    """JSONPath parser, requires `jsonpath-rw-ext` lib.
     Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
@@ -253,7 +253,7 @@ class JSONPathParser(BaseParser):
         :rtype: List[Union[str]]
     """
     name = 'jsonpath'
-    doc_url = 'https://github.com/h2non/jsonpath-ng'
+    doc_url = 'https://github.com/sileht/python-jsonpath-rw-ext'
     test_url = 'https://jsonpath.com/'
     _RECURSION_LIST = False
 

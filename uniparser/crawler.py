@@ -29,7 +29,7 @@ class RuleStorage(ABC):
         pass
 
     @abstractmethod
-    def pop_crawler_rule(self, rule_name: str, host: str = None, commit=False):
+    def pop_crawler_rule(self, rule: CrawlerRule, commit=False):
         pass
 
     @abstractmethod
@@ -92,14 +92,15 @@ class JSONRuleStorage(JsonSerializable, RuleStorage):
             self.commit()
         return True
 
-    def pop_crawler_rule(self, rule_name: str, host: str = None, commit=False):
+    def pop_crawler_rule(self, rule: CrawlerRule, commit=False):
+        host = get_host(rule['request_args'].get('url'))
         if host:
             host_rules = [self.get(host)]
         else:
             host_rules = list(self.values())
         for host_rule in host_rules:
             if host_rule:
-                crawler_rule = host_rule.pop_crawler_rule(rule_name)
+                crawler_rule = host_rule.pop_crawler_rule(rule['name'])
                 if commit:
                     self.commit()
                 return crawler_rule

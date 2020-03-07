@@ -1025,8 +1025,9 @@ def test_uni_parser_frequency():
 
 
 if __name__ == "__main__":
+    from uniparser.config import GlobalConfig
+    GlobalConfig.GLOBAL_TIMEOUT = 5
     for case in (
-            test_crawler,
             test_css_parser,
             test_xml_parser,
             test_re_parser,
@@ -1042,6 +1043,7 @@ if __name__ == "__main__":
             test_default_usage,
             test_crawler_storage,
             test_uni_parser_frequency,
+            test_crawler,
     ):
         case()
         print(case.__name__, 'ok')

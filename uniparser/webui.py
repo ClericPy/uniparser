@@ -36,7 +36,10 @@ index_tpl_path = index_tpl_path.as_posix()
 @app.get('/init_app')
 def init_app():
     parser_name_choices = [{'value': i.name} for i in uni.parser_classes]
-    parser_name_docs = {i.name: i.__doc__ for i in uni.parser_classes}
+    parser_name_docs = {
+        i.name: f'{i.__doc__}\n{i.doc_url}\n\n{i.test_url}'
+        for i in uni.parser_classes
+    }
     parser_name_docs[''] = 'Choose a parser_name'
     return {
         'parser_name_choices': parser_name_choices,

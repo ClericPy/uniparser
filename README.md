@@ -26,7 +26,7 @@ Provide a universal solution for crawler.
                 1. lxml
             3. regex
             4. jsonpath
-                1. jsonpath_ng
+                1. jsonpath-rw-ext
             5. objectpath
                 1. objectpath
             6. jmespath

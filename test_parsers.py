@@ -973,10 +973,10 @@ def test_uni_parser_frequency():
 
     def test_sync_crawl():
         from concurrent.futures import ThreadPoolExecutor
-        Uniparser.pop_frequency('http://staticfile.org/assets/css/style.css')
+        Uniparser.pop_frequency('https://cn.bing.com/')
         uni = Uniparser()
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"http://staticfile.org/assets/css/style.css","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['http://staticfile.org/assets/css/style.css'] * 4",""]],"childs":""}],"regex":"^http://staticfile.org/assets/css/style.css","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://cn.bing.com/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://cn.bing.com/'] * 4",""]],"childs":""}],"regex":"^https://cn.bing.com/","encoding":""}'''
         )
         start_time = time.time()
         pool = ThreadPoolExecutor()
@@ -986,7 +986,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < 2
         # set Frequency, download 2 times each 1 sec
-        uni.set_frequency('http://staticfile.org/assets/css/style.css', 2, 1)
+        uni.set_frequency('https://cn.bing.com/', 2, 1)
         start_time = time.time()
         pool = ThreadPoolExecutor()
         tasks = [pool.submit(uni.download, crawler_rule) for _ in range(5)]
@@ -997,9 +997,9 @@ def test_uni_parser_frequency():
 
     async def test_async_crawl():
         uni = Uniparser()
-        uni.pop_frequency('http://staticfile.org/assets/css/style.css')
+        uni.pop_frequency('https://cn.bing.com/')
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"http://staticfile.org/assets/css/style.css","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['http://staticfile.org/assets/css/style.css'] * 4",""]],"childs":""}],"regex":"^http://staticfile.org/assets/css/style.css","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://cn.bing.com/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://cn.bing.com/'] * 4",""]],"childs":""}],"regex":"^https://cn.bing.com/","encoding":""}'''
         )
         start_time = time.time()
         tasks = [
@@ -1010,7 +1010,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < 2
         # set Frequency, download 2 times each 1 sec
-        uni.set_async_frequency('http://staticfile.org/assets/css/style.css', 2, 1)
+        uni.set_async_frequency('https://cn.bing.com/', 2, 1)
         start_time = time.time()
         tasks = [
             asyncio.ensure_future(uni.adownload(crawler_rule)) for _ in range(5)

@@ -1,4 +1,4 @@
-jsonpath_ng==1.4.3
+jsonpath-rw-ext
 objectpath
 bs4
 toml

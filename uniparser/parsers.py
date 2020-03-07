@@ -809,9 +809,11 @@ class HostRule(JsonSerializable):
             rule = CrawlerRule.loads(rule)
         self['crawler_rules'][rule['name']] = rule
         try:
-            assert get_host(rule['request_args']['url']) == self['host'], f'different host: {self["host"]} not match {rule["request_args"]["url"]}'
-            assert self.search(rule['request_args']['url']), f'regex {rule["regex"]} not match the given url: {rule["request_args"]["url"]}'
-            assert self.match(rule['request_args']['url']), f'regex {rule["regex"]} not match the given url: {rule["request_args"]["url"]}'
+            assert get_host(rule['request_args']['url']) == self[
+                'host'], f'different host: {self["host"]} not match {rule["request_args"]["url"]}'
+            assert self.match(rule['request_args']['url']) or self.search(
+                rule['request_args']['url']
+            ), f'regex {rule["regex"]} not match the given url: {rule["request_args"]["url"]}'
         except (ValueError, KeyError, AssertionError) as e:
             self['crawler_rules'].pop(rule['name'], None)
             raise e

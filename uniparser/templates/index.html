@@ -134,7 +134,8 @@
                                     <br>
                                     <div class="sub-title">ChildRules</div>
                                     <el-input type="textarea" style="width: 50%;"
-                                        placeholder="Child rules, JSON list of ParseRule objects" v-model="rule.childs">
+                                        placeholder="Child rules, JSON list of ParseRule objects"
+                                        v-model="rule.child_rules">
                                     </el-input>
                                     <br>
                                 </div>
@@ -152,7 +153,8 @@
                     <hr>
                     <el-form-item label="CrawlerRule JSON" title="Can be loaded by CrawlerRule.from_json">
                         <el-checkbox v-model="pretty_json">Pretty</el-checkbox>
-                        <el-button size='mini' icon="el-icon-document-copy" data-clipboard-target="#current_crawler_rule_json" id="copy" circle></el-button>
+                        <el-button size='mini' icon="el-icon-document-copy"
+                            data-clipboard-target="#current_crawler_rule_json" id="copy" circle></el-button>
                         <el-input type="textarea" autosize placeholder="" id="current_crawler_rule_json"
                             v-model="current_crawler_rule_json">
                         </el-input>
@@ -232,7 +234,7 @@
                     });
                 },
                 download() {
-                    var data = this.crawler_rule
+                    var data = this.current_crawler_rule_json
                     this.$http.post('request', data).then(
                         r => {
                             this.input_object = r.body.text
@@ -274,7 +276,7 @@
                         chain_rules: [
                             ['', '', '']
                         ],
-                        childs: "",
+                        child_rules: "",
                     })
                 },
                 del_rule(index) {
@@ -297,6 +299,11 @@
                         if (new_rule.request_args && new_rule.request_args.url) {
                             new_rule.request_args = JSON.stringify(new_rule.request_args, null, 2)
                         }
+                        new_rule.parse_rules.forEach(rule => {
+                            if (rule.child_rules) {
+                                rule.child_rules = JSON.stringify(rule.child_rules)
+                            }
+                        });
                         this.crawler_rule = new_rule
                         this.new_rule_visible = false
                     } catch (err) {
@@ -352,10 +359,9 @@
                     this.crawler_rule.parse_rules.forEach(item => {
                         if (item.name) {
                             try {
-                                childs = JSON.parse(item.childs || [])
-
+                                child_rules = JSON.parse(item.child_rules || "[]")
                             } catch (error) {
-                                childs = item.childs
+                                child_rules = item.child_rules
                             }
                             var chain_rules = []
                             item.chain_rules.forEach(i => {
@@ -366,7 +372,7 @@
                             rules.push({
                                 'name': item.name,
                                 'chain_rules': chain_rules,
-                                'childs': childs
+                                'child_rules': child_rules
                             })
                         }
                     });

@@ -387,6 +387,13 @@ def test_python_parser():
     result = uni.python.parse([1, 2, 3, 4, 5], 'getitem', '[1::2]')
     # print(result)
     assert result == [2, 4]
+    result = uni.python.parse({'a': '1'}, 'getitem', 'a')
+    # print(result)
+    assert result == '1'
+    result = uni.python.parse({'a': '1'}, 'getitem', 'b')
+    # print(result)
+    # key error returns the bad key
+    assert str(result) == "'b'" and isinstance(result, KeyError)
 
     # ===================== test split =====================
     # split by None

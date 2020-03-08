@@ -449,22 +449,25 @@ class PythonParser(BaseParser):
             return Template(value).safe_substitute(input_object=input_object)
 
     def _handle_getitem(self, input_object, param, value):
-        value = value[1:-1]
-        if ':' in value:
-            # as slice
-            start, stop = value.split(':', 1)
-            if ':' in stop:
-                stop, step = stop.split(':')
+        if value and (value[0], value[-1]) == ('[', ']'):
+            value = value[1:-1]
+            if ':' in value:
+                # as slice
+                start, stop = value.split(':', 1)
+                if ':' in stop:
+                    stop, step = stop.split(':')
+                else:
+                    step = None
+                start = int(start) if start else None
+                stop = int(stop) if stop else None
+                step = int(step) if step else None
+                key = slice(start, stop, step)
             else:
-                step = None
-            start = int(start) if start else None
-            stop = int(stop) if stop else None
-            step = int(step) if step else None
-            key = slice(start, stop, step)
+                # as index
+                key = int(value)
+            return input_object[key]
         else:
-            # as index
-            key = int(value)
-        return input_object[key]
+            return input_object[value]
 
 
 class LoaderParser(BaseParser):

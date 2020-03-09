@@ -580,47 +580,7 @@ class ParseRule(JsonSerializable):
     3. child_rules: a list of ParseRule instances, nested to save different values as named.
     4. context: a dict shared values by udf parse of the rules, only when udf value is null. May be shared from upstream CrawlerRule.
 
-    Recursion parsing like a matryoshka doll?
-
-    Rule format like:
-        {
-            'name': 'parse_rule',
-            'chain_rules': [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
-                            ['python', 'getitem', '[0]'], ['python', 'getitem', '[0]']],
-            'child_rules': [{
-                'name': 'rule1',
-                'chain_rules': [['python', 'getitem', '[:7]'],
-                                ['udf', 'str(input_object)+" "+context', '']],
-                'child_rules': [{
-                    'name': 'rule2',
-                    'chain_rules': [['udf', 'input_object[::-1]', '']],
-                    'child_rules': []
-                },
-                                {
-                                    'name': 'rule3',
-                                    'chain_rules': [['udf', 'input_object[::-1]', '']],
-                                    'child_rules': [{
-                                        'name': 'rule4',
-                                        'chain_rules': [[
-                                            'udf', 'input_object[::-1]', ''
-                                        ]],
-                                        'child_rules': []
-                                    }]
-                                }]
-            }]
-        }
-
-    Parse Result like:
-        {
-            'parse_rule': {
-                'rule1': {
-                    'rule2': 'dlrow olleh si sihT',
-                    'rule3': {
-                        'rule4': 'This is hello world'
-                    }
-                }
-            }
-        }
+    Recursion parsing like a matryoshka doll.
 
     """
     __slots__ = ('context',)
@@ -630,6 +590,7 @@ class ParseRule(JsonSerializable):
                  chain_rules: List[List],
                  child_rules: List['ParseRule'] = None,
                  context: dict = None,
+                 iter_parse_child: bool = False,
                  **kwargs):
         chain_rules = self.compile_codes(chain_rules or [])
         # ensure items of child_rules is ParseRule
@@ -642,6 +603,8 @@ class ParseRule(JsonSerializable):
             chain_rules=chain_rules,
             child_rules=child_rules,
             **kwargs)
+        if iter_parse_child:
+            self['iter_parse_child'] = iter_parse_child
 
     @staticmethod
     def compile_rule(chain_rule):
@@ -666,57 +629,43 @@ class CrawlerRule(JsonSerializable):
 
     Rule format like:
         {
-            'name': 'crawler_rule',
-            'parse_rules': [{
-                'name': 'parse_rule',
-                'chain_rules': [['css', 'p', '$outerHTML'], ['css', 'b', '$text'],
-                                ['python', 'getitem', '[0]'],
-                                ['python', 'getitem', '[0]']],
-                'child_rules': [{
-                    'name': 'rule1',
-                    'chain_rules': [['python', 'getitem', '[:7]'],
-                                    ['udf', 'str(input_object)+" "+context', '']],
-                    'child_rules': [
+            "name": "crawler_rule",
+            "request_args": {
+                "method": "get",
+                "url": "http://example.com",
+                "headers": {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
+                }
+            },
+            "parse_rules": [{
+                "name": "parse_rule",
+                "chain_rules": [["css", "p", "$text"], ["python", "getitem", "[0]"]],
+                "child_rules": [{
+                    "name": "rule1",
+                    "chain_rules": [["python", "getitem", "[:7]"]],
+                    "child_rules": [
                         {
-                            'name': 'rule2',
-                            'chain_rules': [['udf', 'input_object[::-1]', '']],
-                            'child_rules': []
+                            "name": "rule2",
+                            "chain_rules": [["udf", "input_object[::-1]", ""]],
+                            "child_rules": []
                         },
                         {
-                            'name': 'rule3',
-                            'chain_rules': [['udf', 'input_object[::-1]', '']],
-                            'child_rules': [{
-                                'name': 'rule4',
-                                'chain_rules': [['udf', 'input_object[::-1]', '']],
-                                'child_rules': []
+                            "name": "rule3",
+                            "chain_rules": [["udf", "input_object[::-1]", ""]],
+                            "child_rules": [{
+                                "name": "rule4",
+                                "chain_rules": [["udf", "input_object[::-1]", ""]],
+                                "child_rules": []
                             }]
                         }
                     ]
                 }]
             }],
-            'request_args': {
-                'method': 'get',
-                'url': 'http://example.com',
-                'headers': {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
-                }
-            },
-            'regex': ''
+            "regex": ""
         }
 
     Parse Result like:
-        {
-            'crawler_rule': {
-                'parse_rule': {
-                    'rule1': {
-                        'rule2': 'dlrow olleh si sihT',
-                        'rule3': {
-                            'rule4': 'This is hello world'
-                        }
-                    }
-                }
-            }
-        }
+        {'crawler_rule': {'parse_rule': {'rule1': {'rule2': 'od sihT', 'rule3': {'rule4': 'This do'}}}}}
     """
     __slots__ = ('context',)
 
@@ -872,12 +821,24 @@ class Uniparser(object):
             return {rule['name']: input_object}
         else:
             result = {rule['name']: {}}
-        for sub_rule in rule['child_rules']:
-            result[rule['name']][sub_rule['name']] = self.parse_parse_rule(
-                input_object,
-                sub_rule,
-                context=context,
-            ).get(sub_rule['name'])
+        if rule.get('iter_parse_child', False):
+            result[rule['name']] = []
+            for partial_input_object in input_object:
+                partial_result = {}
+                for sub_rule in rule['child_rules']:
+                    partial_result[sub_rule['name']] = self.parse_parse_rule(
+                        partial_input_object,
+                        sub_rule,
+                        context=context,
+                    ).get(sub_rule['name'])
+                result[rule['name']].append(partial_result)
+        else:
+            for sub_rule in rule['child_rules']:
+                result[rule['name']][sub_rule['name']] = self.parse_parse_rule(
+                    input_object,
+                    sub_rule,
+                    context=context,
+                ).get(sub_rule['name'])
         return result
 
     def parse(self,

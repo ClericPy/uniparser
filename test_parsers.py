@@ -844,6 +844,28 @@ def test_uni_parser():
     assert CrawlerRule.loads(json_string) == CrawlerRule.from_json(
         json_string) == crawler_rule == loaded_rule
     assert isinstance(loaded_rule['parse_rules'][0], ParseRule)
+    # test iter_parse_child
+    parse_rule = ParseRule(
+        'test_iter_parse', [['python', 'const', '']],
+        iter_parse_child=True,
+        child_rules=[ParseRule('child', [['udf', 'input_object * 2', '']])])
+    result = uni.parse([1, 2, 3], parse_rule)
+    # print(result)
+    assert result == {
+        'test_iter_parse': [{
+            'child': 2
+        }, {
+            'child': 4
+        }, {
+            'child': 6
+        }]
+    }
+    parse_rule = ParseRule(
+        'test_iter_parse', [['python', 'const', '']],
+        child_rules=[ParseRule('child', [['udf', 'input_object * 2', '']])])
+    result = uni.parse([1, 2, 3], parse_rule)
+    # print(result)
+    assert result == {'test_iter_parse': {'child': [1, 2, 3, 1, 2, 3]}}
 
     # ===================================================
     # 4. test Uniparser.crawl & Uniparser.acrawl
@@ -948,25 +970,26 @@ def test_crawler_storage():
 
 
 def test_crawler():
+    import asyncio
     crawler = Crawler(
         storage=JSONRuleStorage.loads(
-            r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"main": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "subs": {"name":"detail","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
+            r'''{"api.github.com": {"host": "api.github.com", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","url":"https://api.github.com/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["jmespath","[rate_limit_url,feeds_url]",""]],"child_rules":[]}],"regex":"https://api.github.com/$","encoding":""}, "detail": {"name":"detail","request_args":{"method":"get","url":"https://api.github.com/rate_limit","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["python","getitem","[:1]"]],"child_rules":[]}],"regex":"https://api.github.com/.+","encoding":""}}}}'''
         ))
     # yapf: disable
-    expected_result = {'list': {'__request__': ['https://www.python.org/dev/peps/pep-0001', 'https://www.python.org/dev/peps/pep-0004', 'https://www.python.org/dev/peps/pep-0005'], '__result__': [{'detail': {'title': 'PEP 1 -- PEP Purpose and Guidelines'}}, {'detail': {'title': 'PEP 4 -- Deprecation of Standard Modules'}}, {'detail': {'title': 'PEP 5 -- Guidelines for Language Evolution'}}]}}
+    expected_result = {'list': {'__request__': ['https://api.github.com/rate_limit', 'https://api.github.com/feeds'], '__result__': [{'detail': {'title': '{'}}, {'detail': {'title': '{'}}]}}
     # yapf: enable
 
     def test_sync_crawler():
         # JSON will be saved if file_path!=None
 
-        result = crawler.crawl('https://www.python.org/dev/peps/')
+        result = crawler.crawl('https://api.github.com/')
         # print(result)
         assert result == expected_result
 
     def test_async_crawler():
 
         async def _test():
-            result = await crawler.acrawl('https://www.python.org/dev/peps/')
+            result = await crawler.acrawl('https://api.github.com/')
             # print(result)
             assert result == expected_result
 
@@ -980,10 +1003,10 @@ def test_uni_parser_frequency():
 
     def test_sync_crawl():
         from concurrent.futures import ThreadPoolExecutor
-        Uniparser.pop_frequency('https://www.bing.com/')
+        Uniparser.pop_frequency('https://www.baidu.com/robots.txt')
         uni = Uniparser()
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.bing.com/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://www.bing.com/'] * 4",""]],"childs":""}],"regex":"^https://www.bing.com/","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt","encoding":""}'''
         )
         start_time = time.time()
         pool = ThreadPoolExecutor()
@@ -993,7 +1016,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < 2
         # set Frequency, download 2 times each 1 sec
-        uni.set_frequency('https://www.bing.com/', 2, 1)
+        uni.set_frequency('https://www.baidu.com/robots.txt', 2, 1)
         start_time = time.time()
         pool = ThreadPoolExecutor()
         tasks = [pool.submit(uni.download, crawler_rule) for _ in range(5)]
@@ -1004,9 +1027,9 @@ def test_uni_parser_frequency():
 
     async def test_async_crawl():
         uni = Uniparser()
-        uni.pop_frequency('https://www.bing.com/')
+        uni.pop_frequency('https://www.baidu.com/robots.txt')
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.bing.com/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.bing.com/'] * 4",""]],"childs":""}],"regex":"^https://www.bing.com/","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt","encoding":""}'''
         )
         start_time = time.time()
         tasks = [
@@ -1017,7 +1040,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < 2
         # set Frequency, download 2 times each 1 sec
-        uni.set_async_frequency('https://www.bing.com/', 2, 1)
+        uni.set_async_frequency('https://www.baidu.com/robots.txt', 2, 1)
         start_time = time.time()
         tasks = [
             asyncio.ensure_future(uni.adownload(crawler_rule)) for _ in range(5)

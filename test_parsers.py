@@ -844,6 +844,28 @@ def test_uni_parser():
     assert CrawlerRule.loads(json_string) == CrawlerRule.from_json(
         json_string) == crawler_rule == loaded_rule
     assert isinstance(loaded_rule['parse_rules'][0], ParseRule)
+    # test iter_parse_child
+    parse_rule = ParseRule(
+        'test_iter_parse', [['python', 'const', '']],
+        iter_parse_child=True,
+        child_rules=[ParseRule('child', [['udf', 'input_object * 2', '']])])
+    result = uni.parse([1, 2, 3], parse_rule)
+    # print(result)
+    assert result == {
+        'test_iter_parse': [{
+            'child': 2
+        }, {
+            'child': 4
+        }, {
+            'child': 6
+        }]
+    }
+    parse_rule = ParseRule(
+        'test_iter_parse', [['python', 'const', '']],
+        child_rules=[ParseRule('child', [['udf', 'input_object * 2', '']])])
+    result = uni.parse([1, 2, 3], parse_rule)
+    # print(result)
+    assert result == {'test_iter_parse': {'child': [1, 2, 3, 1, 2, 3]}}
 
     # ===================================================
     # 4. test Uniparser.crawl & Uniparser.acrawl
@@ -980,10 +1002,10 @@ def test_uni_parser_frequency():
 
     def test_sync_crawl():
         from concurrent.futures import ThreadPoolExecutor
-        Uniparser.pop_frequency('https://www.bing.com/')
+        Uniparser.pop_frequency('https://www.baidu.com/robots.txt')
         uni = Uniparser()
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.bing.com/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://www.bing.com/'] * 4",""]],"childs":""}],"regex":"^https://www.bing.com/","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt","encoding":""}'''
         )
         start_time = time.time()
         pool = ThreadPoolExecutor()
@@ -993,7 +1015,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < 2
         # set Frequency, download 2 times each 1 sec
-        uni.set_frequency('https://www.bing.com/', 2, 1)
+        uni.set_frequency('https://www.baidu.com/robots.txt', 2, 1)
         start_time = time.time()
         pool = ThreadPoolExecutor()
         tasks = [pool.submit(uni.download, crawler_rule) for _ in range(5)]
@@ -1004,9 +1026,9 @@ def test_uni_parser_frequency():
 
     async def test_async_crawl():
         uni = Uniparser()
-        uni.pop_frequency('https://www.bing.com/')
+        uni.pop_frequency('https://www.baidu.com/robots.txt')
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.bing.com/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.bing.com/'] * 4",""]],"childs":""}],"regex":"^https://www.bing.com/","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt","encoding":""}'''
         )
         start_time = time.time()
         tasks = [
@@ -1017,7 +1039,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < 2
         # set Frequency, download 2 times each 1 sec
-        uni.set_async_frequency('https://www.bing.com/', 2, 1)
+        uni.set_async_frequency('https://www.baidu.com/robots.txt', 2, 1)
         start_time = time.time()
         tasks = [
             asyncio.ensure_future(uni.adownload(crawler_rule)) for _ in range(5)

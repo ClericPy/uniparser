@@ -132,7 +132,9 @@
                                     <i class="el-icon-circle-plus" style="margin: 0.5em 0 0.5em 45%; zoom: 1.2;"
                                         @click="add_new_rule_chain(index)"></i>
                                     <br>
-                                    <div class="sub-title">ChildRules</div>
+                                    <div class="sub-title">ChildRules<el-checkbox v-model="rule.iter_parse_child"
+                                            style="zoom: 0.9;margin-left: 2em;">Iter Parse</el-checkbox>
+                                    </div>
                                     <el-input type="textarea" style="width: 50%;"
                                         placeholder="Child rules, JSON list of ParseRule objects"
                                         v-model="rule.child_rules">
@@ -277,6 +279,7 @@
                             ['', '', '']
                         ],
                         child_rules: "",
+                        iter_parse_child: false,
                     })
                 },
                 del_rule(index) {
@@ -372,7 +375,8 @@
                             rules.push({
                                 'name': item.name,
                                 'chain_rules': chain_rules,
-                                'child_rules': child_rules
+                                'child_rules': child_rules,
+                                'iter_parse_child': item.iter_parse_child
                             })
                         }
                     });

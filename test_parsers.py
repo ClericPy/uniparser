@@ -933,8 +933,8 @@ def test_crawler():
 
         asyncio.get_event_loop().run_until_complete(_test())
 
-    # test_sync_crawler()
-    # test_async_crawler()
+    test_sync_crawler()
+    test_async_crawler()
 
     # test crawl return Exception
     crawler = Crawler(

@@ -14,6 +14,10 @@ from .utils import (AsyncRequestAdapter, NotSet, SyncRequestAdapter,
                     ensure_request, get_host)
 
 
+class RuleNotFoundError(BaseException):
+    pass
+
+
 class RuleStorage(ABC):
 
     @abstractmethod
@@ -157,9 +161,11 @@ class Crawler(object):
         url = request_args['url']
         crawler_rule = self.storage.find_crawler_rule(url)
         if not crawler_rule:
-            return
+            return RuleNotFoundError(f'No rule matched the given url: {url}')
         result = self.uniparser.crawl(
             crawler_rule, context=context, **request_args)
+        if isinstance(result, BaseException):
+            return result
         __request__ = result[crawler_rule['name']].get('__request__')
         if __request__ and self.uniparser._RECURSION_CRAWL:
             if isinstance(__request__, (list, tuple)):
@@ -193,9 +199,11 @@ class Crawler(object):
         else:
             crawler_rule = coro_or_result
         if not crawler_rule:
-            return
+            return RuleNotFoundError(f'No rule matched the given url: {url}')
         result = await self.uniparser.acrawl(
             crawler_rule, context=context, **request_args)
+        if isinstance(result, BaseException):
+            return result
         __request__ = result[crawler_rule['name']].get('__request__')
         if __request__ and self.uniparser._RECURSION_CRAWL:
             if isinstance(__request__, (list, tuple)):

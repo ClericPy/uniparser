@@ -911,6 +911,8 @@ class Uniparser(object):
               **request):
         input_object, resp = self.download(crawler_rule, request_adapter,
                                            **request)
+        if isinstance(resp, Exception):
+            return resp
         context = context or crawler_rule.context
         for k, v in crawler_rule.context.items():
             if k not in context:
@@ -940,6 +942,8 @@ class Uniparser(object):
                      **request):
         input_object, resp = await self.adownload(crawler_rule, request_adapter,
                                                   **request)
+        if isinstance(resp, Exception):
+            return resp
         context = context or crawler_rule.context
         for k, v in crawler_rule.context.items():
             if k not in context:

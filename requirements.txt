@@ -2,7 +2,7 @@ jsonpath-rw-ext
 objectpath
 bs4
 toml
-pyyaml
+pyyaml>=5.3
 lxml
 jmespath
 frequency-controller>=0.0.3

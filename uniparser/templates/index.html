@@ -394,7 +394,7 @@
                             regex: this.crawler_rule.regex,
                             encoding: this.crawler_rule.encoding,
                         }
-                        this.crawler_rule.request_args = JSON.stringify(request_args, null, 2)
+                        this.crawler_rule.request_args = JSON.stringify(data.request_args, null, 2)
                         if (this.pretty_json) {
                             return JSON.stringify(data, null, 2)
                         } else {

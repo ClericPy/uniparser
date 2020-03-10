@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABC, abstractmethod
+from functools import partial
 from hashlib import md5 as _md5
 from inspect import isgenerator
 from itertools import chain
@@ -16,7 +17,8 @@ from jmespath import compile as jmespath_compile
 from jsonpath_rw_ext import parse as jp_parse
 from objectpath import Tree as OP_Tree
 from toml import loads as toml_loads
-from yaml import full_load as yaml_full_load
+from yaml import FullLoader
+from yaml import load as yaml_load
 from yaml import safe_load as yaml_safe_load
 
 from .config import GlobalConfig
@@ -483,14 +485,15 @@ class LoaderParser(BaseParser):
     """
     name = 'loader'
     _RECURSION_LIST = True
+    yaml_full_load = partial(yaml_load, Loader=FullLoader)
 
     def __init__(self):
         self.loaders = {
             'json': GlobalConfig.json_loads,
             'toml': toml_loads,
-            'yaml': yaml_full_load,
+            'yaml': self.yaml_full_load,
             'yaml_safe_load': yaml_safe_load,
-            'yaml_full_load': yaml_full_load,
+            'yaml_full_load': self.yaml_full_load,
         }
         super().__init__()
 

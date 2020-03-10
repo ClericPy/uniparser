@@ -85,7 +85,9 @@
                             type="textarea" autosize></el-input>
                     </el-form-item>
                     <el-form-item>
-                        <el-button type="primary" @click="download"> <i class="el-icon-download"></i> Download
+                        <el-button type="primary" @click="download"> <i v-show="!downloading"
+                                class="el-icon-download"><i v-show="downloading" class="el-icon-loading"></i>
+                                Download
                         </el-button>
                     </el-form-item>
                     <el-form-item :label="'Response Body ' + request_status " id="request_status">
@@ -190,6 +192,7 @@
         var Main = {
             data() {
                 return {
+                    downloading: false,
                     pretty_json: true,
                     drawer: false,
                     options: '',
@@ -237,16 +240,19 @@
                 },
                 download() {
                     var data = this.current_crawler_rule_json
+                    this.downloading = true
                     this.$http.post('request', data).then(
                         r => {
                             this.input_object = r.body.text
                             this.request_status = r.body.status
                             let color = r.body.ok ? 'green' : 'red'
                             document.querySelector('#request_status>label').style.color = color
+                            this.downloading = false
                         }, r => {
                             this.status = 'testTask failed, Bad request (' + r.status + ') :' + r
                                 .statusText
                             this.status_icon_flag = 'error'
+                            this.downloading = false
                         }
                     )
                 },
@@ -358,40 +364,45 @@
             watch: {},
             computed: {
                 current_crawler_rule_json: function () {
-                    var rules = []
-                    this.crawler_rule.parse_rules.forEach(item => {
-                        if (item.name) {
-                            try {
-                                child_rules = JSON.parse(item.child_rules || "[]")
-                            } catch (error) {
-                                child_rules = item.child_rules
-                            }
-                            var chain_rules = []
-                            item.chain_rules.forEach(i => {
-                                if (i[0] && i[1]) {
-                                    chain_rules.push([i[0], i[1], i[2]])
+                    try {
+                        var rules = []
+                        this.crawler_rule.parse_rules.forEach(item => {
+                            if (item.name) {
+                                try {
+                                    child_rules = JSON.parse(item.child_rules || "[]")
+                                } catch (error) {
+                                    child_rules = item.child_rules
                                 }
-                            });
-                            rules.push({
-                                'name': item.name,
-                                'chain_rules': chain_rules,
-                                'child_rules': child_rules,
-                                'iter_parse_child': item.iter_parse_child
-                            })
+                                var chain_rules = []
+                                item.chain_rules.forEach(i => {
+                                    if (i[0] && i[1]) {
+                                        chain_rules.push([i[0], i[1], i[2]])
+                                    }
+                                });
+                                rules.push({
+                                    'name': item.name,
+                                    'chain_rules': chain_rules,
+                                    'child_rules': child_rules,
+                                    'iter_parse_child': item.iter_parse_child
+                                })
+                            }
+                        });
+                        var data = {
+                            name: this.crawler_rule.name,
+                            request_args: JSON.parse(this.crawler_rule.request_args),
+                            parse_rules: rules,
+                            regex: this.crawler_rule.regex,
+                            encoding: this.crawler_rule.encoding,
                         }
-                    });
-                    var data = {
-                        name: this.crawler_rule.name,
-                        request_args: JSON.parse(this.crawler_rule.request_args),
-                        parse_rules: rules,
-                        regex: this.crawler_rule.regex,
-                        encoding: this.crawler_rule.encoding,
+                        if (this.pretty_json) {
+                            return JSON.stringify(data, null, 2)
+                        } else {
+                            return JSON.stringify(data)
+                        }
+                    } catch (error) {
+                        return err
                     }
-                    if (this.pretty_json) {
-                        return JSON.stringify(data, null, 2)
-                    } else {
-                        return JSON.stringify(data)
-                    }
+
                 }
             }
         }

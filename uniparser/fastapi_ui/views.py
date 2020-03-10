@@ -10,7 +10,7 @@ from starlette.templating import Jinja2Templates
 from .. import CrawlerRule, Uniparser, __version__
 from ..utils import ensure_request, get_available_async_request
 
-app = FastAPI(openapi_prefix="/watchdog")
+app = FastAPI(title="Uniparser", version=__version__)
 
 adapter = get_available_async_request()
 if not adapter:
@@ -80,5 +80,5 @@ def parse_rule(kwargs: dict):
     rule_json = kwargs['rule']
     rule = CrawlerRule.loads(rule_json)
     # print(rule)
-    result = uni.parse(input_object, rule, GLOBAL_RESP)
+    result = uni.parse(input_object, rule, {'resp': GLOBAL_RESP})
     return {'type': str(type(result)), 'data': repr(result)}

@@ -161,6 +161,7 @@ class SyncRequestAdapter(ABC):
                 break
             except self.error as e:
                 text = str(e)
+                resp = e
                 continue
         return text, resp
 
@@ -204,6 +205,7 @@ class AsyncRequestAdapter(ABC):
                 break
             except self.error as e:
                 text = str(e)
+                resp = e
                 continue
         return text, resp
 
@@ -257,7 +259,7 @@ class TorequestsSyncAdapter(SyncRequestAdapter):
         if session:
             self.session = session
         else:
-            self.session = tPool(**kwargs)
+            self.session = tPool(catch_exception=False, **kwargs)
         self.error = FailureException
 
     def __enter__(self):
@@ -320,6 +322,7 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
                 break
             except self.error as e:
                 text = str(e)
+                resp = e
                 continue
         return text, resp
 
@@ -330,7 +333,7 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
         from torequests.dummy import Requests, FailureException
         if session:
             kwargs['session'] = session
-        self.req = Requests(**kwargs)
+        self.req = Requests(catch_exception=False, **kwargs)
         self.error = FailureException
 
     async def __aenter__(self):
@@ -355,6 +358,7 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
                 break
             except self.error as e:
                 text = str(e)
+                resp = e
                 continue
         return text, resp
 

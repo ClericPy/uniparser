@@ -161,6 +161,7 @@ class SyncRequestAdapter(ABC):
                 break
             except self.error as e:
                 text = str(e)
+                resp = e
                 continue
         return text, resp
 
@@ -204,6 +205,7 @@ class AsyncRequestAdapter(ABC):
                 break
             except self.error as e:
                 text = str(e)
+                resp = e
                 continue
         return text, resp
 
@@ -320,6 +322,7 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
                 break
             except self.error as e:
                 text = str(e)
+                resp = e
                 continue
         return text, resp
 
@@ -355,6 +358,7 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
                 break
             except self.error as e:
                 text = str(e)
+                resp = e
                 continue
         return text, resp
 

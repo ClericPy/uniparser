@@ -6,7 +6,7 @@ from itertools import chain
 from re import compile as re_compile
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 from warnings import warn
 
 from bs4 import BeautifulSoup, Tag
@@ -288,6 +288,7 @@ class ObjectPathParser(BaseParser):
     doc_url = 'http://github.com/adriank/ObjectPath'
     test_url = 'http://objectpath.org/'
     _RECURSION_LIST = False
+    ITER_TYPES_TUPLE = tuple(ITER_TYPES)
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
@@ -297,7 +298,7 @@ class ObjectPathParser(BaseParser):
         tree = OP_Tree(input_object)
         result = tree.execute(param)
         # from objectpath.core import ITER_TYPES
-        if isinstance(result, ITER_TYPES):
+        if isinstance(result, self.ITER_TYPES_TUPLE):
             result = list(result)
         return result
 
@@ -339,7 +340,11 @@ class UDFParser(BaseParser):
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
     # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
-    _GLOBALS_ARGS = {'md5': md5}
+    _GLOBALS_ARGS = {
+        'md5': md5,
+        'json_loads': GlobalConfig.json_loads,
+        'json_dumps': GlobalConfig.json_dumps,
+    }
 
     @staticmethod
     def get_code_mode(code):
@@ -357,7 +362,7 @@ class UDFParser(BaseParser):
             try:
                 context = GlobalConfig.json_loads(value)
             except GlobalConfig.JSONDecodeError:
-                context = value
+                context = {}
         else:
             context = value or {}
         if not self._ALLOW_IMPORT and 'import' in param:
@@ -365,13 +370,13 @@ class UDFParser(BaseParser):
             raise RuntimeError(
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
-        local_vars = locals()
+        local_vars = {'input_object': input_object, 'context': context}
         local_vars.update(self._GLOBALS_ARGS)
         # run code
         code = getattr(param, 'code', param)
         if self.get_code_mode(param) is exec:
             exec(code, local_vars, local_vars)
-            parse_function = locals().get('parse')
+            parse_function = local_vars.get('parse')
             if not parse_function:
                 raise ValueError(
                     'UDF snippet should have a function named `parse`')
@@ -804,12 +809,14 @@ class Uniparser(object):
 
     def parse_crawler_rule(self, input_object, rule: CrawlerRule, context=None):
         parse_rules = rule['parse_rules']
-        result = {
-            parse_rule['name']: self.parse_parse_rule(
+        parse_result: Dict[str, Any] = {}
+        context = context or rule.context
+        for parse_rule in parse_rules:
+            context['parse_result'] = parse_result
+            parse_result[parse_rule['name']] = self.parse_parse_rule(
                 input_object, parse_rule, context).get(parse_rule['name'])
-            for parse_rule in parse_rules
-        }
-        return {rule['name']: result}
+        context.pop('parse_result', None)
+        return {rule['name']: parse_result}
 
     def parse_parse_rule(self, input_object, rule: ParseRule, context=None):
         # if context, use context; else use rule.context
@@ -904,7 +911,7 @@ class Uniparser(object):
               **request):
         input_object, resp = self.download(crawler_rule, request_adapter,
                                            **request)
-        context = context or {}
+        context = context or crawler_rule.context
         for k, v in crawler_rule.context.items():
             if k not in context:
                 context[k] = v
@@ -933,7 +940,7 @@ class Uniparser(object):
                      **request):
         input_object, resp = await self.adownload(crawler_rule, request_adapter,
                                                   **request)
-        context = context or {}
+        context = context or crawler_rule.context
         for k, v in crawler_rule.context.items():
             if k not in context:
                 context[k] = v

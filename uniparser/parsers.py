@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 from hashlib import md5 as _md5
-from inspect import isgenerator
 from itertools import chain
 from re import compile as re_compile
 from string import Template
@@ -15,6 +14,7 @@ from frequency_controller import AsyncFrequency, Frequency
 from jmespath import compile as jmespath_compile
 from jsonpath_rw_ext import parse as jp_parse
 from objectpath import Tree as OP_Tree
+from objectpath.core import ITER_TYPES
 from toml import loads as toml_loads
 from yaml import full_load as yaml_full_load
 from yaml import safe_load as yaml_safe_load
@@ -296,7 +296,8 @@ class ObjectPathParser(BaseParser):
             param = '$%s' % param[4:]
         tree = OP_Tree(input_object)
         result = tree.execute(param)
-        if isgenerator(result):
+        # from objectpath.core import ITER_TYPES
+        if isinstance(result, ITER_TYPES):
             result = list(result)
         return result
 

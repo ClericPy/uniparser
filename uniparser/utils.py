@@ -257,7 +257,7 @@ class TorequestsSyncAdapter(SyncRequestAdapter):
         if session:
             self.session = session
         else:
-            self.session = tPool(**kwargs)
+            self.session = tPool(catch_exception=False, **kwargs)
         self.error = FailureException
 
     def __enter__(self):
@@ -330,7 +330,7 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
         from torequests.dummy import Requests, FailureException
         if session:
             kwargs['session'] = session
-        self.req = Requests(**kwargs)
+        self.req = Requests(catch_exception=False, **kwargs)
         self.error = FailureException
 
     async def __aenter__(self):

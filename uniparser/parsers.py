@@ -20,6 +20,7 @@ from yaml import full_load as yaml_full_load
 from yaml import safe_load as yaml_safe_load
 
 from .config import GlobalConfig
+from .exceptions import InvalidSchemaError
 from .utils import (AsyncRequestAdapter, SyncRequestAdapter, ensure_request,
                     get_available_async_request, get_available_sync_request,
                     get_host)
@@ -824,6 +825,8 @@ class Uniparser(object):
             input_object,
             rule['chain_rules'],
             context=context or getattr(rule, 'context', {}))
+        if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
+            raise InvalidSchemaError(f'Schema check is not True: {input_object}')
         result = {rule['name']: input_object}
         if not rule['child_rules']:
             return {rule['name']: input_object}

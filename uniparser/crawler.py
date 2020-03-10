@@ -9,13 +9,10 @@ from pathlib import Path
 from warnings import warn
 
 from .config import GlobalConfig
+from .exceptions import RuleNotFoundError
 from .parsers import CrawlerRule, HostRule, JsonSerializable, Uniparser
 from .utils import (AsyncRequestAdapter, NotSet, SyncRequestAdapter,
                     ensure_request, get_host)
-
-
-class RuleNotFoundError(BaseException):
-    pass
 
 
 class RuleStorage(ABC):
@@ -132,6 +129,8 @@ class Crawler(object):
             1.2 New crawl result will be set in same level as __request__ named `__result__`
             1.3 Besides url, other request_args will use crawler_rule's
         2. If same url has different post-data, use nonsense param in url's tail to distinguish, like http://xxx.com#nonsense?nonsense=1
+
+    PS: __request__ can be reset by GlobalConfig.__request__ = '__new_request__'
     """
 
     def __init__(self, uniparser: Uniparser = None,
@@ -166,7 +165,7 @@ class Crawler(object):
             crawler_rule, context=context, **request_args)
         if isinstance(result, BaseException):
             return result
-        __request__ = result[crawler_rule['name']].get('__request__')
+        __request__ = result[crawler_rule['name']].get(GlobalConfig.__request__)
         if __request__ and self.uniparser._RECURSION_CRAWL:
             if isinstance(__request__, (list, tuple)):
                 with ThreadPoolExecutor() as pool:
@@ -174,12 +173,13 @@ class Crawler(object):
                         pool.submit(self.crawl, request, context=context)
                         for request in __request__
                     ]
-                    result[crawler_rule['name']]['__result__'] = [
+                    result[crawler_rule['name']][GlobalConfig.__result__] = [
                         task.result() for task in tasks
                     ]
             else:
-                result[crawler_rule['name']]['__result__'] = self.crawl(
-                    __request__, context=context)
+                result[crawler_rule['name']][GlobalConfig.
+                                             __result__] = self.crawl(
+                                                 __request__, context=context)
         return result
 
     async def acrawl(self, request, context=None):
@@ -204,17 +204,18 @@ class Crawler(object):
             crawler_rule, context=context, **request_args)
         if isinstance(result, BaseException):
             return result
-        __request__ = result[crawler_rule['name']].get('__request__')
+        __request__ = result[crawler_rule['name']].get(GlobalConfig.__request__)
         if __request__ and self.uniparser._RECURSION_CRAWL:
             if isinstance(__request__, (list, tuple)):
                 tasks = [
                     ensure_future(self.acrawl(request, context=context))
                     for request in __request__
                 ]
-                result[crawler_rule['name']]['__result__'] = [
+                result[crawler_rule['name']][GlobalConfig.__result__] = [
                     (await task) if task else None for task in tasks
                 ]
             else:
-                result[crawler_rule['name']]['__result__'] = await self.acrawl(
-                    __request__, context=context)
+                result[crawler_rule['name']][GlobalConfig.
+                                             __result__] = await self.acrawl(
+                                                 __request__, context=context)
         return result

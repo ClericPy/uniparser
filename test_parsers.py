@@ -1016,21 +1016,22 @@ if __name__ == "__main__":
     from uniparser.config import GlobalConfig
     GlobalConfig.GLOBAL_TIMEOUT = 5
     for case in (
-            # test_css_parser,
-            # test_xml_parser,
-            # test_re_parser,
-            # test_jsonpath_parser,
-            # test_objectpath_parser,
-            # test_jmespath_parser,
-            # test_python_parser,
-            # test_udf_parser,
-            # test_loader_parser,
-            # test_time_parser,
-            # test_uni_parser,
-            # test_crawler_rule,
-            # test_default_usage,
-            # test_crawler_storage,
-            # test_uni_parser_frequency,
-            test_crawler,):
+            test_css_parser,
+            test_xml_parser,
+            test_re_parser,
+            test_jsonpath_parser,
+            test_objectpath_parser,
+            test_jmespath_parser,
+            test_python_parser,
+            test_udf_parser,
+            test_loader_parser,
+            test_time_parser,
+            test_uni_parser,
+            test_crawler_rule,
+            test_default_usage,
+            test_crawler_storage,
+            test_uni_parser_frequency,
+            test_crawler,
+    ):
         case()
         print(case.__name__, 'ok')

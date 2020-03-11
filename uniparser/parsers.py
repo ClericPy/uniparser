@@ -113,6 +113,18 @@ class CSSParser(BaseParser):
 
         :return: list of Tag / str
         :rtype: List[Union[str, Tag]]
+
+        examples:
+
+            ['<a class="url" href="/">title</a>', 'a.url', '@href'] => ['/']
+            ['<a class="url" href="/">title</a>', 'a.url', '$text'] => ['title']
+            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => ['title']
+            ['<a class="url" href="/">title</a>', 'a.url', '$html'] => ['title']
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$string'] => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$self'] => [<a class="url" href="/">title</a>]
+
+            WARNING: $self returns the original Tag object
     """
     name = 'css'
     doc_url = 'https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors'
@@ -144,7 +156,7 @@ class CSSParser(BaseParser):
 
 
 class XMLParser(BaseParser):
-    """XML parser, requires `bs4` and `lxml`(necessary).
+    """XML parser, requires `bs4` and `lxml`(necessary), but not support `xpath` for now.
     Since XML input object always should be string, _RECURSION_LIST will be True.
 
     Parse the input object with css selector, `BeautifulSoup` with features='xml'.
@@ -168,6 +180,16 @@ class XMLParser(BaseParser):
 
         :return: list of Tag / str
         :rtype: List[Union[str, Tag]]
+
+        examples:
+
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$text'] => ['author']
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$innerHTML'] => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$html'] => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$outerHTML'] => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$string'] => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$self'] => [<creator>author</creator>]
+            WARNING: $self returns the original Tag object
     """
     name = 'xml'
     doc_url = 'https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors'
@@ -219,6 +241,14 @@ class RegexParser(BaseParser):
 
         :return: list of str
         :rtype: List[Union[str]]
+
+        examples:
+
+            ['a a b b c c', 'a|c', '@b'] => b b b b b b
+            ['a a b b c c', 'a', ''] => ['a', 'a']
+            ['a a b b c c', 'a (a b)', '$0'] => ['a a b']
+            ['a a b b c c', 'a (a b)', '$1'] => ['a b']
+            ['a a b b c c', 'b', '-'] => ['a a ', ' ', ' c c']
     """
     name = 're'
     test_url = 'https://regex101.com/'
@@ -254,6 +284,10 @@ class JSONPathParser(BaseParser):
         :type value: [str, None]
         :return: list of str
         :rtype: List[Union[str]]
+
+        examples:
+
+            [{'a': {'b': {'c': 1}}}, '$..c', ''] => [1]
     """
     name = 'jsonpath'
     doc_url = 'https://github.com/sileht/python-jsonpath-rw-ext'
@@ -286,6 +320,10 @@ class ObjectPathParser(BaseParser):
         :type param: [str]
         :param value: not to use
         :type value: [Any]
+
+        examples:
+
+            [{'a': {'b': {'c': 1}}}, '$..c', ''] => [1]
     """
     name = 'objectpath'
     doc_url = 'http://github.com/adriank/ObjectPath'
@@ -316,6 +354,10 @@ class JMESPathParser(BaseParser):
         :type param: [str]
         :param value: not to use
         :type value: [Any]
+
+        examples:
+
+            [{'a': {'b': {'c': 1}}}, 'a.b.c', ''] => 1
     """
     name = 'jmespath'
     doc_url = 'https://github.com/jmespath/jmespath.py'
@@ -336,6 +378,15 @@ class UDFParser(BaseParser):
         param & value:
             param: the python source code to be exec(param), either have the function named `parse`, or will return eval(param)
             value: will be renamed to `context`, which can be used in parser function. `value` often be set as the dict of request & response.
+        examples:
+
+            ['a b c d', 'input_object[::-1]', ''] => d c b a
+            ['a b c d', 'context["key"]', {'key': 'value'}] => value
+            ['a b c d', 'md5(input_object)', ''] => 713f592bd537f7725d491a03e837d64a
+            ['["string"]', 'json_loads(input_object)', ''] => ['string']
+            [['string'], 'json_dumps(input_object)', ''] => ["string"]
+            ['a b c d', 'parse = lambda input_object: input_object', ''] => a b c d
+            ['a b c d', 'def parse(input_object): context["key"]="new";return context', {'key': 'old'}] => {'key': 'new'}
     """
     name = 'udf'
     doc_url = 'https://docs.python.org/3/'
@@ -388,32 +439,8 @@ class UDFParser(BaseParser):
             return eval(code, local_vars, local_vars)
 
 
-class CompiledString(str):
-    __slots__ = ('operator', 'code')
-    __support__ = ('jmespath', 'jsonpath', 'udf')
-
-    def __new__(cls, string, mode=None, *args, **kwargs):
-        if isinstance(string, cls):
-            return string
-        obj = str.__new__(cls, string, *args, **kwargs)
-        obj = cls.compile(obj, string, mode)
-        return obj
-
-    @classmethod
-    def compile(cls, obj, string, mode=None):
-        if mode == 'jmespath':
-            obj.code = jmespath_compile(string)
-        elif mode == 'jsonpath':
-            obj.code = jp_parse(string)
-        elif mode == 'udf':
-            obj.operator = UDFParser.get_code_mode(string)
-            # for higher performance, pre-compile the code
-            obj.code = compile(string, string, obj.operator.__name__)
-        return obj
-
-
 class PythonParser(BaseParser):
-    """PythonParser. Some frequently-used utils.
+    r"""PythonParser. Some frequently-used utils.
     Since python input object may be any type, _RECURSION_LIST will be False.
 
         :param input_object: input object, any object.
@@ -422,29 +449,32 @@ class PythonParser(BaseParser):
 
             1.  param: getitem, alias to get
                 value: could be [0] as index, [1:3] as slice, ['key'] for dict
-                demo: [[1, 2, 3], 'getitem', '[-1]'] => 3
-                demo: [[1, 2, 3], 'getitem', '[:2]'] => [1, 2]
-                demo: [{'a': '1'}, 'getitem', 'a'] => '1'
             2.  param: split
                 value: return input_object.split(value or None)
-                demo: ['a b\tc \n \td', 'split', ''] => ['a', 'b', 'c', 'd']
             3.  param: join
                 value: return value.join(input_object)
-                demo: [['a', 'b', 'c', 'd'], 'join', ''] => 'abcd'
             4.  param: chain
                 value: nonsense `value` variable. return list(itertools.chain(*input_object))
-                demo: [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd'].
             5.  param: const
                 value: return value if value else input_object
-                demo: ['python', 'index', ''] => 'python'
-                demo: ['python', 'index', 'java'] => 'java'
             6.  param: template
                 value: Template.safe_substitute(input_object=input_object, **input_object if isinstance(input_object, dict))
-                demo: ['python', 'template', '1 $input_object 2'] => '1 python 2'.
             7.  param: index
-                value: value should be number string.
-                demo: ['python', 'index', '0'] => input_object[0]
-    """
+                value: value can be number string / key.
+
+        examples:
+
+            [[1, 2, 3], 'getitem', '[-1]'] => 3
+            [[1, 2, 3], 'getitem', '[:2]'] => [1, 2]
+            [{'a': '1'}, 'getitem', 'a'] => 1
+            ['a b\tc \n \td', 'split', ''] => ['a', 'b', 'c', 'd']
+            [['a', 'b', 'c', 'd'], 'join', ''] => abcd
+            [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd']
+            ['python', 'template', '1 $input_object 2'] => 1 python 2
+            [[1], 'index', '0'] => 1
+            ['python', 'index', '-1'] => n
+            [{'a': '1'}, 'index', 'a'] => 1
+"""
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
     # Differ from others, treate list as list object
@@ -459,7 +489,7 @@ class PythonParser(BaseParser):
             'chain': lambda input_object, param, value: list(chain(*input_object)),
             'const': lambda input_object, param, value: value if value else input_object,
             'template': self._handle_template,
-            'index': lambda input_object, param, value: input_object[int(value)],
+            'index': lambda input_object, param, value: input_object[int(value) if (value.isdigit() or value.startswith('-') and value[1:].isdigit()) else value],
         }
         function = param_functions.get(param, return_self)
         return function(input_object, param, value)
@@ -503,6 +533,12 @@ class LoaderParser(BaseParser):
         :type param: [str]
         :param value: some kwargs, input as json string
         :type value: [str]
+
+        examples:
+
+            ['{"a": "b"}', 'json', ''] => {'a': 'b'}
+            ['a = "a"', 'toml', ''] => {'a': 'a'}
+            ['animal: pets', 'yaml', ''] => {'animal': 'pets'}
     """
     name = 'loader'
     _RECURSION_LIST = True
@@ -532,6 +568,8 @@ class LoaderParser(BaseParser):
 class TimeParser(BaseParser):
     """TimeParser. Parse different format of time. Sometimes time string need a preprocessing with regex.
     Since input object can not be list, _RECURSION_LIST will be True.
+        To change time zone:
+            uniparser.time.LOCAL_TIME_ZONE = +8
 
         :param input_object: str
         :type input_object: [str]
@@ -539,6 +577,13 @@ class TimeParser(BaseParser):
         :type param: [str]
         :param value: standard strftime/strptime format
         :type value: [str]
+
+        examples:
+
+            ['2020-02-03 20:29:45', 'encode', ''] => 1580732985.0
+            ['1580732985.1873155', 'decode', ''] => 2020-02-03 20:29:45
+            ['2020-02-03T20:29:45', 'encode', '%Y-%m-%dT%H:%M:%S'] => 1580732985.0
+            ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S'] => Feb 03 2020 20:29:45
 
     WARNING: time.struct_time do not have timezone info, so %z is always the local timezone
     """
@@ -567,6 +612,30 @@ class TimeParser(BaseParser):
             return strftime(value, localtime(input_object + tz_fix_seconds))
         else:
             return input_object
+
+
+class CompiledString(str):
+    __slots__ = ('operator', 'code')
+    __support__ = ('jmespath', 'jsonpath', 'udf')
+
+    def __new__(cls, string, mode=None, *args, **kwargs):
+        if isinstance(string, cls):
+            return string
+        obj = str.__new__(cls, string, *args, **kwargs)
+        obj = cls.compile(obj, string, mode)
+        return obj
+
+    @classmethod
+    def compile(cls, obj, string, mode=None):
+        if mode == 'jmespath':
+            obj.code = jmespath_compile(string)
+        elif mode == 'jsonpath':
+            obj.code = jp_parse(string)
+        elif mode == 'udf':
+            obj.operator = UDFParser.get_code_mode(string)
+            # for higher performance, pre-compile the code
+            obj.code = compile(string, string, obj.operator.__name__)
+        return obj
 
 
 class JsonSerializable(dict):
@@ -691,6 +760,7 @@ class CrawlerRule(JsonSerializable):
         {'crawler_rule': {'parse_rule': {'rule1': {'rule2': 'od sihT', 'rule3': {'rule4': 'This do'}}}}}
     """
     __slots__ = ('context',)
+    CHECK_STRATEGY = 'match'
 
     def __init__(self,
                  name: str,
@@ -744,6 +814,9 @@ class CrawlerRule(JsonSerializable):
     def match(self, url):
         return not self['regex'] or re_compile(self['regex']).match(url)
 
+    def check_regex(self, url, strategy=''):
+        return getattr(self, strategy or self.CHECK_STRATEGY)(url)
+
 
 class HostRule(JsonSerializable):
     __slots__ = ()
@@ -758,26 +831,21 @@ class HostRule(JsonSerializable):
         }
         super().__init__(host=host, crawler_rules=crawler_rules, **kwargs)
 
-    def find(self, url):
-        return self.match(url)
+    def find(self, url, strategy=''):
+        rules = [
+            rule for rule in self['crawler_rules'].values()
+            if rule.check_regex(url, strategy)
+        ]
+        if len(rules) > 1:
+            raise ValueError(f'{url} matched more than 1 rule. {rules}')
+        if rules:
+            return rules[0]
 
     def search(self, url):
-        rules = [
-            rule for rule in self['crawler_rules'].values() if rule.search(url)
-        ]
-        if len(rules) > 1:
-            raise ValueError(f'{url} matched more than 1 rule. {rules}')
-        if rules:
-            return rules[0]
+        return self.find(url, 'search')
 
     def match(self, url):
-        rules = [
-            rule for rule in self['crawler_rules'].values() if rule.match(url)
-        ]
-        if len(rules) > 1:
-            raise ValueError(f'{url} matched more than 1 rule. {rules}')
-        if rules:
-            return rules[0]
+        return self.find(url, 'match')
 
     def add_crawler_rule(self, rule: CrawlerRule):
         if not isinstance(rule, CrawlerRule) and isinstance(rule, str):
@@ -800,7 +868,6 @@ class HostRule(JsonSerializable):
 class Uniparser(object):
     """Parsers collection.
     """
-    parser_classes = BaseParser.__subclasses__()
     _RECURSION_CRAWL = True
     _DEFAULT_FREQUENCY = Frequency()
     _DEFAULT_ASYNC_FREQUENCY = AsyncFrequency()
@@ -812,6 +879,33 @@ class Uniparser(object):
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
         self.request_adapter = request_adapter
+
+    def _prepare_default_parsers(self):
+        self.css = CSSParser()
+        self.xml = XMLParser()
+        self.re = RegexParser()
+        self.jsonpath = JSONPathParser()
+        self.objectpath = ObjectPathParser()
+        self.jmespath = JMESPathParser()
+        self.python = PythonParser()
+        self.udf = UDFParser()
+        self.loader = LoaderParser()
+        self.time = TimeParser()
+
+    def _prepare_custom_parsers(self):
+        # handle the other sublclasses
+        for parser in BaseParser.__subclasses__():
+            if parser.name not in self.__dict__:
+                self.__dict__[parser.name] = parser()
+
+    # for alias
+    @property
+    def py(self):
+        return self.python
+
+    @property
+    def parser_classes(self):
+        return BaseParser.__subclasses__()
 
     def parse_chain(self, input_object, chain_rules: List, context=None):
         for parser_name, param, value in chain_rules:
@@ -842,7 +936,8 @@ class Uniparser(object):
             rule['chain_rules'],
             context=context or getattr(rule, 'context', {}))
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
-            raise InvalidSchemaError(f'Schema check is not True: {input_object}')
+            raise InvalidSchemaError(
+                f'Schema check is not True: {input_object}')
         result = {rule['name']: input_object}
         if not rule['child_rules']:
             return {rule['name']: input_object}
@@ -878,22 +973,6 @@ class Uniparser(object):
         elif isinstance(rule_object, ParseRule):
             return self.parse_parse_rule(
                 input_object=input_object, rule=rule_object, context=context)
-
-    def _prepare_default_parsers(self):
-        self.css = CSSParser()
-        self.xml = XMLParser()
-        self.re = RegexParser()
-        self.jsonpath = JSONPathParser()
-        self.objectpath = ObjectPathParser()
-        self.jmespath = JMESPathParser()
-        self.python = PythonParser()
-        self.loader = LoaderParser()
-        self.time = TimeParser()
-
-    def _prepare_custom_parsers(self):
-        for parser in BaseParser.__subclasses__():
-            if parser.name not in self.__dict__:
-                self.__dict__[parser.name] = parser()
 
     def ensure_adapter(self, sync=True):
         if self.request_adapter:

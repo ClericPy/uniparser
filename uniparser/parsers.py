@@ -460,21 +460,19 @@ class PythonParser(BaseParser):
             6.  param: template
                 value: Template.safe_substitute(input_object=input_object, **input_object if isinstance(input_object, dict))
             7.  param: index
-                value: value should be number string.
+                value: value can be number string / key.
 
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]'] => 3
             [[1, 2, 3], 'getitem', '[:2]'] => [1, 2]
-            [{'a': '1'}, 'getitem', 'a'] => '1'
+            [{'a': '1'}, 'getitem', 'a'] => 1
             ['a b\tc \n \td', 'split', ''] => ['a', 'b', 'c', 'd']
-            [['a', 'b', 'c', 'd'], 'join', ''] => 'abcd'
-            [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd'].
-            ['python', 'index', ''] => 'python'
-            ['python', 'index', 'java'] => 'java'
-            ['python', 'template', '1 $input_object 2'] => '1 python 2'.
-            ['python', 'index', '0'] => input_object[0]
-
+            [['a', 'b', 'c', 'd'], 'join', ''] => abcd
+            [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd']
+            ['python', 'template', '1 $input_object 2'] => 1 python 2
+            [[1], 'index', '0'] => 1
+            [{'a': '1'}, 'index', 'a'] => 1
 """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -490,7 +488,7 @@ class PythonParser(BaseParser):
             'chain': lambda input_object, param, value: list(chain(*input_object)),
             'const': lambda input_object, param, value: value if value else input_object,
             'template': self._handle_template,
-            'index': lambda input_object, param, value: input_object[int(value)],
+            'index': lambda input_object, param, value: input_object[int(value) if value.isdigit() else value],
         }
         function = param_functions.get(param, return_self)
         return function(input_object, param, value)

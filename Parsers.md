@@ -210,14 +210,13 @@ PythonParser. Some frequently-used utils.
 
             [[1, 2, 3], 'getitem', '[-1]'] => 3
             [[1, 2, 3], 'getitem', '[:2]'] => [1, 2]
-            [{'a': '1'}, 'getitem', 'a'] => '1'
+            [{'a': '1'}, 'getitem', 'a'] => 1
             ['a b\tc \n \td', 'split', ''] => ['a', 'b', 'c', 'd']
-            [['a', 'b', 'c', 'd'], 'join', ''] => 'abcd'
-            [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd'].
-            ['python', 'index', ''] => 'python'
-            ['python', 'index', 'java'] => 'java'
-            ['python', 'template', '1 $input_object 2'] => '1 python 2'.
-            ['python', 'index', '0'] => input_object[0]
+            [['a', 'b', 'c', 'd'], 'join', ''] => abcd
+            [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd']
+            ['python', 'template', '1 $input_object 2'] => 1 python 2
+            [[1], 'index', '0'] => 1
+            [{'a': '1'}, 'index', 'a'] => 1
 
 
 ```
@@ -264,4 +263,3 @@ TimeParser. Parse different format of time. Sometimes time string need a preproc
     WARNING: time.struct_time do not have timezone info, so %z is always the local timezone
     
 ```
-

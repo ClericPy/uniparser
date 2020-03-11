@@ -760,6 +760,7 @@ class CrawlerRule(JsonSerializable):
         {'crawler_rule': {'parse_rule': {'rule1': {'rule2': 'od sihT', 'rule3': {'rule4': 'This do'}}}}}
     """
     __slots__ = ('context',)
+    CHECK_STRATEGY = 'match'
 
     def __init__(self,
                  name: str,
@@ -813,6 +814,9 @@ class CrawlerRule(JsonSerializable):
     def match(self, url):
         return not self['regex'] or re_compile(self['regex']).match(url)
 
+    def check_regex(self, url, strategy=''):
+        return getattr(self, strategy or self.CHECK_STRATEGY)(url)
+
 
 class HostRule(JsonSerializable):
     __slots__ = ()
@@ -827,26 +831,21 @@ class HostRule(JsonSerializable):
         }
         super().__init__(host=host, crawler_rules=crawler_rules, **kwargs)
 
-    def find(self, url):
-        return self.match(url)
+    def find(self, url, strategy=''):
+        rules = [
+            rule for rule in self['crawler_rules'].values()
+            if rule.check_regex(url, strategy)
+        ]
+        if len(rules) > 1:
+            raise ValueError(f'{url} matched more than 1 rule. {rules}')
+        if rules:
+            return rules[0]
 
     def search(self, url):
-        rules = [
-            rule for rule in self['crawler_rules'].values() if rule.search(url)
-        ]
-        if len(rules) > 1:
-            raise ValueError(f'{url} matched more than 1 rule. {rules}')
-        if rules:
-            return rules[0]
+        return self.find(url, 'search')
 
     def match(self, url):
-        rules = [
-            rule for rule in self['crawler_rules'].values() if rule.match(url)
-        ]
-        if len(rules) > 1:
-            raise ValueError(f'{url} matched more than 1 rule. {rules}')
-        if rules:
-            return rules[0]
+        return self.find(url, 'match')
 
     def add_crawler_rule(self, rule: CrawlerRule):
         if not isinstance(rule, CrawlerRule) and isinstance(rule, str):

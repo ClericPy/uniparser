@@ -152,13 +152,23 @@ def test_css_parser():
     # print(result)
     assert result == ['', 'a2', 'a3']
 
-    # test get innerHTML
+    # test get innerHTML, html
     result = uni.css.parse(HTML, 'a', '$innerHTML')
     # print(result)
     assert result == ['<!--invisible comment-->', 'a2', 'a3']
+    result = uni.css.parse(HTML, 'a', '$html')
+    # print(result)
+    assert result == ['<!--invisible comment-->', 'a2', 'a3']
 
-    # test get outerHTML
+    # test get outerHTML, string
     result = uni.css.parse(HTML, 'a', '$outerHTML')
+    # print(result)
+    assert result == [
+        '<a class="a" id="link1"><!--invisible comment--></a>',
+        '<a class="a" href="http://example.com/2" id="link2">a2</a>',
+        '<a class="a" href="http://example.com/3" id="link3">a3</a>'
+    ]
+    result = uni.css.parse(HTML, 'a', '$string')
     # print(result)
     assert result == [
         '<a class="a" id="link1"><!--invisible comment--></a>',
@@ -378,6 +388,10 @@ def test_python_parser():
     # ===================== test getitem =====================
     # getitem with index
     result = uni.python.parse([1, 2, 3], 'getitem', '[-1]')
+    # print(result)
+    assert result == 3
+    # getitem with index
+    result = uni.python.parse([1, 2, 3], 'get', '[-1]')
     # print(result)
     assert result == 3
 
@@ -1027,22 +1041,22 @@ if __name__ == "__main__":
     from uniparser.config import GlobalConfig
     GlobalConfig.GLOBAL_TIMEOUT = 5
     for case in (
-            # test_css_parser,
-            # test_xml_parser,
-            # test_re_parser,
-            # test_jsonpath_parser,
-            # test_objectpath_parser,
-            # test_jmespath_parser,
+            test_css_parser,
+            test_xml_parser,
+            test_re_parser,
+            test_jsonpath_parser,
+            test_objectpath_parser,
+            test_jmespath_parser,
             test_python_parser,
-            # test_udf_parser,
-            # test_loader_parser,
-            # test_time_parser,
-            # test_uni_parser,
-            # test_crawler_rule,
-            # test_default_usage,
-            # test_crawler_storage,
-            # test_uni_parser_frequency,
-            # test_crawler,
+            test_udf_parser,
+            test_loader_parser,
+            test_time_parser,
+            test_uni_parser,
+            test_crawler_rule,
+            test_default_usage,
+            test_crawler_storage,
+            test_uni_parser_frequency,
+            test_crawler,
     ):
         case()
         print(case.__name__, 'ok')

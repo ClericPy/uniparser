@@ -105,9 +105,9 @@ class CSSParser(BaseParser):
 
             $text: return element.text
 
-            $innerHTML: return element.decode_contents()
+            $innerHTML, $html: return element.decode_contents()
 
-            $outerHTML: return str(element)
+            $outerHTML, $string: return str(element)
 
             $self: return element
 
@@ -120,7 +120,9 @@ class CSSParser(BaseParser):
         '@attr': lambda element: element.get(),
         '$text': lambda element: element.text,
         '$innerHTML': lambda element: element.decode_contents(),
+        '$html': lambda element: element.decode_contents(),
         '$outerHTML': lambda element: str(element),
+        '$string': lambda element: str(element),
         '$self': return_self,
     }
 
@@ -418,7 +420,7 @@ class PythonParser(BaseParser):
         :type input_object: [object]
         param & value:
 
-            1.  param: getitem
+            1.  param: getitem, alias to get
                 value: could be [0] as index, [1:3] as slice, ['key'] for dict
                 demo: [[1, 2, 3], 'getitem', '[-1]'] => 3
                 demo: [[1, 2, 3], 'getitem', '[:2]'] => [1, 2]
@@ -451,6 +453,7 @@ class PythonParser(BaseParser):
     def _parse(self, input_object, param, value):
         param_functions = {
             'getitem': self._handle_getitem,
+            'get': self._handle_getitem,
             'split': lambda input_object, param, value: input_object.split(value or None),
             'join': lambda input_object, param, value: value.join(input_object),
             'chain': lambda input_object, param, value: list(chain(*input_object)),

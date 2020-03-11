@@ -105,9 +105,9 @@ class CSSParser(BaseParser):
 
             $text: return element.text
 
-            $innerHTML: return element.decode_contents()
+            $innerHTML, $html: return element.decode_contents()
 
-            $outerHTML: return str(element)
+            $outerHTML, $string: return str(element)
 
             $self: return element
 
@@ -120,7 +120,9 @@ class CSSParser(BaseParser):
         '@attr': lambda element: element.get(),
         '$text': lambda element: element.text,
         '$innerHTML': lambda element: element.decode_contents(),
+        '$html': lambda element: element.decode_contents(),
         '$outerHTML': lambda element: str(element),
+        '$string': lambda element: str(element),
         '$self': return_self,
     }
 
@@ -418,18 +420,30 @@ class PythonParser(BaseParser):
         :type input_object: [object]
         param & value:
 
-            1.  param: getitem
-                value: could be [0] as index, [1:3] as slice
+            1.  param: getitem, alias to get
+                value: could be [0] as index, [1:3] as slice, ['key'] for dict
+                demo: [[1, 2, 3], 'getitem', '[-1]'] => 3
+                demo: [[1, 2, 3], 'getitem', '[:2]'] => [1, 2]
+                demo: [{'a': '1'}, 'getitem', 'a'] => '1'
             2.  param: split
                 value: return input_object.split(value or None)
+                demo: ['a b\tc \n \td', 'split', ''] => ['a', 'b', 'c', 'd']
             3.  param: join
                 value: return value.join(input_object)
+                demo: [['a', 'b', 'c', 'd'], 'join', ''] => 'abcd'
             4.  param: chain
-                value: return list(itertools.chain(*input_object))
+                value: nonsense `value` variable. return list(itertools.chain(*input_object))
+                demo: [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd'].
             5.  param: const
                 value: return value if value else input_object
+                demo: ['python', 'index', ''] => 'python'
+                demo: ['python', 'index', 'java'] => 'java'
             6.  param: template
                 value: Template.safe_substitute(input_object=input_object, **input_object if isinstance(input_object, dict))
+                demo: ['python', 'template', '1 $input_object 2'] => '1 python 2'.
+            7.  param: index
+                value: value should be number string.
+                demo: ['python', 'index', '0'] => input_object[0]
     """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -439,11 +453,13 @@ class PythonParser(BaseParser):
     def _parse(self, input_object, param, value):
         param_functions = {
             'getitem': self._handle_getitem,
+            'get': self._handle_getitem,
             'split': lambda input_object, param, value: input_object.split(value or None),
             'join': lambda input_object, param, value: value.join(input_object),
             'chain': lambda input_object, param, value: list(chain(*input_object)),
             'const': lambda input_object, param, value: value if value else input_object,
             'template': self._handle_template,
+            'index': lambda input_object, param, value: input_object[int(value)],
         }
         function = param_functions.get(param, return_self)
         return function(input_object, param, value)

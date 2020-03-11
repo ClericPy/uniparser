@@ -48,8 +48,8 @@ setup(
         'requests': ['requests'],
         'httpx': ['httpx'],
         'aiohttp': ['aiohttp'],
-        'torequests': ['torequests'],
-        'all': ['torequests', 'httpx', 'requests', 'aiohttp'],
+        'torequests': ['torequests>=4.9.9'],
+        'all': ['torequests>=4.9.9', 'httpx', 'requests', 'aiohttp'],
     },
     classifiers=[
         "License :: OSI Approved :: MIT License",

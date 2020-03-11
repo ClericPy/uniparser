@@ -152,13 +152,23 @@ def test_css_parser():
     # print(result)
     assert result == ['', 'a2', 'a3']
 
-    # test get innerHTML
+    # test get innerHTML, html
     result = uni.css.parse(HTML, 'a', '$innerHTML')
     # print(result)
     assert result == ['<!--invisible comment-->', 'a2', 'a3']
+    result = uni.css.parse(HTML, 'a', '$html')
+    # print(result)
+    assert result == ['<!--invisible comment-->', 'a2', 'a3']
 
-    # test get outerHTML
+    # test get outerHTML, string
     result = uni.css.parse(HTML, 'a', '$outerHTML')
+    # print(result)
+    assert result == [
+        '<a class="a" id="link1"><!--invisible comment--></a>',
+        '<a class="a" href="http://example.com/2" id="link2">a2</a>',
+        '<a class="a" href="http://example.com/3" id="link3">a3</a>'
+    ]
+    result = uni.css.parse(HTML, 'a', '$string')
     # print(result)
     assert result == [
         '<a class="a" id="link1"><!--invisible comment--></a>',
@@ -380,6 +390,10 @@ def test_python_parser():
     result = uni.python.parse([1, 2, 3], 'getitem', '[-1]')
     # print(result)
     assert result == 3
+    # getitem with index
+    result = uni.python.parse([1, 2, 3], 'get', '[-1]')
+    # print(result)
+    assert result == 3
 
     # getitem with slice
     result = uni.python.parse([1, 2, 3], 'getitem', '[:2]')
@@ -436,6 +450,17 @@ def test_python_parser():
     }, 'template', '$a + $b = ?')
     # print(result)
     assert result == 'aaaa + bbbb = ?'
+    # ===================== test index =====================
+    result = uni.python.parse(['a', 'b', 'c', 'd'], 'index', '-1')
+    # print(result)
+    assert result == 'd'
+    # ===================== test chain =====================
+    result = uni.python.parse(['a', 'b', ['c', 'd']], 'chain', '')
+    # print(result)
+    assert result == ['a', 'b', 'c', 'd']
+    result = uni.python.parse(['aaa', ['b'], ['c', 'd']], 'chain', '')
+    # print(result)
+    assert result == ['a', 'a', 'a', 'b', 'c', 'd']
 
 
 def test_udf_parser():

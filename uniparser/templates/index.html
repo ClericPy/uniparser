@@ -70,7 +70,7 @@
                     rel="noopener noreferrer">Uniparser Test Console v{{version}}</a></el-header>
             <el-main>
                 <el-form :model="crawler_rule">
-                    <el-input v-model="crawler_rule.name" style="width: 40%;zoom: 100%;" placeholder="">
+                    <el-input clearable v-model="crawler_rule.name" style="width: 40%;zoom: 100%;" placeholder="">
                         <span slot="prepend">Rule Name</span>
                     </el-input><br>
                     <el-input v-model="crawler_rule.regex" style="width: 40%;zoom: 100%;" placeholder="">
@@ -336,14 +336,18 @@
                     }) => {
                         this.$http.post('curl_parse', value).then(
                             r => {
-                                if (r.body.ok) {
-                                    console.log(r.body.result)
-                                    this.crawler_rule.request_args = JSON.stringify(r.body.result, null,
+                                let result = r.body
+                                if (result.ok) {
+                                    this.crawler_rule.request_args = JSON.stringify(result.result, null,
                                         2)
+                                    let url = result.result.url
+                                    if (url) {
+                                        this.crawler_rule.regex = '^' + url.replace(/([\.\?\+\*\^\$])/g, '\\$1') + '$'
+                                    }
                                 } else {
                                     this.$message({
                                         type: 'error',
-                                        message: 'cURL parse failed: ' + r.body.result
+                                        message: 'cURL parse failed: ' + result.result
                                     });
                                 }
                             }, r => {

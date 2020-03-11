@@ -56,6 +56,10 @@ def index():
 def send_request():
     global GLOBAL_RESP
     rule = CrawlerRule(**request.json)
+    regex = rule['regex']
+    url = rule['request_args']['url']
+    if not regex or not rule.check_regex(url):
+        return {'text': f'regex `{regex}` not match url: {url}', 'status': -1, 'ok': False}
     body, r = uni.download(rule)
     GLOBAL_RESP = r
     return {
@@ -69,6 +73,10 @@ def send_request():
 def curl_parse():
     curl = request.body.read().decode('u8')
     result = ensure_request(curl)
+    if isinstance(curl, str) and curl.startswith('http'):
+        result['headers'] = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
+        }
     return {'result': result, 'ok': True}
 
 

@@ -56,6 +56,10 @@ def index(request: Request):
 async def send_request(request_args: dict):
     global GLOBAL_RESP
     rule = CrawlerRule(**request_args)
+    regex = rule['regex']
+    url = rule['request_args']['url']
+    if not regex or not rule.check_regex(url):
+        return {'text': f'regex `{regex}` not match url: {url}', 'status': -1, 'ok': False}
     body, r = await uni.adownload(rule)
     GLOBAL_RESP = r
     return {
@@ -67,8 +71,12 @@ async def send_request(request_args: dict):
 
 @app.post("/curl_parse")
 async def curl_parse(request: Request):
-    req = (await request.body()).decode('u8')
-    result = ensure_request(req)
+    curl = (await request.body()).decode('u8')
+    result = ensure_request(curl)
+    if isinstance(curl, str) and curl.startswith('http'):
+        result['headers'] = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
+        }
     return {'result': result, 'ok': True}
 
 

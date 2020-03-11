@@ -17,7 +17,8 @@ Provide a universal solution for crawler.
 ## Feature List
 
 1. Support most of popular parsers for HTML / XML / JSON / AnyString / Python object
-   1. <details>
+   1. [Parser docs](./Parsers.md)
+   2. <details>
         <summary>parser list</summary>
       
             1. css (HTML)

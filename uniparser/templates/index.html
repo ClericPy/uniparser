@@ -70,7 +70,7 @@
                     rel="noopener noreferrer">Uniparser Test Console v{{version}}</a></el-header>
             <el-main>
                 <el-form :model="crawler_rule">
-                    <el-input v-model="crawler_rule.name" style="width: 40%;zoom: 100%;" placeholder="">
+                    <el-input clearable v-model="crawler_rule.name" style="width: 40%;zoom: 100%;" placeholder="">
                         <span slot="prepend">Rule Name</span>
                     </el-input><br>
                     <el-input v-model="crawler_rule.regex" style="width: 40%;zoom: 100%;" placeholder="">
@@ -103,8 +103,10 @@
                                     placeholder="Rule name for saving parse result" v-model="rule.name">
                                     <template slot="prepend" class="sub-title">Rule Name</template>
                                 </el-input>
-                                <i class="el-icon-delete" @click="del_rule(index)">
-                                </i>
+                                <i style="zoom: 1.5;" title="Send this parse rule to child_rules"
+                                    class="el-icon-d-caret" @click="open_send_child_dialog(index)"></i>
+                                <i style="zoom: 1.5;" title="Delete this parse rule" class="el-icon-delete"
+                                    @click="del_rule(index)"></i>
                                 <br>
                                 <div v-if="rule.name">
                                     <div class="sub-title">Rules Chain</div>
@@ -137,7 +139,7 @@
                                     <div class="sub-title">ChildRules<el-checkbox v-model="rule.iter_parse_child"
                                             style="zoom: 0.9;margin-left: 2em;">Iter Parse</el-checkbox>
                                     </div>
-                                    <el-input type="textarea" style="width: 50%;"
+                                    <el-input type="textarea" autosize style="width: 60%;"
                                         placeholder="Child rules, JSON list of ParseRule objects"
                                         v-model="rule.child_rules">
                                     </el-input>
@@ -185,6 +187,12 @@
                         <el-button type="primary" @click="load_rule()"> OK </el-button>
                     </div>
                 </el-dialog>
+                <el-dialog title="Choose the rule name you want to send" :visible.sync="send_child_rule_visible">
+                    <template v-for="(item, index) in parse_rules_to_be_send" class="rule">
+                        <el-button type='primary' @click="send_child(item)"> ${item.rule.name}
+                        </el-button>
+                    </template>
+                </el-dialog>
             </el-main>
         </el-container>
     </div>
@@ -217,6 +225,8 @@
                     doc_drawer: false,
                     new_rule_visible: false,
                     new_rule_json: '',
+                    parse_rules_to_be_send: [],
+                    send_child_rule_visible: false,
                 }
             },
             methods: {
@@ -288,6 +298,29 @@
                         iter_parse_child: false,
                     })
                 },
+                send_child(item) {
+                    this.send_child_rule_visible = false
+                    let child_rules = JSON.parse(item.rule.child_rules || "[]")
+                    let sender_rule = this.crawler_rule.parse_rules.splice(item.sender_index, 1)
+                    child_rules.push(sender_rule)
+                    this.crawler_rule.parse_rules[item.receiver_index].child_rules = JSON.stringify(child_rules,
+                        null, 2)
+                    this.parse_rules_to_be_send = []
+                },
+                open_send_child_dialog(index) {
+                    this.parse_rules_to_be_send = []
+                    this.crawler_rule.parse_rules.forEach((rule, idx) => {
+                        if (idx != index) {
+                            this.parse_rules_to_be_send.push({
+                                rule: rule,
+                                receiver_index: idx,
+                                sender_index: index,
+                            })
+                        }
+                    });
+                    this.send_child_rule_visible = true
+                    // this.crawler_rule.parse_rules.splice(index, 1)
+                },
                 del_rule(index) {
                     this.crawler_rule.parse_rules.splice(index, 1)
                 },
@@ -336,14 +369,19 @@
                     }) => {
                         this.$http.post('curl_parse', value).then(
                             r => {
-                                if (r.body.ok) {
-                                    console.log(r.body.result)
-                                    this.crawler_rule.request_args = JSON.stringify(r.body.result, null,
+                                let result = r.body
+                                if (result.ok) {
+                                    this.crawler_rule.request_args = JSON.stringify(result.result, null,
                                         2)
+                                    let url = result.result.url
+                                    if (url) {
+                                        this.crawler_rule.regex = '^' + url.replace(/([\.\?\+\*\^\$])/g,
+                                            '\\$1') + '$'
+                                    }
                                 } else {
                                     this.$message({
                                         type: 'error',
-                                        message: 'cURL parse failed: ' + r.body.result
+                                        message: 'cURL parse failed: ' + result.result
                                     });
                                 }
                             }, r => {

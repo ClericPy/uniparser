@@ -800,7 +800,6 @@ class HostRule(JsonSerializable):
 class Uniparser(object):
     """Parsers collection.
     """
-    parser_classes = BaseParser.__subclasses__()
     _RECURSION_CRAWL = True
     _DEFAULT_FREQUENCY = Frequency()
     _DEFAULT_ASYNC_FREQUENCY = AsyncFrequency()
@@ -812,6 +811,32 @@ class Uniparser(object):
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
         self.request_adapter = request_adapter
+
+    def _prepare_default_parsers(self):
+        self.css = CSSParser()
+        self.xml = XMLParser()
+        self.re = RegexParser()
+        self.jsonpath = JSONPathParser()
+        self.objectpath = ObjectPathParser()
+        self.jmespath = JMESPathParser()
+        self.python = PythonParser()
+        self.loader = LoaderParser()
+        self.time = TimeParser()
+
+    def _prepare_custom_parsers(self):
+        # handle the other sublclasses
+        for parser in BaseParser.__subclasses__():
+            if parser.name not in self.__dict__:
+                self.__dict__[parser.name] = parser()
+
+    # for alias
+    @property
+    def py(self):
+        return self.python
+
+    @property
+    def parser_classes(self):
+        return BaseParser.__subclasses__()
 
     def parse_chain(self, input_object, chain_rules: List, context=None):
         for parser_name, param, value in chain_rules:
@@ -842,7 +867,8 @@ class Uniparser(object):
             rule['chain_rules'],
             context=context or getattr(rule, 'context', {}))
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
-            raise InvalidSchemaError(f'Schema check is not True: {input_object}')
+            raise InvalidSchemaError(
+                f'Schema check is not True: {input_object}')
         result = {rule['name']: input_object}
         if not rule['child_rules']:
             return {rule['name']: input_object}
@@ -878,22 +904,6 @@ class Uniparser(object):
         elif isinstance(rule_object, ParseRule):
             return self.parse_parse_rule(
                 input_object=input_object, rule=rule_object, context=context)
-
-    def _prepare_default_parsers(self):
-        self.css = CSSParser()
-        self.xml = XMLParser()
-        self.re = RegexParser()
-        self.jsonpath = JSONPathParser()
-        self.objectpath = ObjectPathParser()
-        self.jmespath = JMESPathParser()
-        self.python = PythonParser()
-        self.loader = LoaderParser()
-        self.time = TimeParser()
-
-    def _prepare_custom_parsers(self):
-        for parser in BaseParser.__subclasses__():
-            if parser.name not in self.__dict__:
-                self.__dict__[parser.name] = parser()
 
     def ensure_adapter(self, sync=True):
         if self.request_adapter:

@@ -454,6 +454,9 @@ def test_python_parser():
     result = uni.python.parse(['a', 'b', 'c', 'd'], 'index', '-1')
     # print(result)
     assert result == 'd'
+    result = uni.python.parse({'a': 1}, 'index', 'a')
+    # print(result)
+    assert result == 1
     # ===================== test chain =====================
     result = uni.python.parse(['a', 'b', ['c', 'd']], 'chain', '')
     # print(result)

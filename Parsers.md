@@ -216,9 +216,8 @@ PythonParser. Some frequently-used utils.
             [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd']
             ['python', 'template', '1 $input_object 2'] => 1 python 2
             [[1], 'index', '0'] => 1
+            ['python', 'index', '-1'] => n
             [{'a': '1'}, 'index', 'a'] => 1
-
-
 ```
 ## LoaderParser
 ```

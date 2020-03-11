@@ -472,6 +472,7 @@ class PythonParser(BaseParser):
             [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd']
             ['python', 'template', '1 $input_object 2'] => 1 python 2
             [[1], 'index', '0'] => 1
+            ['python', 'index', '-1'] => n
             [{'a': '1'}, 'index', 'a'] => 1
 """
     name = 'python'
@@ -488,7 +489,7 @@ class PythonParser(BaseParser):
             'chain': lambda input_object, param, value: list(chain(*input_object)),
             'const': lambda input_object, param, value: value if value else input_object,
             'template': self._handle_template,
-            'index': lambda input_object, param, value: input_object[int(value) if value.isdigit() else value],
+            'index': lambda input_object, param, value: input_object[int(value) if (value.isdigit() or value.startswith('-') and value[1:].isdigit()) else value],
         }
         function = param_functions.get(param, return_self)
         return function(input_object, param, value)

@@ -13,6 +13,8 @@ Provide a universal solution for crawler.
 3. Separating the crawler code from main app code, no need to redeploy app when adding a new crawler.
 4. Provide a universal solution for crawler platforms.
 5. Summarize common string parsing tools on the market.
+6. The implementation of web views is to be plug-in and portable, which means it can be mounted on other web apps as a [sub_app](https://fastapi.tiangolo.com/advanced/sub-applications-proxy/#mount-the-sub-application):
+    1. `app.mount("/uniparser", uniparser_app)`
 
 ## Feature List
 

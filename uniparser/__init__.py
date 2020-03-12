@@ -1,3 +1,4 @@
+import logging
 from .crawler import Crawler, JSONRuleStorage
 from .exceptions import InvalidSchemaError, RuleNotFoundError
 from .parsers import CrawlerRule, HostRule, ParseRule, Uniparser
@@ -8,3 +9,4 @@ from .utils import (AiohttpAsyncAdapter, AsyncRequestAdapter,
 
 __all__ = ['Uniparser', 'ParseRule', 'CrawlerRule', 'HostRule']
 __version__ = '1.2.9'
+logging.getLogger('uniparser').addHandler(logging.NullHandler())

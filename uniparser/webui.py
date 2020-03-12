@@ -3,13 +3,17 @@
 Uniparser Test Console Demo
 """
 
+from logging import getLogger
 from pathlib import Path
+from time import time
+from traceback import format_exc
 
 from bottle import BaseRequest, Bottle, request, template
 
 from . import CrawlerRule, Uniparser, __version__
 from .utils import ensure_request, get_available_sync_request
 
+logger = getLogger('uniparser')
 # 10MB
 BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
 app = Bottle()
@@ -20,7 +24,6 @@ if not adapter:
     )
 uni = Uniparser(adapter())
 GLOBAL_RESP = None
-
 cdn_urls = {
     'VUE_JS_CDN': 'https://cdn.staticfile.org/vue/2.6.11/vue.min.js',
     'ELEMENT_CSS_CDN': 'https://cdn.staticfile.org/element-ui/2.13.0/theme-chalk/index.css',
@@ -31,6 +34,18 @@ cdn_urls = {
 
 index_tpl_path = Path(__file__).parent / 'templates' / 'index.html'
 index_tpl_path = index_tpl_path.as_posix()
+
+
+def exception_handler(exc):
+    trace_id = str(int(time() * 1000))
+    err_name = exc.__class__.__name__
+    err_value = str(exc)
+    msg = f'{err_name}({err_value}) trace_id: {trace_id}:\n{format_exc()}'
+    logger.error(msg)
+    return f'Oops! {err_name}, trace_id: {trace_id}'
+
+
+app.error_handler[500] = exception_handler
 
 
 @app.get('/init_app')
@@ -59,7 +74,11 @@ def send_request():
     regex = rule['regex']
     url = rule['request_args']['url']
     if not regex or not rule.check_regex(url):
-        return {'text': f'regex `{regex}` not match url: {url}', 'status': -1, 'ok': False}
+        return {
+            'text': f'regex `{regex}` not match url: {url}',
+            'status': -1,
+            'ok': False
+        }
     body, r = uni.download(rule)
     GLOBAL_RESP = r
     return {

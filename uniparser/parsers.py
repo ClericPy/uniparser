@@ -447,10 +447,11 @@ class UDFParser(BaseParser):
                 context = {}
         else:
             context = value or {}
-        if not self._ALLOW_IMPORT and 'import' in param:
+        if not self._ALLOW_IMPORT and ('import' in param or 'exec(' in param or
+                                       'eval(' in param):
             # cb = re_compile(r'^\s*(from  )?import \w+') # not strict enough
             raise RuntimeError(
-                'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
+                'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` `exec` `eval` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
         local_vars = {'input_object': input_object, 'context': context}
         local_vars.update(self._GLOBALS_ARGS)

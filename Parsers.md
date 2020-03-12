@@ -1,4 +1,5 @@
-## CSSParser
+## CSSParser (css)
+
 ```
 CSS selector parser, requires `bs4` and `lxml`(optional).
     Since HTML input object always should be string, _RECURSION_LIST will be True.
@@ -27,18 +28,19 @@ CSS selector parser, requires `bs4` and `lxml`(optional).
 
         examples:
 
-            ['<a class="url" href="/">title</a>', 'a.url', '@href'] => ['/']
-            ['<a class="url" href="/">title</a>', 'a.url', '$text'] => ['title']
-            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => ['title']
-            ['<a class="url" href="/">title</a>', 'a.url', '$html'] => ['title']
-            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => ['<a class="url" href="/">title</a>']
-            ['<a class="url" href="/">title</a>', 'a.url', '$string'] => ['<a class="url" href="/">title</a>']
-            ['<a class="url" href="/">title</a>', 'a.url', '$self'] => [<a class="url" href="/">title</a>]
+            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => Expecting value: line 1 column 1 (char 0)
 
             WARNING: $self returns the original Tag object
     
 ```
-## XMLParser
+## XMLParser (xml)
+
 ```
 XML parser, requires `bs4` and `lxml`(necessary), but not support `xpath` for now.
     Since XML input object always should be string, _RECURSION_LIST will be True.
@@ -67,16 +69,17 @@ XML parser, requires `bs4` and `lxml`(necessary), but not support `xpath` for no
 
         examples:
 
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$text'] => ['author']
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$text']      => ['author']
             ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$innerHTML'] => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$html'] => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$html']      => [<creator>author</creator>]
             ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$outerHTML'] => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$string'] => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$self'] => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$string']    => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$self']      => [<creator>author</creator>]
             WARNING: $self returns the original Tag object
     
 ```
-## RegexParser
+## RegexParser (re)
+
 ```
 RegexParser. Parse the input object with standard regex, features from `re`.
     Since regex input object always should be string, _RECURSION_LIST will be True.
@@ -103,14 +106,15 @@ RegexParser. Parse the input object with standard regex, features from `re`.
 
         examples:
 
-            ['a a b b c c', 'a|c', '@b'] => b b b b b b
-            ['a a b b c c', 'a', ''] => ['a', 'a']
+            ['a a b b c c', 'a|c', '@b']     => b b b b b b
+            ['a a b b c c', 'a', '']         => ['a', 'a']
             ['a a b b c c', 'a (a b)', '$0'] => ['a a b']
             ['a a b b c c', 'a (a b)', '$1'] => ['a b']
-            ['a a b b c c', 'b', '-'] => ['a a ', ' ', ' c c']
+            ['a a b b c c', 'b', '-']        => ['a a ', ' ', ' c c']
     
 ```
-## JSONPathParser
+## JSONPathParser (jsonpath)
+
 ```
 JSONPath parser, requires `jsonpath-rw-ext` lib.
     Since json input object may be dict / list, _RECURSION_LIST will be False.
@@ -129,7 +133,8 @@ JSONPath parser, requires `jsonpath-rw-ext` lib.
             [{'a': {'b': {'c': 1}}}, '$..c', ''] => [1]
     
 ```
-## ObjectPathParser
+## ObjectPathParser (objectpath)
+
 ```
 ObjectPath parser, requires `objectpath` lib.
     Since json input object may be dict / list, _RECURSION_LIST will be False.
@@ -146,7 +151,8 @@ ObjectPath parser, requires `objectpath` lib.
             [{'a': {'b': {'c': 1}}}, '$..c', ''] => [1]
     
 ```
-## JMESPathParser
+## JMESPathParser (jmespath)
+
 ```
 JMESPath parser, requires `jmespath` lib.
     Since json input object may be dict / list, _RECURSION_LIST will be False.
@@ -163,7 +169,8 @@ JMESPath parser, requires `jmespath` lib.
             [{'a': {'b': {'c': 1}}}, 'a.b.c', ''] => 1
     
 ```
-## UDFParser
+## UDFParser (udf)
+
 ```
 UDFParser. Python source code snippets. globals will contain `input_object` and `context` variables.
     Since python input object may be any type, _RECURSION_LIST will be False.
@@ -173,16 +180,17 @@ UDFParser. Python source code snippets. globals will contain `input_object` and 
             value: will be renamed to `context`, which can be used in parser function. `value` often be set as the dict of request & response.
         examples:
 
-            ['a b c d', 'input_object[::-1]', ''] => d c b a
-            ['a b c d', 'context["key"]', {'key': 'value'}] => value
-            ['a b c d', 'md5(input_object)', ''] => 713f592bd537f7725d491a03e837d64a
-            ['["string"]', 'json_loads(input_object)', ''] => ['string']
-            [['string'], 'json_dumps(input_object)', ''] => ["string"]
-            ['a b c d', 'parse = lambda input_object: input_object', ''] => a b c d
+            ['a b c d', 'input_object[::-1]', '']                                                       => d c b a
+            ['a b c d', 'context["key"]', {'key': 'value'}]                                             => value
+            ['a b c d', 'md5(input_object)', '']                                                        => 713f592bd537f7725d491a03e837d64a
+            ['["string"]', 'json_loads(input_object)', '']                                              => ['string']
+            [['string'], 'json_dumps(input_object)', '']                                                => ["string"]
+            ['a b c d', 'parse = lambda input_object: input_object', '']                                => a b c d
             ['a b c d', 'def parse(input_object): context["key"]="new";return context', {'key': 'old'}] => {'key': 'new'}
     
 ```
-## PythonParser
+## PythonParser (python)
+
 ```
 PythonParser. Some frequently-used utils.
     Since python input object may be any type, _RECURSION_LIST will be False.
@@ -204,22 +212,27 @@ PythonParser. Some frequently-used utils.
             6.  param: template
                 value: Template.safe_substitute(input_object=input_object, **input_object if isinstance(input_object, dict))
             7.  param: index
-                value: value should be number string.
-
+                value: value can be number string / key.
+            8.  param: sort
+                value: value can be asc (default) / desc.
         examples:
 
-            [[1, 2, 3], 'getitem', '[-1]'] => 3
-            [[1, 2, 3], 'getitem', '[:2]'] => [1, 2]
-            [{'a': '1'}, 'getitem', 'a'] => 1
-            ['a b\tc \n \td', 'split', ''] => ['a', 'b', 'c', 'd']
-            [['a', 'b', 'c', 'd'], 'join', ''] => abcd
-            [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd']
+            [[1, 2, 3], 'getitem', '[-1]']              => 3
+            [[1, 2, 3], 'getitem', '[:2]']              => [1, 2]
+            [{'a': '1'}, 'getitem', 'a']                => 1
+            ['a b\tc \n \td', 'split', '']              => ['a', 'b', 'c', 'd']
+            [['a', 'b', 'c', 'd'], 'join', '']          => abcd
+            [['aaa', ['b'], ['c', 'd']], 'chain', '']   => ['a', 'a', 'a', 'b', 'c', 'd']
             ['python', 'template', '1 $input_object 2'] => 1 python 2
-            [[1], 'index', '0'] => 1
-            ['python', 'index', '-1'] => n
-            [{'a': '1'}, 'index', 'a'] => 1
+            [[1], 'index', '0']                         => 1
+            ['python', 'index', '-1']                   => n
+            [{'a': '1'}, 'index', 'a']                  => 1
+            ['adcb', 'sort', '']                        => ['a', 'b', 'c', 'd']
+            [[1, 3, 2, 4], 'sort', 'desc']              => [4, 3, 2, 1]
+
 ```
-## LoaderParser
+## LoaderParser (loader)
+
 ```
 LoaderParser. Loads string with json / yaml / toml standard format.
     Since input object should be string, _RECURSION_LIST will be True.
@@ -233,12 +246,13 @@ LoaderParser. Loads string with json / yaml / toml standard format.
 
         examples:
 
-            ['{"a": "b"}', 'json', ''] => {'a': 'b'}
-            ['a = "a"', 'toml', ''] => {'a': 'a'}
+            ['{"a": "b"}', 'json', '']   => {'a': 'b'}
+            ['a = "a"', 'toml', '']      => {'a': 'a'}
             ['animal: pets', 'yaml', ''] => {'animal': 'pets'}
     
 ```
-## TimeParser
+## TimeParser (time)
+
 ```
 TimeParser. Parse different format of time. Sometimes time string need a preprocessing with regex.
     Since input object can not be list, _RECURSION_LIST will be True.
@@ -254,10 +268,10 @@ TimeParser. Parse different format of time. Sometimes time string need a preproc
 
         examples:
 
-            ['2020-02-03 20:29:45', 'encode', ''] => 1580732985.0
-            ['1580732985.1873155', 'decode', ''] => 2020-02-03 20:29:45
+            ['2020-02-03 20:29:45', 'encode', '']                  => 1580732985.0
+            ['1580732985.1873155', 'decode', '']                   => 2020-02-03 20:29:45
             ['2020-02-03T20:29:45', 'encode', '%Y-%m-%dT%H:%M:%S'] => 1580732985.0
-            ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S'] => Feb 03 2020 20:29:45
+            ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S']  => Feb 03 2020 20:29:45
 
     WARNING: time.struct_time do not have timezone info, so %z is always the local timezone
     

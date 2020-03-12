@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 
+from logging import getLogger
 # pip install fastapi uvicorn
 from pathlib import Path
+from time import time
 
 from fastapi import FastAPI
 from starlette.requests import Request
+from starlette.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 
 from .. import CrawlerRule, Uniparser, __version__
 from ..utils import ensure_request, get_available_async_request
 
 app = FastAPI(title="Uniparser", version=__version__)
-
+logger = getLogger('uniparser')
 adapter = get_available_async_request()
 if not adapter:
     raise RuntimeError(
@@ -29,6 +32,22 @@ cdn_urls = {
     'VUE_RESOURCE_CDN': 'https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js',
     'CLIPBOARDJS_CDN': 'https://cdn.staticfile.org/clipboard.js/2.0.4/clipboard.min.js',
 }
+
+
+@app.exception_handler(Exception)
+async def exception_handler(request: Request, exc: Exception):
+    trace_id = str(int(time() * 1000))
+    err_name = exc.__class__.__name__
+    err_value = str(exc)
+    msg = f'{err_name}({err_value}) trace_id: {trace_id}:\n{format_exc()}'
+    logger.error(msg)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "message": f"Oops! {err_name}.",
+            "trace_id": trace_id
+        },
+    )
 
 
 @app.get('/init_app')
@@ -59,7 +78,11 @@ async def send_request(request_args: dict):
     regex = rule['regex']
     url = rule['request_args']['url']
     if not regex or not rule.check_regex(url):
-        return {'text': f'regex `{regex}` not match url: {url}', 'status': -1, 'ok': False}
+        return {
+            'text': f'regex `{regex}` not match url: {url}',
+            'status': -1,
+            'ok': False
+        }
     body, r = await uni.adownload(rule)
     GLOBAL_RESP = r
     return {

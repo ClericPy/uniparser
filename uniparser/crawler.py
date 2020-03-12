@@ -5,6 +5,7 @@ from asyncio import ensure_future
 from concurrent.futures import ThreadPoolExecutor
 from inspect import isawaitable
 from json import dump
+from logging import getLogger
 from pathlib import Path
 from warnings import warn
 
@@ -13,6 +14,8 @@ from .exceptions import RuleNotFoundError
 from .parsers import CrawlerRule, HostRule, JsonSerializable, Uniparser
 from .utils import (AsyncRequestAdapter, NotSet, SyncRequestAdapter,
                     ensure_request, get_host)
+
+logger = getLogger('uniparser')
 
 
 class RuleStorage(ABC):
@@ -61,7 +64,9 @@ class JSONRuleStorage(JsonSerializable, RuleStorage):
                                 json_string).items():
                             self[host] = HostRule(**host_rule)
             else:
-                warn(f'create storage file at {self.file_path}.')
+                msg = f'create storage file at {self.file_path}.'
+                warn(msg)
+                logger.warning(msg)
         for host, host_rule in kwargs.items():
             self[host] = HostRule(**host_rule)
         self.commit()
@@ -82,7 +87,9 @@ class JSONRuleStorage(JsonSerializable, RuleStorage):
     def add_crawler_rule(self, rule: CrawlerRule, commit=False):
         url = rule.get('request_args', {}).get('url')
         if not url:
-            warn(f'invalid url {url} in {rule}, add failed.')
+            msg = f'invalid url {url} in {rule}, add failed.'
+            warn(msg)
+            logger.warning(msg)
             return False
         host = get_host(url)
         if not host:

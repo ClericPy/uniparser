@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from hashlib import md5 as _md5
 from itertools import chain
+from logging import getLogger
 from re import compile as re_compile
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
@@ -30,6 +31,8 @@ __all__ = [
     'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
     'JMESPathParser', 'PythonParser', 'UDFParser', 'LoaderParser', 'Uniparser'
 ]
+
+logger = getLogger('uniparser')
 
 
 def return_self(self, *args, **kwargs):
@@ -64,6 +67,34 @@ class BaseParser(ABC):
     2. `_parse` method
     3. use lazy import, maybe
     4. Parsers will recursion parse list of input_object if it can only parse `str` object.
+
+    Test demo::
+
+        from uniparser import Uniparser
+
+        uni = Uniparser()
+
+        inputs = [
+            [[1, 2, 3], 'getitem', '[-1]'],
+            [[1, 2, 3], 'getitem', '[:2]'],
+            [{
+                'a': '1'
+            }, 'getitem', 'a'],
+            ['a b\tc \n \td', 'split', ''],
+            [['a', 'b', 'c', 'd'], 'join', ''],
+            [['aaa', ['b'], ['c', 'd']], 'chain', ''],
+            ['python', 'template', '1 $input_object 2'],
+            [[1], 'index', '0'],
+            ['python', 'index', '-1'],
+            [{
+                'a': '1'
+            }, 'index', 'a'],
+        ]
+        head_length = max([len(str(i)) for i in inputs])
+
+        for i in inputs:
+            print(f"{str(i):<{head_length}} => {uni.python.parse(*i)}")
+
     """
     test_url = 'https://github.com/ClericPy/uniparser'
     doc_url = 'https://github.com/ClericPy/uniparser'
@@ -116,13 +147,13 @@ class CSSParser(BaseParser):
 
         examples:
 
-            ['<a class="url" href="/">title</a>', 'a.url', '@href'] => ['/']
-            ['<a class="url" href="/">title</a>', 'a.url', '$text'] => ['title']
-            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => ['title']
-            ['<a class="url" href="/">title</a>', 'a.url', '$html'] => ['title']
-            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => ['<a class="url" href="/">title</a>']
-            ['<a class="url" href="/">title</a>', 'a.url', '$string'] => ['<a class="url" href="/">title</a>']
-            ['<a class="url" href="/">title</a>', 'a.url', '$self'] => [<a class="url" href="/">title</a>]
+            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => Expecting value: line 1 column 1 (char 0)
 
             WARNING: $self returns the original Tag object
     """
@@ -183,12 +214,12 @@ class XMLParser(BaseParser):
 
         examples:
 
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$text'] => ['author']
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$text']      => ['author']
             ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$innerHTML'] => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$html'] => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$html']      => [<creator>author</creator>]
             ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$outerHTML'] => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$string'] => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$self'] => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$string']    => [<creator>author</creator>]
+            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$self']      => [<creator>author</creator>]
             WARNING: $self returns the original Tag object
     """
     name = 'xml'
@@ -244,11 +275,11 @@ class RegexParser(BaseParser):
 
         examples:
 
-            ['a a b b c c', 'a|c', '@b'] => b b b b b b
-            ['a a b b c c', 'a', ''] => ['a', 'a']
+            ['a a b b c c', 'a|c', '@b']     => b b b b b b
+            ['a a b b c c', 'a', '']         => ['a', 'a']
             ['a a b b c c', 'a (a b)', '$0'] => ['a a b']
             ['a a b b c c', 'a (a b)', '$1'] => ['a b']
-            ['a a b b c c', 'b', '-'] => ['a a ', ' ', ' c c']
+            ['a a b b c c', 'b', '-']        => ['a a ', ' ', ' c c']
     """
     name = 're'
     test_url = 'https://regex101.com/'
@@ -380,12 +411,12 @@ class UDFParser(BaseParser):
             value: will be renamed to `context`, which can be used in parser function. `value` often be set as the dict of request & response.
         examples:
 
-            ['a b c d', 'input_object[::-1]', ''] => d c b a
-            ['a b c d', 'context["key"]', {'key': 'value'}] => value
-            ['a b c d', 'md5(input_object)', ''] => 713f592bd537f7725d491a03e837d64a
-            ['["string"]', 'json_loads(input_object)', ''] => ['string']
-            [['string'], 'json_dumps(input_object)', ''] => ["string"]
-            ['a b c d', 'parse = lambda input_object: input_object', ''] => a b c d
+            ['a b c d', 'input_object[::-1]', '']                                                       => d c b a
+            ['a b c d', 'context["key"]', {'key': 'value'}]                                             => value
+            ['a b c d', 'md5(input_object)', '']                                                        => 713f592bd537f7725d491a03e837d64a
+            ['["string"]', 'json_loads(input_object)', '']                                              => ['string']
+            [['string'], 'json_dumps(input_object)', '']                                                => ["string"]
+            ['a b c d', 'parse = lambda input_object: input_object', '']                                => a b c d
             ['a b c d', 'def parse(input_object): context["key"]="new";return context', {'key': 'old'}] => {'key': 'new'}
     """
     name = 'udf'
@@ -419,10 +450,11 @@ class UDFParser(BaseParser):
                 context = {}
         else:
             context = value or {}
-        if not self._ALLOW_IMPORT and 'import' in param:
+        if not self._ALLOW_IMPORT and ('import' in param or 'exec(' in param or
+                                       'eval(' in param):
             # cb = re_compile(r'^\s*(from  )?import \w+') # not strict enough
             raise RuntimeError(
-                'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
+                'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` `exec` `eval` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
         local_vars = {'input_object': input_object, 'context': context}
         local_vars.update(self._GLOBALS_ARGS)
@@ -461,19 +493,22 @@ class PythonParser(BaseParser):
                 value: Template.safe_substitute(input_object=input_object, **input_object if isinstance(input_object, dict))
             7.  param: index
                 value: value can be number string / key.
-
+            8.  param: sort
+                value: value can be asc (default) / desc.
         examples:
 
-            [[1, 2, 3], 'getitem', '[-1]'] => 3
-            [[1, 2, 3], 'getitem', '[:2]'] => [1, 2]
-            [{'a': '1'}, 'getitem', 'a'] => 1
-            ['a b\tc \n \td', 'split', ''] => ['a', 'b', 'c', 'd']
-            [['a', 'b', 'c', 'd'], 'join', ''] => abcd
-            [['aaa', ['b'], ['c', 'd']], 'chain', ''] => ['a', 'a', 'a', 'b', 'c', 'd']
+            [[1, 2, 3], 'getitem', '[-1]']              => 3
+            [[1, 2, 3], 'getitem', '[:2]']              => [1, 2]
+            [{'a': '1'}, 'getitem', 'a']                => 1
+            ['a b\tc \n \td', 'split', '']              => ['a', 'b', 'c', 'd']
+            [['a', 'b', 'c', 'd'], 'join', '']          => abcd
+            [['aaa', ['b'], ['c', 'd']], 'chain', '']   => ['a', 'a', 'a', 'b', 'c', 'd']
             ['python', 'template', '1 $input_object 2'] => 1 python 2
-            [[1], 'index', '0'] => 1
-            ['python', 'index', '-1'] => n
-            [{'a': '1'}, 'index', 'a'] => 1
+            [[1], 'index', '0']                         => 1
+            ['python', 'index', '-1']                   => n
+            [{'a': '1'}, 'index', 'a']                  => 1
+            ['adcb', 'sort', '']                        => ['a', 'b', 'c', 'd']
+            [[1, 3, 2, 4], 'sort', 'desc']              => [4, 3, 2, 1]
 """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -490,6 +525,7 @@ class PythonParser(BaseParser):
             'const': lambda input_object, param, value: value if value else input_object,
             'template': self._handle_template,
             'index': lambda input_object, param, value: input_object[int(value) if (value.isdigit() or value.startswith('-') and value[1:].isdigit()) else value],
+            'sort': lambda input_object, param, value: sorted(input_object, reverse=(True if value.lower() == 'desc' else False)),
         }
         function = param_functions.get(param, return_self)
         return function(input_object, param, value)
@@ -536,8 +572,8 @@ class LoaderParser(BaseParser):
 
         examples:
 
-            ['{"a": "b"}', 'json', ''] => {'a': 'b'}
-            ['a = "a"', 'toml', ''] => {'a': 'a'}
+            ['{"a": "b"}', 'json', '']   => {'a': 'b'}
+            ['a = "a"', 'toml', '']      => {'a': 'a'}
             ['animal: pets', 'yaml', ''] => {'animal': 'pets'}
     """
     name = 'loader'
@@ -580,10 +616,10 @@ class TimeParser(BaseParser):
 
         examples:
 
-            ['2020-02-03 20:29:45', 'encode', ''] => 1580732985.0
-            ['1580732985.1873155', 'decode', ''] => 2020-02-03 20:29:45
+            ['2020-02-03 20:29:45', 'encode', '']                  => 1580732985.0
+            ['1580732985.1873155', 'decode', '']                   => 2020-02-03 20:29:45
             ['2020-02-03T20:29:45', 'encode', '%Y-%m-%dT%H:%M:%S'] => 1580732985.0
-            ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S'] => Feb 03 2020 20:29:45
+            ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S']  => Feb 03 2020 20:29:45
 
     WARNING: time.struct_time do not have timezone info, so %z is always the local timezone
     """
@@ -600,9 +636,9 @@ class TimeParser(BaseParser):
         if param == 'encode':
             # time string => timestamp
             if '%z' in value:
-                warn(
-                    'TimeParser Warning: time.struct_time do not have timezone info, so %z is nonsense'
-                )
+                msg = 'TimeParser Warning: time.struct_time do not have timezone info, so %z is nonsense'
+                warn(msg)
+                logger.warn(msg)
             return mktime(strptime(input_object, value)) - tz_fix_seconds
         elif param == 'decode':
             if isinstance(input_object,
@@ -911,7 +947,9 @@ class Uniparser(object):
         for parser_name, param, value in chain_rules:
             parser = getattr(self, parser_name)
             if not parser:
-                warn(f'Skip parsing for unknown name: {parser_name}')
+                msg = f'Skip parsing for unknown name: {parser_name}'
+                warn(msg)
+                logger.warn(msg)
                 continue
             if context and parser_name == 'udf' and not value:
                 value = context

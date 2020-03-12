@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from hashlib import md5 as _md5
 from itertools import chain
+from logging import getLogger
 from re import compile as re_compile
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
@@ -30,6 +31,8 @@ __all__ = [
     'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
     'JMESPathParser', 'PythonParser', 'UDFParser', 'LoaderParser', 'Uniparser'
 ]
+
+logger = getLogger('uniparser')
 
 
 def return_self(self, *args, **kwargs):
@@ -633,9 +636,9 @@ class TimeParser(BaseParser):
         if param == 'encode':
             # time string => timestamp
             if '%z' in value:
-                warn(
-                    'TimeParser Warning: time.struct_time do not have timezone info, so %z is nonsense'
-                )
+                msg = 'TimeParser Warning: time.struct_time do not have timezone info, so %z is nonsense'
+                warn(msg)
+                logger.warn(msg)
             return mktime(strptime(input_object, value)) - tz_fix_seconds
         elif param == 'decode':
             if isinstance(input_object,
@@ -944,7 +947,9 @@ class Uniparser(object):
         for parser_name, param, value in chain_rules:
             parser = getattr(self, parser_name)
             if not parser:
-                warn(f'Skip parsing for unknown name: {parser_name}')
+                msg = f'Skip parsing for unknown name: {parser_name}'
+                warn(msg)
+                logger.warn(msg)
                 continue
             if context and parser_name == 'udf' and not value:
                 value = context

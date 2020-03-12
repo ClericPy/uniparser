@@ -464,6 +464,13 @@ def test_python_parser():
     result = uni.python.parse(['aaa', ['b'], ['c', 'd']], 'chain', '')
     # print(result)
     assert result == ['a', 'a', 'a', 'b', 'c', 'd']
+    # ===================== test sort =====================
+    result = uni.python.parse(*['adcb', 'sort', ''])
+    # print(result)
+    assert result == ['a', 'b', 'c', 'd']
+    result = uni.python.parse(*[[1, 3, 2, 4], 'sort', 'desc'])
+    # print(result)
+    assert result == [4, 3, 2, 1]
 
 
 def test_udf_parser():

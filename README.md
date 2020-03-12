@@ -19,7 +19,7 @@ Provide a universal solution for crawler.
 ## Feature List
 
 1. Support most of popular parsers for HTML / XML / JSON / AnyString / Python object
-   1. [Parser docs](./Parsers.md)
+   1. [Parser docs](https://github.com/ClericPy/uniparser/blob/master/parsers.md)
    2. <details>
         <summary>parser list</summary>
       
@@ -236,7 +236,16 @@ if __name__ == "__main__":
 
 Test code: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
 
-Advanced Usage: [watchdogs](https://github.com/ClericPy/watchdogs)
+Advanced Usage Demo: [watchdogs](https://github.com/ClericPy/watchdogs)
+
+> Generate parsers doc
+
+```python
+from uniparser import Uniparser
+
+for i in Uniparser().parser_classes:
+    print(f'## {i.__name__} ({i.name})\n\n```\n{i.__doc__}\n```')
+```
 
 ## TODO
 

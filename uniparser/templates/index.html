@@ -121,12 +121,12 @@
                                         </el-autocomplete>
                                         <el-input @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
-                                            style="width: 35%;zoom: 120%;display:inline-block;" :rows="1" autosize
+                                            style="width: 40%;zoom: 120%;display:inline-block;" :rows="1" autosize
                                             placeholder="Param. Ctrl+Enter=Submit; Alt+Enter=New" v-model="r[1]">
                                         </el-input>
                                         <el-input @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
-                                            style="width: 35%;zoom: 120%;display:inline-block;" :rows="1" autosize
+                                            style="width: 40%;zoom: 120%;display:inline-block;" :rows="1" autosize
                                             placeholder="Value. Ctrl+Enter=Submit; Alt+Enter=New" v-model="r[2]">
                                         </el-input>
                                         <i class="el-icon-delete" @click="del_rule_chain(index, i)">
@@ -207,7 +207,7 @@
                     docs: '',
                     crawler_rule: {
                         name: 'HelloWorld',
-                        regex: '',
+                        regex: '^http://httpbin.org/forms/post$',
                         encoding: "",
                         parse_rules: [],
                         request_args: JSON.stringify({

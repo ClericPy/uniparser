@@ -209,13 +209,21 @@
                     options: '',
                     docs: '',
                     crawler_rule: {
-                        name: 'HelloWorld',
-                        regex: '^http://httpbin.org/forms/post$',
+                        name: '',
+                        regex: '^http://httpbin.org/$',
                         encoding: "",
-                        parse_rules: [],
+                        parse_rules: [{
+                            "name": "title",
+                            "chain_rules": [
+                                ["css", "title", "$text"],
+                                ["py", "index", "0"]
+                            ],
+                            "child_rules": '[]',
+                            "iter_parse_child": false
+                        }],
                         request_args: JSON.stringify({
                             "method": "get",
-                            "url": "http://httpbin.org/forms/post",
+                            "url": "http://httpbin.org/",
                             "headers": {
                                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
                             }
@@ -256,7 +264,23 @@
                     this.downloading = true
                     this.$http.post('request', data).then(
                         r => {
-                            this.input_object = r.body.text
+                            let scode = r.body.text
+                            this.input_object = scode
+                            if (!this.crawler_rule.name) {
+                                let default_name = 'U-' + new Date().getTime().toString().slice(0, -3)
+                                try {
+                                    // get title as name
+                                    let el = document.createElement('html');
+                                    el.innerHTML = scode
+                                    let title = (el.getElementsByTagName('title')[0] || '').innerText
+                                    title = title.replace(/- .*/g, '')
+                                    let h1 = (el.getElementsByTagName('h1')[0] || '').innerText
+                                    let name = title || h1 || this.crawler_rule.request_args.url || default_name
+                                    this.crawler_rule.name = name
+                                } catch (error) {
+                                    this.crawler_rule.name = default_name
+                                }
+                            }
                             this.request_status = r.body.status
                             let color = r.body.ok ? 'green' : 'red'
                             document.querySelector('#request_status>label').style.color = color
@@ -303,12 +327,13 @@
                 },
                 send_child(item) {
                     this.send_child_rule_visible = false
-                    let child_rules = JSON.parse(item.rule.child_rules || "[]")
-                    let sender_rule = this.crawler_rule.parse_rules.splice(item.sender_index, 1)[0]
+                    let child_rules = JSON.parse(item.rule.child_rules || '[]')
+                    let sender_rule = this.crawler_rule.parse_rules[item.sender_index]
                     sender_rule.child_rules = JSON.parse(sender_rule.child_rules || "[]")
                     child_rules.push(sender_rule)
                     this.crawler_rule.parse_rules[item.receiver_index].child_rules = JSON.stringify(child_rules,
                         null, 2)
+                    this.crawler_rule.parse_rules.splice(item.sender_index, 1)[0]
                     this.parse_rules_to_be_send = []
                 },
                 open_send_child_dialog(index) {
@@ -414,9 +439,9 @@
                         this.crawler_rule.parse_rules.forEach(item => {
                             if (item.name) {
                                 try {
-                                    child_rules = JSON.parse(item.child_rules || "[]")
+                                    var child_rules = JSON.parse(item.child_rules || "[]")
                                 } catch (error) {
-                                    child_rules = item.child_rules
+                                    var child_rules = item.child_rules
                                 }
                                 var chain_rules = []
                                 item.chain_rules.forEach(i => {

@@ -301,7 +301,7 @@
                 send_child(item) {
                     this.send_child_rule_visible = false
                     let child_rules = JSON.parse(item.rule.child_rules || "[]")
-                    let sender_rule = this.crawler_rule.parse_rules.splice(item.sender_index, 1)
+                    let sender_rule = this.crawler_rule.parse_rules.splice(item.sender_index, 1)[0]
                     child_rules.push(sender_rule)
                     this.crawler_rule.parse_rules[item.receiver_index].child_rules = JSON.stringify(child_rules,
                         null, 2)

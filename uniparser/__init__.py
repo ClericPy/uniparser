@@ -9,4 +9,4 @@ from .utils import (AiohttpAsyncAdapter, AsyncRequestAdapter,
 
 logging.getLogger('uniparser').addHandler(logging.NullHandler())
 __all__ = ['Uniparser', 'ParseRule', 'CrawlerRule', 'HostRule']
-__version__ = '1.3.3'
+__version__ = '1.3.4'

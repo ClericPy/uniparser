@@ -4,6 +4,7 @@ from logging import getLogger
 # pip install fastapi uvicorn
 from pathlib import Path
 from time import time
+from traceback import format_exc
 
 from fastapi import FastAPI
 from starlette.requests import Request

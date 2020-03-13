@@ -115,19 +115,19 @@
                                         <i v-if="r[0]" @click="get_doc(r[0])" title="Read the parse doc"
                                             class="el-icon-info"></i>
                                         <el-autocomplete @keyup.ctrl.13.native="parse"
-                                            @keyup.alt.13.native="add_new_rule_chain(index)" class="inline-input"
+                                            @keyup.shift.13.native="add_new_rule_chain(index)" class="inline-input"
                                             style="width: 10%;zoom: 100%;" v-model="r[0]"
                                             :fetch-suggestions="querySearch" placeholder="Parser Name">
                                         </el-autocomplete>
                                         <el-input @keyup.ctrl.13.native="parse"
-                                            @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
+                                            @keyup.shift.13.native="add_new_rule_chain(index)" type="textarea"
                                             style="width: 40%;zoom: 120%;display:inline-block;" :rows="1" autosize
-                                            placeholder="Param. Ctrl+Enter=Submit; Alt+Enter=New" v-model="r[1]">
+                                            placeholder="Param. Ctrl+Enter=>Submit; Shift+Enter=>New" v-model="r[1]">
                                         </el-input>
                                         <el-input @keyup.ctrl.13.native="parse"
-                                            @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
+                                            @keyup.shift.13.native="add_new_rule_chain(index)" type="textarea"
                                             style="width: 40%;zoom: 120%;display:inline-block;" :rows="1" autosize
-                                            placeholder="Value. Ctrl+Enter=Submit; Alt+Enter=New" v-model="r[2]">
+                                            placeholder="Value. Ctrl+Enter=Submit; Shift+Enter=New" v-model="r[2]">
                                         </el-input>
                                         <i class="el-icon-delete" @click="del_rule_chain(index, i)">
                                         </i>
@@ -301,7 +301,7 @@
                 send_child(item) {
                     this.send_child_rule_visible = false
                     let child_rules = JSON.parse(item.rule.child_rules || "[]")
-                    let sender_rule = this.crawler_rule.parse_rules.splice(item.sender_index, 1)
+                    let sender_rule = this.crawler_rule.parse_rules.splice(item.sender_index, 1)[0]
                     child_rules.push(sender_rule)
                     this.crawler_rule.parse_rules[item.receiver_index].child_rules = JSON.stringify(child_rules,
                         null, 2)

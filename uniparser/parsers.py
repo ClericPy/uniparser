@@ -70,30 +70,17 @@ class BaseParser(ABC):
 
     Test demo::
 
-        from uniparser import Uniparser
+        def _partial_test_parser():
+            from uniparser import Uniparser
 
-        uni = Uniparser()
+            uni = Uniparser()
+            args = [
+                ['adcb', 'sort', ''],
+            ]
+            max_len = max([len(str(i)) for i in args])
+            for i in args:
+                print(f'{str(i):<{max_len}} => {uni.python.parse(*i)}')
 
-        inputs = [
-            [[1, 2, 3], 'getitem', '[-1]'],
-            [[1, 2, 3], 'getitem', '[:2]'],
-            [{
-                'a': '1'
-            }, 'getitem', 'a'],
-            ['a b\tc \n \td', 'split', ''],
-            [['a', 'b', 'c', 'd'], 'join', ''],
-            [['aaa', ['b'], ['c', 'd']], 'chain', ''],
-            ['python', 'template', '1 $input_object 2'],
-            [[1], 'index', '0'],
-            ['python', 'index', '-1'],
-            [{
-                'a': '1'
-            }, 'index', 'a'],
-        ]
-        head_length = max([len(str(i)) for i in inputs])
-
-        for i in inputs:
-            print(f"{str(i):<{head_length}} => {uni.python.parse(*i)}")
 
     """
     test_url = 'https://github.com/ClericPy/uniparser'
@@ -147,13 +134,13 @@ class CSSParser(BaseParser):
 
         examples:
 
-            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => Expecting value: line 1 column 1 (char 0)
-            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => Expecting value: line 1 column 1 (char 0)
-            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => Expecting value: line 1 column 1 (char 0)
-            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => Expecting value: line 1 column 1 (char 0)
-            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => Expecting value: line 1 column 1 (char 0)
-            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => Expecting value: line 1 column 1 (char 0)
-            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => Expecting value: line 1 column 1 (char 0)
+            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => ['/']
+            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => ['title']
+            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => ['title']
+            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => ['title']
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => [<a class="url" href="/">title</a>]
 
             WARNING: $self returns the original Tag object
     """
@@ -215,11 +202,6 @@ class XMLParser(BaseParser):
         examples:
 
             ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$text']      => ['author']
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$innerHTML'] => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$html']      => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$outerHTML'] => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$string']    => [<creator>author</creator>]
-            ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$self']      => [<creator>author</creator>]
             WARNING: $self returns the original Tag object
     """
     name = 'xml'
@@ -275,7 +257,7 @@ class RegexParser(BaseParser):
 
         examples:
 
-            ['a a b b c c', 'a|c', '@b']     => b b b b b b
+            ['a a b b c c', 'a|c', '@b']     => 'b b b b b b'
             ['a a b b c c', 'a', '']         => ['a', 'a']
             ['a a b b c c', 'a (a b)', '$0'] => ['a a b']
             ['a a b b c c', 'a (a b)', '$1'] => ['a b']
@@ -411,12 +393,12 @@ class UDFParser(BaseParser):
             value: will be renamed to `context`, which can be used in parser function. `value` often be set as the dict of request & response.
         examples:
 
-            ['a b c d', 'input_object[::-1]', '']                                                       => d c b a
-            ['a b c d', 'context["key"]', {'key': 'value'}]                                             => value
-            ['a b c d', 'md5(input_object)', '']                                                        => 713f592bd537f7725d491a03e837d64a
+            ['a b c d', 'input_object[::-1]', '']                                                       => 'd c b a'
+            ['a b c d', 'context["key"]', {'key': 'value'}]                                             => 'value'
+            ['a b c d', 'md5(input_object)', '']                                                        => '713f592bd537f7725d491a03e837d64a'
             ['["string"]', 'json_loads(input_object)', '']                                              => ['string']
-            [['string'], 'json_dumps(input_object)', '']                                                => ["string"]
-            ['a b c d', 'parse = lambda input_object: input_object', '']                                => a b c d
+            [['string'], 'json_dumps(input_object)', '']                                                => '["string"]'
+            ['a b c d', 'parse = lambda input_object: input_object', '']                                => 'a b c d'
             ['a b c d', 'def parse(input_object): context["key"]="new";return context', {'key': 'old'}] => {'key': 'new'}
     """
     name = 'udf'
@@ -495,20 +477,25 @@ class PythonParser(BaseParser):
                 value: value can be number string / key.
             8.  param: sort
                 value: value can be asc (default) / desc.
+            9.  param: strip
+                value: chars. return str(input_object).strip(value)
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
             [[1, 2, 3], 'getitem', '[:2]']              => [1, 2]
-            [{'a': '1'}, 'getitem', 'a']                => 1
+            [{'a': '1'}, 'getitem', 'a']                => '1'
             ['a b\tc \n \td', 'split', '']              => ['a', 'b', 'c', 'd']
-            [['a', 'b', 'c', 'd'], 'join', '']          => abcd
+            [['a', 'b', 'c', 'd'], 'join', '']          => 'abcd'
             [['aaa', ['b'], ['c', 'd']], 'chain', '']   => ['a', 'a', 'a', 'b', 'c', 'd']
-            ['python', 'template', '1 $input_object 2'] => 1 python 2
+            ['python', 'template', '1 $input_object 2'] => '1 python 2'
             [[1], 'index', '0']                         => 1
-            ['python', 'index', '-1']                   => n
-            [{'a': '1'}, 'index', 'a']                  => 1
+            ['python', 'index', '-1']                   => 'n'
+            [{'a': '1'}, 'index', 'a']                  => '1'
             ['adcb', 'sort', '']                        => ['a', 'b', 'c', 'd']
             [[1, 3, 2, 4], 'sort', 'desc']              => [4, 3, 2, 1]
+            ['aabbcc', 'strip', 'a']                    => 'bbcc'
+            ['aabbcc', 'strip', 'ac']                   => 'bb'
+            [' \t a ', 'strip', '']                     => 'a'
 """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -526,9 +513,13 @@ class PythonParser(BaseParser):
             'template': self._handle_template,
             'index': lambda input_object, param, value: input_object[int(value) if (value.isdigit() or value.startswith('-') and value[1:].isdigit()) else value],
             'sort': lambda input_object, param, value: sorted(input_object, reverse=(True if value.lower() == 'desc' else False)),
+            'strip': self._handle_strip,
         }
         function = param_functions.get(param, return_self)
         return function(input_object, param, value)
+
+    def _handle_strip(self, input_object, param, value):
+        return str(input_object).strip(value or None)
 
     def _handle_template(self, input_object, param, value):
         if isinstance(input_object, dict):
@@ -575,6 +566,7 @@ class LoaderParser(BaseParser):
             ['{"a": "b"}', 'json', '']   => {'a': 'b'}
             ['a = "a"', 'toml', '']      => {'a': 'a'}
             ['animal: pets', 'yaml', ''] => {'animal': 'pets'}
+
     """
     name = 'loader'
     _RECURSION_LIST = True
@@ -617,9 +609,9 @@ class TimeParser(BaseParser):
         examples:
 
             ['2020-02-03 20:29:45', 'encode', '']                  => 1580732985.0
-            ['1580732985.1873155', 'decode', '']                   => 2020-02-03 20:29:45
+            ['1580732985.1873155', 'decode', '']                   => '2020-02-03 20:29:45'
             ['2020-02-03T20:29:45', 'encode', '%Y-%m-%dT%H:%M:%S'] => 1580732985.0
-            ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S']  => Feb 03 2020 20:29:45
+            ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S']  => 'Feb 03 2020 20:29:45'
 
     WARNING: time.struct_time do not have timezone info, so %z is always the local timezone
     """

@@ -630,7 +630,7 @@ class TimeParser(BaseParser):
             if '%z' in value:
                 msg = 'TimeParser Warning: time.struct_time do not have timezone info, so %z is nonsense'
                 warn(msg)
-                logger.warn(msg)
+                logger.warning(msg)
             return mktime(strptime(input_object, value)) - tz_fix_seconds
         elif param == 'decode':
             if isinstance(input_object,
@@ -941,7 +941,7 @@ class Uniparser(object):
             if not parser:
                 msg = f'Skip parsing for unknown name: {parser_name}'
                 warn(msg)
-                logger.warn(msg)
+                logger.warning(msg)
                 continue
             if context and parser_name == 'udf' and not value:
                 value = context

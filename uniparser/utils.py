@@ -7,6 +7,7 @@ from shlex import split as shlex_split
 from urllib.parse import urlparse
 
 from .config import GlobalConfig
+from .exceptions import InvalidSchemaError
 
 
 class NotSet(object):
@@ -218,7 +219,7 @@ class RequestsAdapter(SyncRequestAdapter):
             self.session = session
         else:
             self.session = Session(**kwargs)
-        self.error = RequestException
+        self.error = (RequestException, InvalidSchemaError)
 
     def __enter__(self):
         return self
@@ -239,7 +240,7 @@ class HTTPXSyncAdapter(SyncRequestAdapter):
             self.session = session
         else:
             self.session = Client(**kwargs)
-        self.error = HTTPError
+        self.error = (HTTPError, InvalidSchemaError)
 
     def __enter__(self):
         return self
@@ -260,7 +261,7 @@ class TorequestsSyncAdapter(SyncRequestAdapter):
             self.session = session
         else:
             self.session = tPool(catch_exception=False, **kwargs)
-        self.error = FailureException
+        self.error = (FailureException, InvalidSchemaError)
 
     def __enter__(self):
         return self
@@ -275,7 +276,7 @@ class HTTPXAsyncAdapter(AsyncRequestAdapter):
         from httpx import AsyncClient, HTTPError
         self.session = session
         self.session_class = AsyncClient(**kwargs)
-        self.error = HTTPError
+        self.error = (HTTPError, InvalidSchemaError)
 
     async def __aenter__(self):
         if not self.session:
@@ -292,7 +293,7 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
         from aiohttp import ClientSession, ClientError
         self.session = session
         self.session_class = partial(ClientSession, **kwargs)
-        self.error = ClientError
+        self.error = (ClientError, InvalidSchemaError)
 
     async def __aenter__(self):
         if not self.session:
@@ -334,7 +335,7 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
         if session:
             kwargs['session'] = session
         self.req = Requests(catch_exception=False, **kwargs)
-        self.error = FailureException
+        self.error = (FailureException, InvalidSchemaError)
 
     async def __aenter__(self):
         await self.req.session

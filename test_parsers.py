@@ -471,6 +471,13 @@ def test_python_parser():
     result = uni.python.parse(*[[1, 3, 2, 4], 'sort', 'desc'])
     # print(result)
     assert result == [4, 3, 2, 1]
+    # ===================== test strip =====================
+    result = uni.python.parse(*['aabbcc', 'strip', 'ac'])
+    # print(result)
+    assert result == 'bb'
+    result = uni.python.parse(*['  bb\t\n', 'strip', ''])
+    # print(result)
+    assert result == 'bb'
 
 
 def test_udf_parser():

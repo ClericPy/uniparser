@@ -122,12 +122,14 @@
                                         <el-input @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
                                             style="width: 40%;zoom: 120%;display:inline-block;" :rows="1" autosize
-                                            placeholder="Param. Ctrl+Enter: submit; Alt+Enter: new chain" v-model="r[1]">
+                                            placeholder="Param. Ctrl+Enter: submit; Alt+Enter: new chain"
+                                            v-model="r[1]">
                                         </el-input>
                                         <el-input @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
                                             style="width: 40%;zoom: 120%;display:inline-block;" :rows="1" autosize
-                                            placeholder="Value. Ctrl+Enter: submit; Alt+Enter: new chain" v-model="r[2]">
+                                            placeholder="Value. Ctrl+Enter: submit; Alt+Enter: new chain"
+                                            v-model="r[2]">
                                         </el-input>
                                         <i class="el-icon-delete" @click="del_rule_chain(index, i)">
                                         </i>
@@ -151,7 +153,8 @@
                             style="margin: 0.5em 0 0.5em 45%; zoom: 1.5;"></i>
                     </el-form-item>
                     <el-form-item>
-                        <el-button type="primary" @click="parse"> <i class="el-icon-video-play"> Parse </i>
+                        <el-button type="primary" :disabled="!input_object" title="Press Download button first."
+                            @click="parse"> <i class="el-icon-video-play"> Parse </i>
                         </el-button>
                         <el-button type="warning" @click="load_rule_popup"> <i class="el-icon-edit-outline"> Loads </i>
                         </el-button>
@@ -179,8 +182,8 @@
                 </el-form>
                 <el-dialog title="Input the JSON string" :visible.sync="new_rule_visible">
                     <el-form>
-                        <el-input v-model="new_rule_json" placeholder="Json dict for Requests" type="textarea"
-                            :autosize="{ minRows: 5, maxRows: 10}" :autofocus="true"></el-input>
+                        <el-input ref="load_json_input" v-model="new_rule_json" placeholder="Json dict for Requests"
+                            type="textarea" :autosize="{ minRows: 5, maxRows: 15}"></el-input>
                     </el-form>
                     <div slot="footer" class="dialog-footer">
                         <el-button @click="load_rule()"> Cancel </el-button>
@@ -355,6 +358,9 @@
                 },
                 load_rule_popup() {
                     this.new_rule_visible = true
+                    setTimeout(() => {
+                        this.$refs.load_json_input.focus()
+                    }, 0);
                     if (!this.new_rule_json) {
                         this.new_rule_json = this.current_crawler_rule_json
                     }

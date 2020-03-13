@@ -1047,6 +1047,18 @@ def test_uni_parser_frequency():
     asyncio.get_event_loop().run_until_complete(test_async_crawl())
 
 
+def _partial_test_parser():
+    from uniparser import Uniparser
+
+    uni = Uniparser()
+    args = [
+        ['adcb', 'sort', ''],
+    ]
+    max_len = max([len(str(i)) for i in args])
+    for i in args:
+        print(f'{str(i):<{max_len}} => {uni.python.parse(*i)}')
+
+
 if __name__ == "__main__":
     from uniparser.config import GlobalConfig
     GlobalConfig.GLOBAL_TIMEOUT = 5

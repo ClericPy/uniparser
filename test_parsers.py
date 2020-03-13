@@ -471,6 +471,13 @@ def test_python_parser():
     result = uni.python.parse(*[[1, 3, 2, 4], 'sort', 'desc'])
     # print(result)
     assert result == [4, 3, 2, 1]
+    # ===================== test strip =====================
+    result = uni.python.parse(*['aabbcc', 'strip', 'ac'])
+    # print(result)
+    assert result == 'bb'
+    result = uni.python.parse(*['  bb\t\n', 'strip', ''])
+    # print(result)
+    assert result == 'bb'
 
 
 def test_udf_parser():
@@ -1045,6 +1052,18 @@ def test_uni_parser_frequency():
 
     test_sync_crawl()
     asyncio.get_event_loop().run_until_complete(test_async_crawl())
+
+
+def _partial_test_parser():
+    from uniparser import Uniparser
+
+    uni = Uniparser()
+    args = [
+        ['adcb', 'sort', ''],
+    ]
+    max_len = max([len(str(i)) for i in args])
+    for i in args:
+        print(f'{str(i):<{max_len}} => {uni.python.parse(*i)}')
 
 
 if __name__ == "__main__":

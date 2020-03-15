@@ -14,9 +14,9 @@ from frequency_controller import AsyncFrequency, Frequency
 
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError
-from .utils import (AsyncRequestAdapter, SyncRequestAdapter, ensure_request,
-                    get_available_async_request, get_available_sync_request,
-                    get_host)
+from .utils import (AsyncRequestAdapter, LazyImporter, SyncRequestAdapter,
+                    ensure_request, get_available_async_request,
+                    get_available_sync_request, get_host)
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'CSSParser',
@@ -25,44 +25,16 @@ __all__ = [
 ]
 
 logger = getLogger('uniparser')
-
-
-class LazyImportLibsPool(object):
-
-    def __getattr__(self, name):
-        value = self.lazy_import(name)
-        return value
-
-    def lazy_import(self, name):
-        if name == 'jmespath_compile':
-            from jmespath import compile as jmespath_compile
-            setattr(self, 'jmespath_compile', jmespath_compile)
-        elif name == 'jp_parse':
-            from jsonpath_rw_ext import parse as jp_parse
-            setattr(self, 'jp_parse', jp_parse)
-        elif name == 'toml_loads':
-            from toml import loads as toml_loads
-            setattr(self, 'toml_loads', toml_loads)
-        elif name in ('BeautifulSoup', 'Tag'):
-            from bs4 import BeautifulSoup, Tag
-            setattr(self, 'BeautifulSoup', BeautifulSoup)
-            setattr(self, 'Tag', Tag)
-        elif name in ('OP_Tree', 'ITER_TYPES'):
-            from objectpath import Tree as OP_Tree
-            from objectpath.core import ITER_TYPES
-            setattr(self, 'OP_Tree', OP_Tree)
-            setattr(self, 'ITER_TYPES', ITER_TYPES)
-        elif name in ('yaml_full_load', 'yaml_safe_load'):
-            from yaml import full_load as yaml_full_load
-            from yaml import safe_load as yaml_safe_load
-            setattr(self, 'yaml_full_load', yaml_full_load)
-            setattr(self, 'yaml_safe_load', yaml_safe_load)
-        else:
-            raise NameError(f'`{name}` lazy_import has not been registered.')
-        return getattr(self, name)
-
-
-lib = LazyImportLibsPool()
+lib = LazyImporter()
+lib.register('from jmespath import compile as jmespath_compile',
+             'jmespath_compile')
+lib.register('from jsonpath_rw_ext import parse as jp_parse', 'jp_parse')
+lib.register('from toml import loads as toml_loads', 'toml_loads')
+lib.register('from bs4 import BeautifulSoup, Tag', ('BeautifulSoup', 'Tag'))
+lib.register('from objectpath import Tree as OP_Tree', 'OP_Tree')
+lib.register('from objectpath.core import ITER_TYPES', 'ITER_TYPES')
+lib.register('from yaml import full_load as yaml_full_load', 'yaml_full_load')
+lib.register('from yaml import safe_load as yaml_safe_load', 'yaml_safe_load')
 
 
 def return_self(self, *args, **kwargs):

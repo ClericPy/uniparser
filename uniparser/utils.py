@@ -3,11 +3,16 @@
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from functools import partial
+from logging import getLogger
+from re import compile as re_compile
 from shlex import split as shlex_split
+from typing import Dict, Union
 from urllib.parse import urlparse
 
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError
+
+logger = getLogger('uniparser')
 
 
 class NotSet(object):
@@ -410,3 +415,126 @@ def _exhaust_simple_coro(coro):
             coro.send(None)
         except StopIteration as e:
             return e.value
+
+
+class LazyImporter(object):
+    """Lazy import libs while it is really needed.
+
+    Usage::
+
+        >>> from uniparser.utils import LazyImporter
+        >>> lib = LazyImporter()
+        >>> lib.register('from re import findall')
+        True
+        >>> lib.findall('a', 'a a a a')
+        ['a', 'a', 'a', 'a']
+        >>> lib.register('import re')
+        True
+        >>> lib.re.findall('a', 'a a a a')
+        ['a', 'a', 'a', 'a']
+        >>> lib.register('from re import findall,    _MAXCACHE')
+        True
+        >>> lib._MAXCACHE
+        512
+        >>> lib.register('from re import findall', ('findall',))
+        True
+        >>> lib.findall('a', 'a a a a')
+        ['a', 'a', 'a', 'a']
+
+        from uniparser.utils import LazyImporter
+
+        lib = LazyImporter()
+
+        lib.register('from re import findall')
+        print(lib.findall('a', 'a a a a'))
+        # ['a', 'a', 'a', 'a']
+
+        lib.register('from re import findall as re_findall', ('re_findall',))
+        print(lib.re_findall('a', 'a a a a'))
+        # ['a', 'a', 'a', 'a']
+
+        lib.register('import re')
+        print(lib.re.findall('a', 'a a a a'))
+        # ['a', 'a', 'a', 'a']
+
+        lib.register('import re as regex', 'regex')
+        print(lib.regex.findall('a', 'a a a a'))
+        # ['a', 'a', 'a', 'a']
+
+        lib.register('from re import findall,    _MAXCACHE')
+        print(lib._MAXCACHE)
+        # 512
+
+        lib.register('from re import findall', ('findall',))
+        print(lib.findall('a', 'a a a a'))
+        # ['a', 'a', 'a', 'a']
+
+        lib.register('from re import findall, match', ('findall',))
+        try:
+            lib.match
+        except Exception as err:
+            print(repr(err))
+        # AttributeError("LazyImporter object has no attribute 'match'")
+
+        try:
+            lib.register('from re import findall as reg_findall')
+        except Exception as err:
+            print(repr(err))
+        # ValueError('Can not use `import var as var1` while names is None')
+    """
+    sub_import_patter = re_compile(r'.* ?import ')
+    find_import_names_pattern = re_compile(r'[a-zA-Z0-9_]+')
+
+    def __init__(self):
+        self.container: Dict[str, tuple] = {}
+        self.inverted_container: Dict[str, str] = {}
+
+    def __getattr__(self, name):
+        if name not in self.inverted_container:
+            raise AttributeError(
+                f"LazyImporter object has no attribute '{name}'")
+        value = self.lazy_import(name)
+        return value
+
+    def lazy_import(self, name):
+        # make `old_keys` in locals
+        old_keys = None
+        import_str = self.inverted_container[name]
+        # clean dict
+        names = self.container.pop(import_str)
+        for _name in names:
+            self.inverted_container.pop(_name, None)
+        old_keys = set(locals().keys())
+        # ! dangerous operation
+        exec(import_str)
+        current_locals = locals()
+        new_vars = current_locals.keys() - old_keys
+        for imported_var in new_vars:
+            if imported_var in names:
+                setattr(self, imported_var, current_locals[imported_var])
+        return getattr(self, name, NotSet)
+
+    def register(self, import_string, names: Union[tuple, str, None] = None):
+        if not names:
+            if ' as ' in import_string:
+                raise ValueError(
+                    'Can not use `import var as var1` while names is None')
+            names_string = self.sub_import_patter.sub('', import_string)
+            name_list = self.find_import_names_pattern.findall(names_string)
+            if not name_list:
+                return False
+            names = tuple(name_list)
+        elif isinstance(names, str):
+            names = (names,)
+        self.container[import_string] = names
+        for name in names:
+            if name in self.inverted_container:
+                old_import_str = self.inverted_container[name]
+                logger.warning(
+                    f'name `{name}` is registered, updated `{old_import_str}` -> `{import_string}`'
+                )
+            self.inverted_container[name] = import_string
+        return True
+
+    def add(self, import_string, names: Union[tuple, str, None] = None):
+        return self.register(import_string, names=names)

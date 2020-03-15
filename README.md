@@ -236,7 +236,8 @@ if __name__ == "__main__":
 
 Test code: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
 
-Advanced Usage Demo: [watchdogs](https://github.com/ClericPy/watchdogs)
+Advanced Usage: [Create crawler rule](https://github.com/ClericPy/watchdogs/blob/master/quick_start.md#create-a-crawlerrule) for  [watchdogs](https://github.com/ClericPy/watchdogs)
+
 
 > Generate parsers doc
 
@@ -253,4 +254,4 @@ for i in Uniparser().parser_classes:
   - [x] Upload dist with Web UI
 - [x] Add **github actions** for testing package
 - [x] Web UI for testing rules
-- [ ] Complete the doc in detail
+- [x] Complete the doc in detail

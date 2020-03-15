@@ -27,7 +27,7 @@ from .utils import (AsyncRequestAdapter, SyncRequestAdapter, ensure_request,
                     get_host)
 
 __all__ = [
-    'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'Tag', 'CSSParser',
+    'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'CSSParser',
     'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
     'JMESPathParser', 'PythonParser', 'UDFParser', 'LoaderParser', 'Uniparser'
 ]
@@ -266,12 +266,13 @@ class RegexParser(BaseParser):
     name = 're'
     test_url = 'https://regex101.com/'
     doc_url = 'https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference'
+    VALID_VALUE_PATTER = re_compile(r'^@|^\$\d+|^-$')
 
     def _parse(self, input_object, param, value):
         assert isinstance(input_object,
                           str), ValueError(r'input_object type should be str')
-        assert re_compile(r'^@|^\$\d+|^-$').match(
-            value) or not value, ValueError(r'args1 should match ^@|^\$\d+')
+        assert self.VALID_VALUE_PATTERN.match(value) or not value, ValueError(
+            r'args1 should match ^@|^\$\d+')
         com = re_compile(param)
         if not value:
             return com.findall(input_object)
@@ -403,7 +404,10 @@ class UDFParser(BaseParser):
     """
     name = 'udf'
     doc_url = 'https://docs.python.org/3/'
+    # can not import other libs
     _ALLOW_IMPORT = False
+    # strict protection
+    _ALLOW_EXEC_EVAL = False
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
     # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
@@ -432,11 +436,13 @@ class UDFParser(BaseParser):
                 context = {}
         else:
             context = value or {}
-        if not self._ALLOW_IMPORT and ('import' in param or 'exec(' in param or
-                                       'eval(' in param):
-            # cb = re_compile(r'^\s*(from  )?import \w+') # not strict enough
+        if not self._ALLOW_IMPORT and 'import' in param:
             raise RuntimeError(
-                'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` `exec` `eval` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
+                'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
+            )
+        if not self._ALLOW_EXEC_EVAL and 'exec' in param or 'eval' in param:
+            raise RuntimeError(
+                'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not has `exec` `eval` strictly. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually'
             )
         local_vars = {'input_object': input_object, 'context': context}
         local_vars.update(self._GLOBALS_ARGS)

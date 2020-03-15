@@ -34,7 +34,7 @@ setup(
     name="uniparser",
     version=version,
     keywords=
-    ("requests crawler parser tools universal lxml beautifulsoup bs4 jsonpath udf"
+    ("requests crawler parser tools universal lxml beautifulsoup bs4 jsonpath udf toml yaml"
     ),
     description=
     "Provide a universal solution for crawler platforms. Read more: https://github.com/ClericPy/uniparser.",

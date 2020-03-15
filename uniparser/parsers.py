@@ -36,29 +36,30 @@ class LazyImportLibsPool(object):
     def lazy_import(self, name):
         if name == 'jmespath_compile':
             from jmespath import compile as jmespath_compile
-            setattr(self.__class__, 'jmespath_compile', jmespath_compile)
+            setattr(self, 'jmespath_compile', jmespath_compile)
         elif name == 'jp_parse':
             from jsonpath_rw_ext import parse as jp_parse
-            setattr(self.__class__, 'jp_parse', jp_parse)
+            setattr(self, 'jp_parse', jp_parse)
         elif name == 'toml_loads':
             from toml import loads as toml_loads
-            setattr(self.__class__, 'toml_loads', toml_loads)
+            setattr(self, 'toml_loads', toml_loads)
         elif name in ('BeautifulSoup', 'Tag'):
             from bs4 import BeautifulSoup, Tag
-            setattr(self.__class__, 'BeautifulSoup', BeautifulSoup)
-            setattr(self.__class__, 'Tag', Tag)
+            setattr(self, 'BeautifulSoup', BeautifulSoup)
+            setattr(self, 'Tag', Tag)
         elif name in ('OP_Tree', 'ITER_TYPES'):
             from objectpath import Tree as OP_Tree
             from objectpath.core import ITER_TYPES
-            setattr(self.__class__, 'OP_Tree', OP_Tree)
-            setattr(self.__class__, 'ITER_TYPES', ITER_TYPES)
+            setattr(self, 'OP_Tree', OP_Tree)
+            setattr(self, 'ITER_TYPES', ITER_TYPES)
         elif name in ('yaml_full_load', 'yaml_safe_load'):
             from yaml import full_load as yaml_full_load
             from yaml import safe_load as yaml_safe_load
-            setattr(self.__class__, 'yaml_full_load', yaml_full_load)
-            setattr(self.__class__, 'yaml_safe_load', yaml_safe_load)
+            setattr(self, 'yaml_full_load', yaml_full_load)
+            setattr(self, 'yaml_safe_load', yaml_safe_load)
         else:
             raise NameError(f'`{name}` lazy_import has not been registered.')
+        return getattr(self, name)
 
 
 lib = LazyImportLibsPool()
@@ -132,6 +133,7 @@ class BaseParser(ABC):
                 return self._parse(input_object, param, value)
         except Exception as err:
             # for traceback
+            # import traceback; traceback.print_exc()
             return err
 
 
@@ -295,7 +297,7 @@ class RegexParser(BaseParser):
     name = 're'
     test_url = 'https://regex101.com/'
     doc_url = 'https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference'
-    VALID_VALUE_PATTER = re_compile(r'^@|^\$\d+|^-$')
+    VALID_VALUE_PATTERN = re_compile(r'^@|^\$\d+|^-$')
 
     def _parse(self, input_object, param, value):
         assert isinstance(input_object,

@@ -19,7 +19,7 @@ Provide a universal solution for crawler.
 ## Feature List
 
 1. Support most of popular parsers for HTML / XML / JSON / AnyString / Python object
-   1. [Parser docs](https://github.com/ClericPy/uniparser/blob/master/Parsers.md)
+   1. [Parser docs](https://github.com/ClericPy/uniparser/blob/master/parsers.md)
    2. <details>
         <summary>parser list</summary>
       

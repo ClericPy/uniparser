@@ -19,7 +19,7 @@ Provide a universal solution for crawler.
 ## Feature List
 
 1. Support most of popular parsers for HTML / XML / JSON / AnyString / Python object
-   1. [Parser docs](https://github.com/ClericPy/uniparser/blob/master/parsers.md)
+   1. [Parser docs](https://github.com/ClericPy/uniparser/blob/master/Parsers.md)
    2. <details>
         <summary>parser list</summary>
       
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     # http://127.0.0.1:8080
 ```
 
-### Fastapi subapp usage
+### or Fastapi subapp usage
 
 ```python
 import uvicorn

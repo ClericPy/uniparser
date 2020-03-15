@@ -447,7 +447,12 @@ class UDFParser(BaseParser):
             raise RuntimeError(
                 'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not has `exec` `eval` strictly. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually'
             )
-        local_vars = {'input_object': input_object, 'context': context}
+        # obj is an alias for input_object
+        local_vars = {
+            'input_object': input_object,
+            'context': context,
+            'obj': input_object
+        }
         local_vars.update(self._GLOBALS_ARGS)
         # run code
         code = getattr(param, 'code', param)

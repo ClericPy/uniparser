@@ -543,6 +543,11 @@ def parse(item):
     # print(result)
     assert result == 'hello world.'
 
+    # test alias obj
+    result = uni.udf.parse('hello', 'obj + " world."', '')
+    # print(result)
+    assert result == 'hello world.'
+
 
 def test_loader_parser():
     uni = Uniparser()

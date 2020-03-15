@@ -10,29 +10,31 @@ from time import localtime, mktime, strftime, strptime, timezone
 from typing import Any, Dict, List, Union
 from warnings import warn
 
-from bs4 import BeautifulSoup, Tag
 from frequency_controller import AsyncFrequency, Frequency
-from jmespath import compile as jmespath_compile
-from jsonpath_rw_ext import parse as jp_parse
-from objectpath import Tree as OP_Tree
-from objectpath.core import ITER_TYPES
-from toml import loads as toml_loads
-from yaml import full_load as yaml_full_load
-from yaml import safe_load as yaml_safe_load
 
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError
-from .utils import (AsyncRequestAdapter, SyncRequestAdapter, ensure_request,
-                    get_available_async_request, get_available_sync_request,
-                    get_host)
+from .utils import (AsyncRequestAdapter, LazyImporter, SyncRequestAdapter,
+                    ensure_request, get_available_async_request,
+                    get_available_sync_request, get_host)
 
 __all__ = [
-    'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'Tag', 'CSSParser',
+    'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'CSSParser',
     'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
     'JMESPathParser', 'PythonParser', 'UDFParser', 'LoaderParser', 'Uniparser'
 ]
 
 logger = getLogger('uniparser')
+lib = LazyImporter()
+lib.register('from jmespath import compile as jmespath_compile',
+             'jmespath_compile')
+lib.register('from jsonpath_rw_ext import parse as jp_parse', 'jp_parse')
+lib.register('from toml import loads as toml_loads', 'toml_loads')
+lib.register('from bs4 import BeautifulSoup, Tag', ('BeautifulSoup', 'Tag'))
+lib.register('from objectpath import Tree as OP_Tree', 'OP_Tree')
+lib.register('from objectpath.core import ITER_TYPES', 'ITER_TYPES')
+lib.register('from yaml import full_load as yaml_full_load', 'yaml_full_load')
+lib.register('from yaml import safe_load as yaml_safe_load', 'yaml_safe_load')
 
 
 def return_self(self, *args, **kwargs):
@@ -103,6 +105,7 @@ class BaseParser(ABC):
                 return self._parse(input_object, param, value)
         except Exception as err:
             # for traceback
+            # import traceback; traceback.print_exc()
             return err
 
 
@@ -161,8 +164,8 @@ class CSSParser(BaseParser):
         if not input_object:
             return result
         # ensure input_object is instance of BeautifulSoup
-        if not isinstance(input_object, Tag):
-            input_object = BeautifulSoup(input_object, 'lxml')
+        if not isinstance(input_object, lib.Tag):
+            input_object = lib.BeautifulSoup(input_object, 'lxml')
         operate = self.operations.get(value, return_self)
         if value.startswith('@'):
             result = [
@@ -219,8 +222,8 @@ class XMLParser(BaseParser):
         if not input_object:
             return result
         # ensure input_object is instance of BeautifulSoup
-        if not isinstance(input_object, Tag):
-            input_object = BeautifulSoup(input_object, 'lxml-xml')
+        if not isinstance(input_object, lib.Tag):
+            input_object = lib.BeautifulSoup(input_object, 'lxml-xml')
         operate = self.operations.get(value, return_self)
         if value.startswith('@'):
             result = [
@@ -266,12 +269,13 @@ class RegexParser(BaseParser):
     name = 're'
     test_url = 'https://regex101.com/'
     doc_url = 'https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference'
+    VALID_VALUE_PATTERN = re_compile(r'^@|^\$\d+|^-$')
 
     def _parse(self, input_object, param, value):
         assert isinstance(input_object,
                           str), ValueError(r'input_object type should be str')
-        assert re_compile(r'^@|^\$\d+|^-$').match(
-            value) or not value, ValueError(r'args1 should match ^@|^\$\d+')
+        assert self.VALID_VALUE_PATTERN.match(value) or not value, ValueError(
+            r'args1 should match ^@|^\$\d+')
         com = re_compile(param)
         if not value:
             return com.findall(input_object)
@@ -315,7 +319,7 @@ class JSONPathParser(BaseParser):
         if param.startswith('JSON.'):
             param = '$%s' % param[4:]
         # try get the compiled jsonpath
-        jsonpath_expr = getattr(param, 'code', jp_parse(param))
+        jsonpath_expr = getattr(param, 'code', lib.jp_parse(param))
         result = [
             getattr(match, attr_name, match.value)
             for match in jsonpath_expr.find(input_object)
@@ -342,14 +346,14 @@ class ObjectPathParser(BaseParser):
     doc_url = 'http://github.com/adriank/ObjectPath'
     test_url = 'http://objectpath.org/'
     _RECURSION_LIST = False
-    ITER_TYPES_TUPLE = tuple(ITER_TYPES)
+    ITER_TYPES_TUPLE = tuple(lib.ITER_TYPES)
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
             input_object = GlobalConfig.json_loads(input_object)
         if param.startswith('JSON.'):
             param = '$%s' % param[4:]
-        tree = OP_Tree(input_object)
+        tree = lib.OP_Tree(input_object)
         result = tree.execute(param)
         # from objectpath.core import ITER_TYPES
         if isinstance(result, self.ITER_TYPES_TUPLE):
@@ -380,7 +384,7 @@ class JMESPathParser(BaseParser):
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
             input_object = GlobalConfig.json_loads(input_object)
-        code = getattr(param, 'code', jmespath_compile(param))
+        code = getattr(param, 'code', lib.jmespath_compile(param))
         return code.search(input_object)
 
 
@@ -403,7 +407,10 @@ class UDFParser(BaseParser):
     """
     name = 'udf'
     doc_url = 'https://docs.python.org/3/'
+    # can not import other libs
     _ALLOW_IMPORT = False
+    # strict protection
+    _ALLOW_EXEC_EVAL = False
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
     # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
@@ -432,11 +439,13 @@ class UDFParser(BaseParser):
                 context = {}
         else:
             context = value or {}
-        if not self._ALLOW_IMPORT and ('import' in param or 'exec(' in param or
-                                       'eval(' in param):
-            # cb = re_compile(r'^\s*(from  )?import \w+') # not strict enough
+        if not self._ALLOW_IMPORT and 'import' in param:
             raise RuntimeError(
-                'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` `exec` `eval` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
+                'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
+            )
+        if not self._ALLOW_EXEC_EVAL and 'exec' in param or 'eval' in param:
+            raise RuntimeError(
+                'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not has `exec` `eval` strictly. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually'
             )
         local_vars = {'input_object': input_object, 'context': context}
         local_vars.update(self._GLOBALS_ARGS)
@@ -574,10 +583,10 @@ class LoaderParser(BaseParser):
     def __init__(self):
         self.loaders = {
             'json': GlobalConfig.json_loads,
-            'toml': toml_loads,
-            'yaml': yaml_full_load,
-            'yaml_safe_load': yaml_safe_load,
-            'yaml_full_load': yaml_full_load,
+            'toml': lib.toml_loads,
+            'yaml': lib.yaml_full_load,
+            'yaml_safe_load': lib.yaml_safe_load,
+            'yaml_full_load': lib.yaml_full_load,
         }
         super().__init__()
 
@@ -656,9 +665,9 @@ class CompiledString(str):
     @classmethod
     def compile(cls, obj, string, mode=None):
         if mode == 'jmespath':
-            obj.code = jmespath_compile(string)
+            obj.code = lib.jmespath_compile(string)
         elif mode == 'jsonpath':
-            obj.code = jp_parse(string)
+            obj.code = lib.jp_parse(string)
         elif mode == 'udf':
             obj.operator = UDFParser.get_code_mode(string)
             # for higher performance, pre-compile the code

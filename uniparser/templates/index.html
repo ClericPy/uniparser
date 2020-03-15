@@ -262,10 +262,12 @@
                 download() {
                     var data = this.current_crawler_rule_json
                     this.downloading = true
+                    this.request_status = '(Downloading)'
+                    this.input_object = ''
                     this.$http.post('request', data).then(
                         r => {
                             let scode = r.body.text
-                            this.input_object = scode
+                            this.input_object = scode.replace(/^\s+/, '')
                             if (!this.crawler_rule.name) {
                                 let default_name = 'U-' + new Date().getTime().toString().slice(0, -3)
                                 try {

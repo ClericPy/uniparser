@@ -5,10 +5,10 @@ import warnings
 from urllib.parse import urlparse
 
 import requests
+from bs4 import Tag
 from uniparser import (Crawler, CrawlerRule, HostRule, JSONRuleStorage,
                        ParseRule, Uniparser)
 from uniparser.crawler import RuleNotFoundError
-from uniparser.parsers import Tag
 from uniparser.utils import (AiohttpAsyncAdapter, HTTPXAsyncAdapter,
                              HTTPXSyncAdapter, RequestsAdapter,
                              TorequestsAsyncAdapter, TorequestsSyncAdapter)

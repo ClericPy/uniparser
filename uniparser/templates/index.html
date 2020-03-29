@@ -71,18 +71,20 @@
             <el-main>
                 <el-form :model="crawler_rule">
                     <el-input clearable v-model="crawler_rule.name" style="width: 40%;zoom: 100%;"
-                        placeholder="Auto set after downloading.">
+                        placeholder="Auto set after downloading">
                         <span slot="prepend">Rule Name</span>
                     </el-input><br>
                     <el-input v-model="crawler_rule.regex" style="width: 40%;zoom: 100%;"
-                        placeholder="Regex to match the url.">
+                        placeholder="Regex to match the url">
                         <span slot="prepend">Regex Pattern</span>
                     </el-input><br>
-                    <el-input v-model="encoding" style="width: 40%;zoom: 100%;" placeholder="Encoding of request_args, defaults to None">
+                    <el-input v-model="encoding" style="width: 40%;zoom: 100%;"
+                        placeholder="Encoding of request_args, defaults to None">
                         <span slot="prepend">Encoding</span>
                     </el-input>
                     <el-form-item label="Request Args">
-                        <el-button type="text" @click="input_curl">cURL Parse</el-button>
+                        <el-link type="primary" @click="input_curl"><b>cURL Parse</b></el-link><br>
+                        </el-link>
                         <el-input v-model="crawler_rule.request_args" placeholder="Json dict for Requests"
                             type="textarea" autosize></el-input>
                     </el-form-item>
@@ -91,6 +93,7 @@
                                 class="el-icon-download"></i><i v-show="downloading" class="el-icon-loading"></i>
                             Download
                         </el-button>
+                        <el-link target="_blank" title="Current URL" :href="current_request_url" type="primary">${current_request_url}
                     </el-form-item>
                     <el-form-item :label="'Response Body ' + request_status " id="request_status">
                         <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 5}" placeholder="" width="50%"
@@ -142,7 +145,7 @@
                                         title="Add a new rule chain" @click="add_new_rule_chain(index)"></i>
                                     <br>
                                     <div class="sub-title">ChildRules<el-checkbox v-model="rule.iter_parse_child"
-                                            title="Parse the upstream input_object one by one, and return the result list."
+                                            title="Parse the upstream input_object one by one, and return the result list"
                                             style="zoom: 0.9;margin-left: 2em;">Iter Parse</el-checkbox>
                                     </div>
                                     <el-input class="child-rules-input" type="textarea" autosize style="width: 60%;"
@@ -158,7 +161,7 @@
                     </el-form-item>
                     <el-form-item>
                         <el-button type="primary" :disabled="!input_object"
-                            title="Parse the input object with the CrawlerRule, press Download button before parsing."
+                            title="Parse the input object with the CrawlerRule, press Download button before parsing"
                             @click="parse"> <i class="el-icon-video-play"> Parse </i>
                         </el-button>
                         <el-button type="warning" @click="load_rule_popup" title="Load CrawlerRule from a JSON string">
@@ -167,7 +170,7 @@
                     </el-form-item>
                     <hr>
                     <el-form-item label="CrawlerRule JSON">
-                        <el-checkbox v-model="pretty_json" title="Switch between 0 and 2 indent.">Pretty</el-checkbox>
+                        <el-checkbox v-model="pretty_json" title="Switch between 0 and 2 indent">Pretty</el-checkbox>
                         <el-button size='mini' icon="el-icon-document-copy"
                             data-clipboard-target="#current_crawler_rule_json" id="copy" title="Copy" circle>
                         </el-button>
@@ -218,7 +221,7 @@
                     docs: '',
                     crawler_rule: {
                         name: '',
-                        regex: '^http://httpbin.org/$',
+                        regex: '^https://httpbin.org/html$',
                         parse_rules: [{
                             "name": "title",
                             "chain_rules": [
@@ -230,7 +233,7 @@
                         }],
                         request_args: JSON.stringify({
                             "method": "get",
-                            "url": "http://httpbin.org/",
+                            "url": "https://httpbin.org/html",
                             "headers": {
                                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
                             }
@@ -279,12 +282,12 @@
                                 let default_name = 'U-' + new Date().getTime().toString().slice(0, -3)
                                 try {
                                     // get title as name
-                                    let el = document.createElement('html');
-                                    el.innerHTML = scode
-                                    let title = (el.getElementsByTagName('title')[0] || '').innerText
-                                    title = title.replace(/- .*/g, '')
+                                    var el = new DOMParser().parseFromString(scode, "text/html");
+                                    let title = (el.getElementsByTagName('title')[0] || el.getElementsByTagName(
+                                        'h1')[0] || el.getElementsByTagName('h2')[0] || '').innerText
+                                    title = title.replace(/-.*/g, '')
                                     let h1 = (el.getElementsByTagName('h1')[0] || '').innerText
-                                    let name = title || h1 || this.crawler_rule.request_args.url || default_name
+                                    let name = title || this.crawler_rule.request_args.url || default_name
                                     this.crawler_rule.name = name
                                 } catch (error) {
                                     this.crawler_rule.name = default_name
@@ -309,7 +312,7 @@
                         'input_object': this.input_object,
                     }
                     if (!this.crawler_rule.parse_rules || !this.input_object) {
-                        this.openAlert('Send request and fill the parse_rules before parsing.')
+                        this.openAlert('Send request and fill the parse_rules before parsing')
                         return
                     }
                     this.$http.post('parse', JSON.stringify(data)).then(
@@ -455,6 +458,13 @@
                 }
             },
             computed: {
+                current_request_url: function () {
+                    try {
+                        return JSON.parse(this.crawler_rule.request_args).url || ''
+                    } catch (error) {
+                        return ''
+                    }
+                },
                 current_crawler_rule_json: function () {
                     try {
                         var rules = []

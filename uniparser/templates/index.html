@@ -78,8 +78,7 @@
                         placeholder="Auto set after downloading.">
                         <span slot="prepend">Regex Pattern</span>
                     </el-input><br>
-                    <el-input v-model="crawler_rule.encoding" style="width: 40%;zoom: 100%;"
-                        placeholder="Defaults to None">
+                    <el-input v-model="encoding" style="width: 40%;zoom: 100%;" placeholder="Encoding for request_args, defaults to None">
                         <span slot="prepend">Encoding</span>
                     </el-input>
                     <el-form-item label="Request Args">
@@ -215,11 +214,11 @@
                     pretty_json: true,
                     drawer: false,
                     options: '',
+                    encoding: "",
                     docs: '',
                     crawler_rule: {
                         name: '',
                         regex: '^http://httpbin.org/$',
-                        encoding: "",
                         parse_rules: [{
                             "name": "title",
                             "chain_rules": [
@@ -448,7 +447,13 @@
                     });
                 }
             },
-            watch: {},
+            watch: {
+                encoding() {
+                    let args = JSON.parse(this.crawler_rule.request_args)
+                    args.encoding = this.encoding
+                    this.crawler_rule.request_args = JSON.stringify(args, null, 2)
+                }
+            },
             computed: {
                 current_crawler_rule_json: function () {
                     try {
@@ -479,7 +484,6 @@
                             request_args: JSON.parse(this.crawler_rule.request_args),
                             parse_rules: rules,
                             regex: this.crawler_rule.regex,
-                            encoding: this.crawler_rule.encoding,
                         }
                         this.crawler_rule.request_args = JSON.stringify(data.request_args, null, 2)
                         if (this.pretty_json) {

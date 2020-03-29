@@ -71,14 +71,14 @@
             <el-main>
                 <el-form :model="crawler_rule">
                     <el-input clearable v-model="crawler_rule.name" style="width: 40%;zoom: 100%;"
-                        placeholder="Input rule name, or auto set after downloading.">
+                        placeholder="Auto set after downloading.">
                         <span slot="prepend">Rule Name</span>
                     </el-input><br>
                     <el-input v-model="crawler_rule.regex" style="width: 40%;zoom: 100%;"
-                        placeholder="Auto set after downloading.">
+                        placeholder="Regex to match the url.">
                         <span slot="prepend">Regex Pattern</span>
                     </el-input><br>
-                    <el-input v-model="encoding" style="width: 40%;zoom: 100%;" placeholder="Encoding for request_args, defaults to None">
+                    <el-input v-model="encoding" style="width: 40%;zoom: 100%;" placeholder="Encoding of request_args, defaults to None">
                         <span slot="prepend">Encoding</span>
                     </el-input>
                     <el-form-item label="Request Args">

@@ -401,6 +401,7 @@ class UDFParser(BaseParser):
             ['a b c d', 'context["key"]', {'key': 'value'}]                                             => 'value'
             ['a b c d', 'md5(input_object)', '']                                                        => '713f592bd537f7725d491a03e837d64a'
             ['["string"]', 'json_loads(input_object)', '']                                              => ['string']
+            ['["string"]', 'json_loads(obj)', '']                                                       => ['string']
             [['string'], 'json_dumps(input_object)', '']                                                => '["string"]'
             ['a b c d', 'parse = lambda input_object: input_object', '']                                => 'a b c d'
             ['a b c d', 'def parse(input_object): context["key"]="new";return context', {'key': 'old'}] => {'key': 'new'}

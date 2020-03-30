@@ -3,7 +3,6 @@
 from abc import ABC, abstractmethod
 from asyncio import ensure_future
 from concurrent.futures import ThreadPoolExecutor
-from inspect import isawaitable
 from json import dump
 from logging import getLogger
 from pathlib import Path
@@ -13,7 +12,7 @@ from .config import GlobalConfig
 from .exceptions import RuleNotFoundError
 from .parsers import CrawlerRule, HostRule, JsonSerializable, Uniparser
 from .utils import (AsyncRequestAdapter, NotSet, SyncRequestAdapter,
-                    ensure_request, get_host)
+                    ensure_await_result, ensure_request, get_host)
 
 logger = getLogger('uniparser')
 
@@ -200,11 +199,8 @@ class Crawler(object):
         assert self.ensure_adapter(sync=False)
         request_args = ensure_request(request)
         url = request_args['url']
-        coro_or_result = self.storage.find_crawler_rule(url)
-        if isawaitable(coro_or_result):
-            crawler_rule = await coro_or_result
-        else:
-            crawler_rule = coro_or_result
+        crawler_rule = await ensure_await_result(
+            self.storage.find_crawler_rule(url))
         if not crawler_rule:
             return RuleNotFoundError(f'No rule matched the given url: {url}')
         result = await self.uniparser.acrawl(

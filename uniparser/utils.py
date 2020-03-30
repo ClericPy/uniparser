@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from functools import partial
+from inspect import isawaitable
 from logging import getLogger
 from re import compile as re_compile
 from shlex import split as shlex_split
@@ -538,3 +539,9 @@ class LazyImporter(object):
 
     def add(self, import_string, names: Union[tuple, str, None] = None):
         return self.register(import_string, names=names)
+
+
+async def ensure_await_result(result):
+    if isawaitable(result):
+        return await result
+    return result

@@ -108,7 +108,7 @@ def curlparse(string, encoding="utf-8"):
     return requests_args
 
 
-def ensure_request(request):
+def ensure_request(request) -> dict:
     """Used for requests.request / Requests.request with **ensure_request(request)
     :param request: dict or curl-string or url
 

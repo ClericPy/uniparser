@@ -8,12 +8,11 @@ from re import compile as re_compile
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
 from typing import Any, Dict, List, Union
-from warnings import warn
 
 from frequency_controller import AsyncFrequency, Frequency
 
 from .config import GlobalConfig
-from .exceptions import InvalidSchemaError
+from .exceptions import InvalidSchemaError, UnknownParserNameError
 from .utils import (AsyncRequestAdapter, LazyImporter, SyncRequestAdapter,
                     ensure_request, get_available_async_request,
                     get_available_sync_request, get_host)
@@ -644,7 +643,6 @@ class TimeParser(BaseParser):
             # time string => timestamp
             if '%z' in value:
                 msg = 'TimeParser Warning: time.struct_time do not have timezone info, so %z is nonsense'
-                warn(msg)
                 logger.warning(msg)
             return mktime(strptime(input_object, value)) - tz_fix_seconds
         elif param == 'decode':
@@ -949,10 +947,9 @@ class Uniparser(object):
         for parser_name, param, value in chain_rules:
             parser = getattr(self, parser_name)
             if not parser:
-                msg = f'Skip parsing for unknown name: {parser_name}'
-                warn(msg)
-                logger.warning(msg)
-                continue
+                msg = f'Unknown parser name: {parser_name}'
+                logger.error(msg)
+                raise UnknownParserNameError(msg)
             if context and parser_name == 'udf' and not value:
                 value = context
             input_object = parser.parse(input_object, param, value)

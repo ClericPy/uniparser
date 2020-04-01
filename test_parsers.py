@@ -747,7 +747,7 @@ def test_default_usage():
     new_parse = '''
 def parse(input_object):
     context['new_key'] = 'cleared'
-    return (input_object, context)
+    return 'ok'
     '''
     crawler_rule.context.update({'new_key': 'new_value'})
     crawler_rule.clear_parse_rules()
@@ -759,16 +759,10 @@ def parse(input_object):
     })
     result = uni.parse(source_code, crawler_rule)
     # print(result)
-    assert result == {
-        'test_crawler_rule': {
-            'rule1': ('http', {
-                'new_key': 'cleared'
-            })
-        }
-    }
+    assert result == {'test_crawler_rule': {'rule1': 'ok'}}
     # print(crawler_rule.context)
     # now the crawler_rule.context has been updated as 'cleared'.
-    assert crawler_rule.context == {'new_key': 'cleared'}
+    assert crawler_rule.context['new_key'] == 'cleared'
 
 
 def test_uni_parser():

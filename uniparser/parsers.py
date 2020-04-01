@@ -962,6 +962,7 @@ class Uniparser(object):
         parse_rules = rule['parse_rules']
         parse_result: Dict[str, Any] = {}
         context = context or rule.context
+        context['request_args'] = rule['request_args']
         for parse_rule in parse_rules:
             context['parse_result'] = parse_result
             parse_result[parse_rule['name']] = self.parse_parse_rule(

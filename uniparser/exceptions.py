@@ -7,3 +7,7 @@ class RuleNotFoundError(BaseException):
 
 class InvalidSchemaError(BaseException):
     pass
+
+
+class UnknownParserNameError(ValueError):
+    pass

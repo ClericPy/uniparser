@@ -111,7 +111,10 @@ def parse_rule():
     rule_json = kwargs['rule']
     rule = CrawlerRule.loads(rule_json)
     # print(rule)
-    result = uni.parse(input_object, rule, {'resp': GLOBAL_RESP})
+    result = uni.parse(input_object, rule, {
+        'resp': GLOBAL_RESP,
+        'request_args': rule['request_args']
+    })
     return {'type': str(type(result)), 'data': repr(result)}
 
 

@@ -8,12 +8,11 @@ from re import compile as re_compile
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
 from typing import Any, Dict, List, Union
-from warnings import warn
 
 from frequency_controller import AsyncFrequency, Frequency
 
 from .config import GlobalConfig
-from .exceptions import InvalidSchemaError
+from .exceptions import InvalidSchemaError, UnknownParserNameError
 from .utils import (AsyncRequestAdapter, LazyImporter, SyncRequestAdapter,
                     ensure_request, get_available_async_request,
                     get_available_sync_request, get_host)
@@ -644,7 +643,6 @@ class TimeParser(BaseParser):
             # time string => timestamp
             if '%z' in value:
                 msg = 'TimeParser Warning: time.struct_time do not have timezone info, so %z is nonsense'
-                warn(msg)
                 logger.warning(msg)
             return mktime(strptime(input_object, value)) - tz_fix_seconds
         elif param == 'decode':
@@ -813,11 +811,6 @@ class CrawlerRule(JsonSerializable):
                  context: dict = None,
                  **kwargs):
         _request_args: dict = ensure_request(request_args)
-        if _request_args:
-            _request_args["headers"] = _request_args.setdefault(
-                "headers", {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
-                })
         self.context = context or {}
         parse_rules = [
             ParseRule(context=self.context, **parse_rule)
@@ -954,10 +947,9 @@ class Uniparser(object):
         for parser_name, param, value in chain_rules:
             parser = getattr(self, parser_name)
             if not parser:
-                msg = f'Skip parsing for unknown name: {parser_name}'
-                warn(msg)
-                logger.warning(msg)
-                continue
+                msg = f'Unknown parser name: {parser_name}'
+                logger.error(msg)
+                raise UnknownParserNameError(msg)
             if context and parser_name == 'udf' and not value:
                 value = context
             input_object = parser.parse(input_object, param, value)
@@ -967,6 +959,7 @@ class Uniparser(object):
         parse_rules = rule['parse_rules']
         parse_result: Dict[str, Any] = {}
         context = context or rule.context
+        context['request_args'] = rule['request_args']
         for parse_rule in parse_rules:
             context['parse_result'] = parse_result
             parse_result[parse_rule['name']] = self.parse_parse_rule(

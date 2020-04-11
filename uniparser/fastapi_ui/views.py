@@ -7,6 +7,7 @@ from time import time
 from traceback import format_exc
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.templating import Jinja2Templates
@@ -22,10 +23,13 @@ if not adapter:
         "one of these libs should be installed: ('requests', 'httpx', 'torequests')"
     )
 uni = Uniparser(adapter())
-
 GLOBAL_RESP = None
 templates = Jinja2Templates(
     directory=str((Path(__file__).parent.parent / 'templates').absolute()))
+app.mount(
+    "/static",
+    StaticFiles(directory=str((Path(__file__).parent.parent / 'static').absolute())),
+    name="static")
 cdn_urls = {
     'VUE_JS_CDN': 'https://cdn.staticfile.org/vue/2.6.11/vue.min.js',
     'ELEMENT_CSS_CDN': 'https://cdn.staticfile.org/element-ui/2.13.0/theme-chalk/index.css',

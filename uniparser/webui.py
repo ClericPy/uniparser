@@ -8,7 +8,7 @@ from pathlib import Path
 from time import time
 from traceback import format_exc
 
-from bottle import BaseRequest, Bottle, request, template
+from bottle import BaseRequest, Bottle, request, static_file, template
 
 from . import CrawlerRule, Uniparser, __version__
 from .utils import ensure_request, get_available_sync_request
@@ -31,9 +31,10 @@ cdn_urls = {
     'VUE_RESOURCE_CDN': 'https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js',
     'CLIPBOARDJS_CDN': 'https://cdn.staticfile.org/clipboard.js/2.0.4/clipboard.min.js',
 }
-
-index_tpl_path = Path(__file__).parent / 'templates' / 'index.html'
+root_path = Path(__file__).parent
+index_tpl_path = root_path / 'templates' / 'index.html'
 index_tpl_path = index_tpl_path.as_posix()
+static_path = (root_path / 'static').as_posix()
 
 
 def exception_handler(exc):
@@ -98,6 +99,11 @@ def curl_parse():
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
             })
     return {'result': result, 'ok': True}
+
+
+@app.get('/static/<path:path>')
+def callback(path):
+    return static_file(path, root=static_path)
 
 
 @app.post("/parse")

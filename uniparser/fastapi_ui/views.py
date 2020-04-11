@@ -7,6 +7,7 @@ from time import time
 from traceback import format_exc
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.templating import Jinja2Templates
@@ -22,10 +23,13 @@ if not adapter:
         "one of these libs should be installed: ('requests', 'httpx', 'torequests')"
     )
 uni = Uniparser(adapter())
-
 GLOBAL_RESP = None
 templates = Jinja2Templates(
     directory=str((Path(__file__).parent.parent / 'templates').absolute()))
+app.mount(
+    "/static",
+    StaticFiles(directory=str((Path(__file__).parent.parent / 'static').absolute())),
+    name="static")
 cdn_urls = {
     'VUE_JS_CDN': 'https://cdn.staticfile.org/vue/2.6.11/vue.min.js',
     'ELEMENT_CSS_CDN': 'https://cdn.staticfile.org/element-ui/2.13.0/theme-chalk/index.css',
@@ -98,9 +102,10 @@ async def curl_parse(request: Request):
     curl = (await request.body()).decode('u8')
     result = ensure_request(curl)
     if isinstance(curl, str) and curl.startswith('http'):
-        result['headers'] = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
-        }
+        result.setdefault(
+            'headers', {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
+            })
     return {'result': result, 'ok': True}
 
 
@@ -112,5 +117,8 @@ def parse_rule(kwargs: dict):
     rule_json = kwargs['rule']
     rule = CrawlerRule.loads(rule_json)
     # print(rule)
-    result = uni.parse(input_object, rule, {'resp': GLOBAL_RESP})
+    result = uni.parse(input_object, rule, {
+        'resp': GLOBAL_RESP,
+        'request_args': rule['request_args']
+    })
     return {'type': str(type(result)), 'data': repr(result)}

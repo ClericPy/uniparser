@@ -4,7 +4,6 @@ import re
 import sys
 
 from setuptools import find_packages, setup
-
 """
 linux:
 rm -rf "dist/*";rm -rf "build/*";python3 setup.py bdist_wheel;twine upload "dist/*;rm -rf "dist/*";rm -rf "build/*""
@@ -43,7 +42,7 @@ setup(
     license="MIT License",
     install_requires=install_requires,
     py_modules=["uniparser"],
-    package_data={'uniparser': ['templates/*.html']},
+    package_data={'uniparser': ['templates/*.html', 'static/*.js']},
     extras_require={
         'requests': ['requests'],
         'httpx': ['httpx'],

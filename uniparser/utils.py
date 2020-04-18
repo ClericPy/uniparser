@@ -46,8 +46,8 @@ class _Curl:
     parser.add_argument("-F", "--form")
     parser.add_argument("--data-binary")
     parser.add_argument("--connect-timeout", type=float)
-    parser.add_argument(
-        "-H", "--header", action="append", default=[])  # key: value
+    parser.add_argument("-H", "--header", action="append",
+                        default=[])  # key: value
     parser.add_argument("--compressed", action="store_true")
 
 
@@ -370,6 +370,44 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
         return text, resp
 
 
+class TorequestsAiohttpAsyncAdapter(AsyncRequestAdapter):
+    """torequests >= 5.0.0.
+
+    WARNING: `torequests.aiohttp_dummy.Requests` is faster than `torequests.dummy.Requests`, but it only can be init in async env."""
+
+    def __init__(self, session=None, **kwargs):
+        from torequests.aiohttp_dummy import Requests, FailureException
+        if session:
+            kwargs['session'] = session
+        self.req = Requests(catch_exception=False, **kwargs)
+        self.error = (FailureException, InvalidSchemaError)
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+    async def request(self, **request_args):
+        text, resp = '', None
+        retry = request_args.pop('retry', 0)
+        encoding = request_args.pop('encoding', None)
+        request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
+        for _ in range(retry + 1):
+            try:
+                resp = await self.req.request(**request_args)
+                if encoding:
+                    text = resp.content.decode(encoding)
+                else:
+                    text = resp.text
+                break
+            except self.error as e:
+                text = str(e)
+                resp = e
+                continue
+        return text, resp
+
+
 def no_adapter():
     return None
 
@@ -398,6 +436,7 @@ def get_available_async_request():
         'torequests': TorequestsAsyncAdapter,
         'aiohttp': AiohttpAsyncAdapter,
         'httpx': HTTPXAsyncAdapter,
+        'torequests_aiohttp': TorequestsAiohttpAsyncAdapter,
     }
     for name, adapter in choice.items():
         try:

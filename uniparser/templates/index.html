@@ -1,220 +1,377 @@
 <!DOCTYPE html>
 <html>
-
-<head>
+  <head>
     <meta charset="utf-8" />
-    <meta name="referrer" content="never">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="referrer" content="never" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link rel="shortcut icon" type="image/ico" href="/icon.png" />
     <title>Uniparser Test Console</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="{{cdn_urls['VUE_JS_CDN']}}"></script>
     <script src="{{cdn_urls['ELEMENT_JS_CDN']}}"></script>
     <script src="{{cdn_urls['VUE_RESOURCE_CDN']}}"></script>
     <script src="{{cdn_urls['CLIPBOARDJS_CDN']}}"></script>
     <style>
-        @import url("{{cdn_urls['ELEMENT_CSS_CDN']}}");
+      @import url("{{cdn_urls['ELEMENT_CSS_CDN']}}");
 
-        html>body {
-            width: 60%;
-            height: 98%;
-            margin: 0 0 0 20%;
-            background-color: #eceff1;
-            word-wrap: break-word;
-        }
+      html > body {
+        width: 60%;
+        height: 98%;
+        margin: 0 0 0 20%;
+        background-color: #eceff1;
+        word-wrap: break-word;
+      }
 
-        .sub-title {
-            color: #606266;
-            font-size: 0.9em;
-        }
+      .sub-title {
+        color: #606266;
+        font-size: 0.9em;
+      }
 
-        #el-drawer__title>span:focus {
-            outline-color: white;
-        }
+      #el-drawer__title > span:focus {
+        outline-color: white;
+      }
 
-        a:link {
-            color: #000000;
-            text-decoration: none;
-        }
+      a:link {
+        color: #000000;
+        text-decoration: none;
+      }
 
-        a:visited {
-            color: #000000;
-            text-decoration: none;
-        }
+      a:visited {
+        color: #000000;
+        text-decoration: none;
+      }
 
-        a:hover {
-            color: #000000;
-            text-decoration: none;
-        }
+      a:hover {
+        color: #000000;
+        text-decoration: none;
+      }
 
-        a:active {
-            color: #000000;
-            text-decoration: none;
-        }
+      a:active {
+        color: #000000;
+        text-decoration: none;
+      }
 
-        div.rule {
-            border: 1px dashed #aaaaaa;
-            padding: 5px;
-        }
+      div.rule {
+        border: 1px dashed #aaaaaa;
+        padding: 5px;
+      }
 
-        .el-input-group__prepend {
-            width: 7em;
-        }
+      .el-input-group__prepend {
+        width: 7em;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
+    <template id="init_vars">{{init_vars_b64}}</template>
     <div id="app">
-        <el-container>
-            <el-header style="margin-top: 2em;"><a href="https://github.com/ClericPy/uniparser" target="_blank"
-                    title="Click to Github" rel="noopener noreferrer">Uniparser Test Console v{{version}}</a></el-header>
-            <el-main>
-                <el-form :model="crawler_rule">
-                    <el-input clearable v-model="crawler_rule.name" style="width: 40%;zoom: 100%;"
-                        placeholder="Auto set after downloading">
-                        <span slot="prepend">Rule Name</span>
-                    </el-input><br>
-                    <el-input v-model="crawler_rule.regex" style="width: 40%;zoom: 100%;"
-                        placeholder="Regex to match the url">
-                        <span slot="prepend">Regex Pattern</span>
-                    </el-input><br>
-                    <el-input v-model="encoding" style="width: 40%;zoom: 100%;"
-                        placeholder="Encoding of request_args, defaults to None">
-                        <span slot="prepend">Encoding</span>
-                    </el-input>
-                    <el-form-item label="Request Args">
-                        <el-link type="primary" @click="input_curl"><b>cURL Parse</b></el-link><br>
-                        </el-link>
-                        <el-input v-model="crawler_rule.request_args" placeholder="Json dict for Requests"
-                            type="textarea" autosize></el-input>
-                    </el-form-item>
-                    <el-form-item>
-                        <el-button type="primary" @click="download"> <i v-show="!downloading"
-                                class="el-icon-download"></i><i v-show="downloading" class="el-icon-loading"></i>
-                            Download
-                        </el-button>
-                        <el-link target="_blank" title="Current URL" :href="current_request_url" type="primary">
-                            ${current_request_url}
-                    </el-form-item>
-                    <el-form-item :label="'Response Body ' + request_status " id="request_status">
-                        <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 5}" placeholder="" width="50%"
-                            v-model="input_object">
-                        </el-input>
-                    </el-form-item>
-                    <el-form-item label="Parse Rules">
-                        <br>
-                        <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
-                            <div class="rule">
-                                <el-input type="text" style="width: 50%;zoom: 100%;" autosize
-                                    placeholder="Rule name for saving parse result" v-model="rule.name">
-                                    <template slot="prepend" class="sub-title">Rule Name</template>
-                                </el-input>
-                                <i style="zoom: 1.5;" title="Send this ParseRule to child_rules" class="el-icon-d-caret"
-                                    @click="open_send_child_dialog(index)"></i>
-                                <i style="zoom: 1.5;" title="Delete this ParseRule" class="el-icon-delete"
-                                    @click="del_rule(index)"></i>
-                                <br>
-                                <div v-if="rule.name">
-                                    <div class="sub-title">Rules Chain</div>
-                                    <div v-for="(r, i) in crawler_rule.parse_rules[index].chain_rules"
-                                        class="rule_chain">
-                                        <i v-if="r[0]" @click="get_doc(r[0])" title="Read the parse doc"
-                                            style="padding: 0.1em;" class="el-icon-info"></i>
-                                        <i v-if="!r[0]" title="Doc not found" style="padding: 0.1em;"
-                                            class="el-icon-warning-outline"></i>
-                                        <el-autocomplete @keyup.ctrl.13.native="parse"
-                                            @keyup.alt.13.native="add_new_rule_chain(index)" class="inline-input"
-                                            style="width: 10%;zoom: 100%;" v-model="r[0]"
-                                            :fetch-suggestions="querySearch" placeholder="Parser Name">
-                                        </el-autocomplete>
-                                        <el-input @keyup.ctrl.13.native="parse"
-                                            @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
-                                            style="width: 40%;zoom: 120%;display:inline-block;" :rows="1" autosize
-                                            placeholder="Param" title="Ctrl+Enter: submit; Alt+Enter: new chain"
-                                            v-model="r[1]">
-                                        </el-input>
-                                        <el-input @keyup.ctrl.13.native="parse"
-                                            @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
-                                            style="width: 40%;zoom: 120%;display:inline-block;" :rows="1" autosize
-                                            placeholder="Value" title="Ctrl+Enter: submit; Alt+Enter: new chain"
-                                            v-model="r[2]">
-                                        </el-input>
-                                        <i class="el-icon-delete" title="Delete this rule chain"
-                                            @click="del_rule_chain(index, i)">
-                                        </i>
-                                        <br>
-                                    </div>
-                                    <i class="el-icon-circle-plus" style="margin: 0.5em 0 0.5em 45%; zoom: 1.2;"
-                                        title="Add a new rule chain" @click="add_new_rule_chain(index)"></i>
-                                    <br>
-                                    <div class="sub-title">ChildRules<el-checkbox v-model="rule.iter_parse_child"
-                                            title="Parse the upstream input_object one by one, and return the result list"
-                                            style="zoom: 0.9;margin-left: 2em;">Iter Parse</el-checkbox>
-                                    </div>
-                                    <el-input class="child-rules-input" type="textarea" autosize style="width: 60%;"
-                                        placeholder="Child rules, JSON list of ParseRule objects"
-                                        v-model="rule.child_rules">
-                                    </el-input>
-                                    <br>
-                                </div>
-                            </div>
-                        </template>
-                        <i class="el-icon-circle-plus-outline" @click="add_new_rule" title="Add a new ParseRule"
-                            style="margin: 0.5em 0 0.5em 45%; zoom: 1.5;"></i>
-                    </el-form-item>
-                    <el-form-item>
-                        <el-button type="primary" :disabled="!input_object"
-                            title="Parse the input object with the CrawlerRule, press Download button before parsing"
-                            @click="parse"> <i class="el-icon-video-play"> Parse </i>
-                        </el-button>
-                        <el-button type="warning" @click="load_rule_popup" title="Load CrawlerRule from a JSON string">
-                            <i class="el-icon-edit-outline"> Loads </i>
-                        </el-button>
-                    </el-form-item>
-                    <hr>
-                    <el-form-item label="CrawlerRule JSON">
-                        <el-checkbox v-model="pretty_json" style="padding-right: 0.5em"
-                            title="Switch between 0 and 2 indent">Pretty</el-checkbox>
-                        <el-button size='mini' icon="el-icon-document-copy"
-                            data-clipboard-target="#current_crawler_rule_json" id="copy" title="Copy" circle>
-                        </el-button>
-                        <el-input title="Can be loaded by CrawlerRule.from_json" type="textarea" autosize placeholder=""
-                            id="current_crawler_rule_json" v-model="current_crawler_rule_json">
-                        </el-input>
-                    </el-form-item>
-                    <el-drawer close-on-press-escape="true" title="Parse Result" :visible.sync="drawer" size="50%"
-                        direction="ttb">
-                        <b style="font-size: 0.8em;">${parse_result.type}</b>
-                        <textarea name="doc" id="show_parse_result"
-                            style="width: 100%; height: 100%;">${parse_result.data}</textarea>
-                    </el-drawer>
-                    <el-drawer :close-on-press-escape="false" title="Doc" :visible.sync="doc_drawer" size="50%"
-                        direction="ttb">
-                        <textarea name="doc" id="show_doc" style="width: 100%; height: 100%;"
-                            :v-model="current_doc">${current_doc}</textarea>
-                    </el-drawer>
-                </el-form>
-                <el-dialog title="Input the JSON string" :visible.sync="new_rule_visible">
-                    <el-form>
-                        <el-input ref="load_json_input" v-model="new_rule_json" placeholder="Json dict for Requests"
-                            type="textarea" :autosize="{ minRows: 5, maxRows: 15}"></el-input>
-                    </el-form>
-                    <div slot="footer" class="dialog-footer">
-                        <el-button @click="new_rule_visible = false"> Cancel </el-button>
-                        <el-button type="primary" @click="load_rule()"> OK </el-button>
+      <el-container>
+        <el-header style="margin-top: 2em;"
+          ><a
+            href="https://github.com/ClericPy/uniparser"
+            target="_blank"
+            title="Click to Github"
+            rel="noopener noreferrer"
+            >Uniparser Test Console v{{version}}</a
+          ></el-header
+        >
+        <el-main>
+          <el-form :model="crawler_rule">
+            <el-input
+              clearable
+              v-model="crawler_rule.name"
+              style="width: 40%; zoom: 100%;"
+              placeholder="Auto set after downloading"
+            >
+              <span slot="prepend">Rule Name</span> </el-input
+            ><br />
+            <el-input v-model="crawler_rule.regex" style="width: 40%; zoom: 100%;" placeholder="Regex to match the url">
+              <span slot="prepend">Regex Pattern</span> </el-input
+            ><br />
+            <el-input
+              v-model="encoding"
+              style="width: 40%; zoom: 100%;"
+              placeholder="Encoding of request_args, defaults to None"
+            >
+              <span slot="prepend">Encoding</span>
+            </el-input>
+            <el-form-item label="Request Args">
+              <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_curl"
+                ><b>cURL</b></el-button
+              >
+              <el-button
+                style="margin-left: 0;"
+                size="mini"
+                icon="el-icon-tickets"
+                @click="show_request_template"
+                v-if="crawler_rule.request_args"
+                ><b>Template</b></el-button
+              >
+              <el-input
+                v-model="crawler_rule.request_args"
+                placeholder="Json dict for Requests"
+                type="textarea"
+                autosize
+              ></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="download">
+                <i v-show="!downloading" class="el-icon-download"></i
+                ><i v-show="downloading" class="el-icon-loading"></i>
+                Download
+              </el-button>
+              <el-link
+                style="margin-left: 1em;"
+                target="_blank"
+                title="Current URL"
+                :href="current_request_url"
+                type="primary"
+              >
+                ${current_request_url}
+              </el-link>
+            </el-form-item>
+            <el-form-item :label="'Response Body ' + request_status " id="request_status">
+              <el-input
+                type="textarea"
+                :autosize="{ minRows: 2, maxRows: 5}"
+                placeholder=""
+                width="50%"
+                v-model="input_object"
+              >
+              </el-input>
+            </el-form-item>
+            <el-form-item label="Parse Rules">
+              <br />
+              <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
+                <div class="rule">
+                  <el-input
+                    type="text"
+                    style="width: 50%; zoom: 100%;"
+                    autosize
+                    placeholder="Rule name for saving parse result"
+                    v-model="rule.name"
+                  >
+                    <template slot="prepend" class="sub-title">Rule Name</template>
+                  </el-input>
+                  <i
+                    style="zoom: 1.5;"
+                    title="Send this ParseRule to child_rules"
+                    class="el-icon-d-caret"
+                    @click="open_send_child_dialog(index)"
+                  ></i>
+                  <i
+                    style="zoom: 1.5;"
+                    title="Delete this ParseRule"
+                    class="el-icon-delete"
+                    @click="del_rule(index)"
+                  ></i>
+                  <br />
+                  <div v-if="rule.name">
+                    <div class="sub-title">Rules Chain</div>
+                    <div v-for="(r, i) in crawler_rule.parse_rules[index].chain_rules" class="rule_chain">
+                      <i
+                        v-if="r[0]"
+                        @click="get_doc(r[0])"
+                        title="Read the parse doc"
+                        style="padding: 0.1em;"
+                        class="el-icon-info"
+                      ></i>
+                      <i v-if="!r[0]" title="Doc not found" style="padding: 0.1em;" class="el-icon-warning-outline"></i>
+                      <el-autocomplete
+                        @keyup.ctrl.13.native="parse"
+                        @keyup.alt.13.native="add_new_rule_chain(index)"
+                        class="inline-input"
+                        style="width: 10%; zoom: 100%;"
+                        v-model="r[0]"
+                        :fetch-suggestions="querySearch"
+                        placeholder="Parser Name"
+                      >
+                      </el-autocomplete>
+                      <el-input
+                        @keyup.ctrl.13.native="parse"
+                        @keyup.alt.13.native="add_new_rule_chain(index)"
+                        type="textarea"
+                        style="width: 40%; zoom: 120%; display: inline-block;"
+                        :rows="1"
+                        autosize
+                        placeholder="Param"
+                        title="Ctrl+Enter: submit; Alt+Enter: new chain"
+                        v-model="r[1]"
+                      >
+                      </el-input>
+                      <el-input
+                        @keyup.ctrl.13.native="parse"
+                        @keyup.alt.13.native="add_new_rule_chain(index)"
+                        type="textarea"
+                        style="width: 40%; zoom: 120%; display: inline-block;"
+                        :rows="1"
+                        autosize
+                        placeholder="Value"
+                        title="Ctrl+Enter: submit; Alt+Enter: new chain"
+                        v-model="r[2]"
+                      >
+                      </el-input>
+                      <i class="el-icon-delete" title="Delete this rule chain" @click="del_rule_chain(index, i)"> </i>
+                      <br />
                     </div>
-                </el-dialog>
-                <el-dialog title="Choose the rule name you want to send" :visible.sync="send_child_rule_visible">
-                    <template v-for="(item, index) in parse_rules_to_be_send" class="rule">
-                        <el-button type='primary' @click="send_child(item)"> ${item.rule.name}
-                        </el-button>
-                    </template>
-                </el-dialog>
-            </el-main>
-        </el-container>
+                    <i
+                      class="el-icon-circle-plus"
+                      style="margin: 0.5em 0 0.5em 45%; zoom: 1.2;"
+                      title="Add a new rule chain"
+                      @click="add_new_rule_chain(index)"
+                    ></i>
+                    <br />
+                    <div class="sub-title">
+                      ChildRules<el-checkbox
+                        v-model="rule.iter_parse_child"
+                        title="Parse the upstream input_object one by one, and return the result list"
+                        style="zoom: 0.9; margin-left: 2em;"
+                        >Iter Parse</el-checkbox
+                      >
+                    </div>
+                    <el-input
+                      class="child-rules-input"
+                      type="textarea"
+                      autosize
+                      style="width: 60%;"
+                      placeholder="Child rules, JSON list of ParseRule objects"
+                      v-model="rule.child_rules"
+                    >
+                    </el-input>
+                    <br />
+                  </div>
+                </div>
+              </template>
+              <i
+                class="el-icon-circle-plus-outline"
+                @click="add_new_rule"
+                title="Add a new ParseRule"
+                style="margin: 0.5em 0 0.5em 45%; zoom: 1.5;"
+              ></i>
+            </el-form-item>
+            <el-form-item>
+              <el-button
+                type="primary"
+                :disabled="!input_object"
+                title="Parse the input object with the CrawlerRule, press Download button before parsing"
+                @click="parse"
+              >
+                <i class="el-icon-video-play"> Parse </i>
+              </el-button>
+              <el-button type="warning" @click="load_rule_popup" title="Load CrawlerRule from a JSON string">
+                <i class="el-icon-edit-outline"> Loads </i>
+              </el-button>
+            </el-form-item>
+            <hr />
+            <el-form-item label="CrawlerRule JSON">
+              <el-checkbox v-model="pretty_json" style="padding-right: 0.5em;" title="Switch between 0 and 2 indent"
+                >Pretty</el-checkbox
+              >
+              <el-button
+                size="mini"
+                icon="el-icon-document-copy"
+                data-clipboard-target="#current_crawler_rule_json"
+                id="copy"
+                title="Copy"
+                circle
+                class="cp-button"
+              >
+              </el-button>
+              <el-input
+                title="Can be loaded by CrawlerRule.from_json"
+                type="textarea"
+                autosize
+                placeholder=""
+                id="current_crawler_rule_json"
+                v-model="current_crawler_rule_json"
+              >
+              </el-input>
+            </el-form-item>
+            <el-drawer
+              close-on-press-escape="true"
+              title="Parse Result"
+              :visible.sync="drawer"
+              size="50%"
+              direction="ttb"
+            >
+              <b style="font-size: 0.8em;">${parse_result.type}</b>
+              <textarea name="doc" id="show_parse_result" style="width: 100%; height: 100%;">
+${parse_result.data}</textarea
+              >
+            </el-drawer>
+            <el-drawer :close-on-press-escape="false" title="Doc" :visible.sync="doc_drawer" size="50%" direction="ttb">
+              <textarea name="doc" id="show_doc" style="width: 100%; height: 100%;" :v-model="current_doc">
+${current_doc}</textarea
+              >
+            </el-drawer>
+          </el-form>
+          <el-dialog title="Input the JSON string" :visible.sync="new_rule_visible">
+            <el-form>
+              <el-input
+                ref="load_json_input"
+                v-model="new_rule_json"
+                placeholder="Json dict for Requests"
+                type="textarea"
+                :autosize="{ minRows: 5, maxRows: 15}"
+              ></el-input>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+              <el-button @click="new_rule_visible = false"> Cancel </el-button>
+              <el-button type="primary" @click="load_rule()"> OK </el-button>
+            </div>
+          </el-dialog>
+          <el-dialog title="Choose the rule name you want to send" :visible.sync="send_child_rule_visible">
+            <template v-for="(item, index) in parse_rules_to_be_send" class="rule">
+              <el-button type="primary" @click="send_child(item)"> ${item.rule.name} </el-button>
+            </template>
+          </el-dialog>
+          <el-dialog title="Request Template" :visible.sync="template_visible">
+            <el-form>
+              <el-form-item label="Template String">
+                <el-input v-model="current_template" type="textarea" autosize autocomplete="off"></el-input>
+              </el-form-item>
+              <el-button size="mini" @click="template_visible = false">Cancel</el-button>
+              <el-button
+                size="mini"
+                type="warning"
+                v-if="crawler_rule.request_template != current_template"
+                @click="update_template"
+                >Update</el-button
+              >
+              <el-button
+                size="mini"
+                icon="el-icon-document-copy"
+                class="cp-button"
+                data-clipboard-text="${variable}"
+                title="Copy text `${variable}` to clipboard"
+                ><span v-html="'Copy ${variable}'"></span
+              ></el-button>
+            </el-form>
+            <div v-if="current_template.match(/\$\{.*?\}/)">
+              <hr />
+              <el-form :inline="true" @submit.native.prevent>
+                <template v-for="item in new Set(current_template.match(/\$\{.*?\}/g))">
+                  <el-form-item>
+                    <el-input
+                      clearable
+                      @keyup.enter.native="add_to_request_args"
+                      v-model="request_template_values[item]"
+                      :placeholder="item"
+                    ></el-input>
+                  </el-form-item>
+                </template>
+              </el-form>
+              <el-button style="margin-top: 1em;" size="mini" type="primary" @click="add_to_request_args"
+                >Add to request_args</el-button
+              >
+            </div>
+          </el-dialog>
+        </el-main>
+      </el-container>
     </div>
-    <!-- <script src="static/uniparser.js"></script> -->
-    <script src="static/uniparser.min.js"></script>
-</body>
-
+    <!-- [CSS Minifier](https://cssminifier.com/)
+    [JavaScript Minifier](https://javascript-minifier.com/) -->
+    <script src="static/uniparser.js"></script>
+    <!-- <script src="static/uniparser.min.js"></script> -->
+  </body>
 </html>

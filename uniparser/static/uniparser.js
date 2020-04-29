@@ -27,8 +27,7 @@ var Main = {
             method: 'get',
             url: 'https://httpbin.org/html',
             headers: {
-              'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36',
             },
           },
           null,
@@ -81,12 +80,7 @@ var Main = {
             try {
               // get title as name
               var el = new DOMParser().parseFromString(scode, 'text/html')
-              let title = (
-                el.getElementsByTagName('title')[0] ||
-                el.getElementsByTagName('h1')[0] ||
-                el.getElementsByTagName('h2')[0] ||
-                ''
-              ).innerText
+              let title = (el.getElementsByTagName('title')[0] || el.getElementsByTagName('h1')[0] || el.getElementsByTagName('h2')[0] || '').innerText
               title = title.replace(/-.*/g, '')
               let name = title || this.crawler_rule.request_args.url || default_name
               this.crawler_rule.name = name
@@ -215,6 +209,7 @@ var Main = {
     show_request_template() {
       this.template_visible = true
       this.current_template = this.crawler_rule.request_template || this.crawler_rule.request_args
+      this.request_template_values = {}
     },
     update_template() {
       try {
@@ -352,7 +347,7 @@ function init_app(app) {
   //   init vars
   let node = document.getElementById('init_vars')
   let args = JSON.parse(window.atob(node.innerHTML))
-  console.log(args);
+  console.log(args)
   Object.keys(args).forEach((name) => {
     app[name] = args[name]
   })

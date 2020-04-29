@@ -3,6 +3,7 @@
 Uniparser Test Console Demo
 """
 
+from base64 import b64encode
 from logging import getLogger
 from pathlib import Path
 from time import time
@@ -11,7 +12,7 @@ from traceback import format_exc
 from bottle import BaseRequest, Bottle, request, static_file, template
 
 from . import CrawlerRule, Uniparser, __version__
-from .utils import ensure_request, get_available_sync_request
+from .utils import GlobalConfig, ensure_request, get_available_sync_request
 
 logger = getLogger('uniparser')
 # 10MB
@@ -33,7 +34,7 @@ cdn_urls = {
 }
 root_path = Path(__file__).parent
 index_tpl_path = root_path / 'templates' / 'index.html'
-index_tpl_path = index_tpl_path.as_posix()
+index_tpl_path_str = index_tpl_path.as_posix()
 static_path = (root_path / 'static').as_posix()
 
 
@@ -49,23 +50,25 @@ def exception_handler(exc):
 app.error_handler[500] = exception_handler
 
 
-@app.get('/init_app')
-def init_app():
+@app.get("/")
+def index():
     parser_name_choices = [{'value': i.name} for i in uni.parser_classes]
     parser_name_docs = {
         i.name: f'{i.__doc__}\n{i.doc_url}\n\n{i.test_url}'
         for i in uni.parser_classes
     }
     parser_name_docs[''] = 'Choose a parser_name'
-    return {
-        'parser_name_choices': parser_name_choices,
-        'parser_name_docs': parser_name_docs,
+    parser_name_docs['py'] = parser_name_docs['python']
+    init_vars = {
+        'options': parser_name_choices,
+        'docs': parser_name_docs,
     }
-
-
-@app.get("/")
-def index():
-    return template(index_tpl_path, cdn_urls=cdn_urls, version=__version__)
+    init_vars_b64 = b64encode(
+        GlobalConfig.json_dumps(init_vars).encode('u8')).decode('u8')
+    return template(index_tpl_path_str,
+                    cdn_urls=cdn_urls,
+                    init_vars_b64=init_vars_b64,
+                    version=__version__)
 
 
 @app.post("/request")

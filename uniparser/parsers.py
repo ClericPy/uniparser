@@ -512,14 +512,17 @@ class PythonParser(BaseParser):
             ['aabbcc', 'strip', 'a']                    => 'bbcc'
             ['aabbcc', 'strip', 'ac']                   => 'bb'
             [' \t a ', 'strip', '']                     => 'a'
+            ['a', 'default', 'b']                       => 'a'
+            ['', 'default', 'b']                        => 'b'
+            [' ', 'default', 'b']                       => 'b'
 """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
 
-    def _parse(self, input_object, param, value):
-        param_functions = {
+    def __init__(self):
+        self.param_functions = {
             'getitem': self._handle_getitem,
             'get': self._handle_getitem,
             'split': lambda input_object, param, value: input_object.split(
@@ -537,12 +540,26 @@ class PythonParser(BaseParser):
                 input_object,
                 reverse=(True if value.lower() == 'desc' else False)),
             'strip': self._handle_strip,
+            'default': self._handle_default,
         }
-        function = param_functions.get(param, return_self)
+
+    def _parse(self, input_object, param, value):
+        function = self.param_functions.get(param, return_self)
         return function(input_object, param, value)
 
     def _handle_strip(self, input_object, param, value):
         return str(input_object).strip(value or None)
+
+    def _handle_default(self, input_object, param, value):
+        if isinstance(input_object, str):
+            if input_object.strip():
+                return input_object
+            else:
+                return value
+        elif input_object:
+            return input_object
+        else:
+            return value
 
     def _handle_template(self, input_object, param, value):
         if isinstance(input_object, dict):

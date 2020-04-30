@@ -230,12 +230,16 @@ PythonParser. Some frequently-used utils.
             ['aabbcc', 'strip', 'a']                    => 'bbcc'
             ['aabbcc', 'strip', 'ac']                   => 'bb'
             [' \t a ', 'strip', '']                     => 'a'
+            ['a', 'default', 'b']                       => 'a'
+            ['', 'default', 'b']                        => 'b'
+            [' ', 'default', 'b']                       => 'b'
 
 ```
 ## LoaderParser (loader)
 
 ```
 LoaderParser. Loads string with json / yaml / toml standard format.
+    And also b16decode, b16encode, b32decode, b32encode, b64decode, b64encode, b85decode, b85encode.
     Since input object should be string, _RECURSION_LIST will be True.
 
         :param input_object: str match format of json / yaml / toml
@@ -250,6 +254,8 @@ LoaderParser. Loads string with json / yaml / toml standard format.
             ['{"a": "b"}', 'json', '']   => {'a': 'b'}
             ['a = "a"', 'toml', '']      => {'a': 'a'}
             ['animal: pets', 'yaml', ''] => {'animal': 'pets'}
+            ['a', 'b64encode', '']       => 'YQ=='
+            ['YQ==', 'b64decode', '']    => 'a'
 
     
 ```

@@ -478,6 +478,15 @@ def test_python_parser():
     result = uni.python.parse(*['  bb\t\n', 'strip', ''])
     # print(result)
     assert result == 'bb'
+    result = uni.python.parse(*['  \t\n', 'default', 'default'])
+    # print(result)
+    assert result == 'default'
+    result = uni.python.parse(*['', 'default', 'default'])
+    # print(result)
+    assert result == 'default'
+    result = uni.python.parse(*['a', 'default', 'default'])
+    # print(result)
+    assert result == 'a'
 
 
 def test_udf_parser():

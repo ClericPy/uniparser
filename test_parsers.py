@@ -585,6 +585,22 @@ def test_loader_parser():
     result = uni.loader.parse(JSON, 'json', '{"encoding": null}')
     # print(result)
     assert result['age'] == 26
+    # base64 lib
+    result = uni.loader.parse('a', 'b64encode', '')
+    # print(result)
+    assert result == 'YQ=='
+    result = uni.loader.parse('YQ==', 'b64decode', '')
+    # print(result)
+    assert result == 'a'
+    result = uni.loader.parse('a', 'b16encode', '')
+    # print(result)
+    assert uni.loader.parse(result, 'b16decode', '') == 'a'
+    result = uni.loader.parse('a', 'b32encode', '')
+    # print(result)
+    assert uni.loader.parse(result, 'b32decode', '') == 'a'
+    result = uni.loader.parse('a', 'b85encode', '')
+    # print(result)
+    assert uni.loader.parse(result, 'b85decode', '') == 'a'
 
 
 def test_time_parser():
@@ -904,18 +920,18 @@ def test_async_adapters():
 
     async def _a_test():
         async with HTTPXAsyncAdapter() as req:
-            text, r = await req.request(
-                method='get', url='http://httpbin.org/get')
+            text, r = await req.request(method='get',
+                                        url='http://httpbin.org/get')
             assert 'url' in text
             assert r.status_code == 200
         async with AiohttpAsyncAdapter() as req:
-            text, r = await req.request(
-                method='get', url='http://httpbin.org/get')
+            text, r = await req.request(method='get',
+                                        url='http://httpbin.org/get')
             assert 'url' in text
             assert r.status == 200
         async with TorequestsAsyncAdapter() as req:
-            text, r = await req.request(
-                method='get', url='http://httpbin.org/get')
+            text, r = await req.request(method='get',
+                                        url='http://httpbin.org/get')
             assert 'url' in text
             assert r.status == 200
 
@@ -950,10 +966,9 @@ def test_crawler_storage():
 
 
 def test_crawler():
-    crawler = Crawler(
-        storage=JSONRuleStorage.loads(
-            r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "subs": {"name":"detail","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
-        ))
+    crawler = Crawler(storage=JSONRuleStorage.loads(
+        r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "subs": {"name":"detail","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
+    ))
     # yapf: disable
     expected_result = {'list': {'__request__': ['https://www.python.org/dev/peps/pep-0001', 'https://www.python.org/dev/peps/pep-0004', 'https://www.python.org/dev/peps/pep-0005'], '__result__': [{'detail': {'title': 'PEP 1 -- PEP Purpose and Guidelines'}}, {'detail': {'title': 'PEP 4 -- Deprecation of Standard Modules'}}, {'detail': {'title': 'PEP 5 -- Guidelines for Language Evolution'}}]}}
     # yapf: enable
@@ -978,19 +993,17 @@ def test_crawler():
     test_async_crawler()
 
     # test crawl return Exception
-    crawler = Crawler(
-        storage=JSONRuleStorage.loads(
-            r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"list","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "detail": {"name":"detail","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
-        ))
+    crawler = Crawler(storage=JSONRuleStorage.loads(
+        r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"list","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "detail": {"name":"detail","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
+    ))
     result = crawler.crawl('https://www.python.org/')
     # print(result)
     assert isinstance(result, RuleNotFoundError)
     assert str(
         result) == 'No rule matched the given url: https://www.python.org/'
-    crawler = Crawler(
-        storage=JSONRuleStorage.loads(
-            r'{"clericpyclericpyclericpyclericpy.com.cn": {"host": "clericpyclericpyclericpyclericpy.com.cn", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"list","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://clericpyclericpyclericpyclericpy.com.cn/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/$","encoding":""}}}}'
-        ))
+    crawler = Crawler(storage=JSONRuleStorage.loads(
+        r'{"clericpyclericpyclericpyclericpy.com.cn": {"host": "clericpyclericpyclericpyclericpy.com.cn", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"list","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://clericpyclericpyclericpyclericpy.com.cn/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/$","encoding":""}}}}'
+    ))
     result = crawler.crawl(
         'https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/')
     # print(result)

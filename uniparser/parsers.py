@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABC, abstractmethod
+from base64 import (b16decode, b16encode, b32decode, b32encode, b64decode,
+                    b64encode, b85decode, b85encode)
 from hashlib import md5 as _md5
 from itertools import chain
 from logging import getLogger
@@ -520,13 +522,20 @@ class PythonParser(BaseParser):
         param_functions = {
             'getitem': self._handle_getitem,
             'get': self._handle_getitem,
-            'split': lambda input_object, param, value: input_object.split(value or None),
+            'split': lambda input_object, param, value: input_object.split(
+                value or None),
             'join': lambda input_object, param, value: value.join(input_object),
-            'chain': lambda input_object, param, value: list(chain(*input_object)),
-            'const': lambda input_object, param, value: value if value else input_object,
+            'chain': lambda input_object, param, value: list(
+                chain(*input_object)),
+            'const': lambda input_object, param, value: value
+                     if value else input_object,
             'template': self._handle_template,
-            'index': lambda input_object, param, value: input_object[int(value) if (value.isdigit() or value.startswith('-') and value[1:].isdigit()) else value],
-            'sort': lambda input_object, param, value: sorted(input_object, reverse=(True if value.lower() == 'desc' else False)),
+            'index': lambda input_object, param, value: input_object[int(
+                value) if (value.isdigit() or value.startswith('-') and value[
+                    1:].isdigit()) else value],
+            'sort': lambda input_object, param, value: sorted(
+                input_object,
+                reverse=(True if value.lower() == 'desc' else False)),
             'strip': self._handle_strip,
         }
         function = param_functions.get(param, return_self)
@@ -537,8 +546,8 @@ class PythonParser(BaseParser):
 
     def _handle_template(self, input_object, param, value):
         if isinstance(input_object, dict):
-            return Template(value).safe_substitute(
-                input_object=input_object, **input_object)
+            return Template(value).safe_substitute(input_object=input_object,
+                                                   **input_object)
         else:
             return Template(value).safe_substitute(input_object=input_object)
 
@@ -566,6 +575,7 @@ class PythonParser(BaseParser):
 
 class LoaderParser(BaseParser):
     """LoaderParser. Loads string with json / yaml / toml standard format.
+    And also b16decode, b16encode, b32decode, b32encode, b64decode, b64encode, b85decode, b85encode.
     Since input object should be string, _RECURSION_LIST will be True.
 
         :param input_object: str match format of json / yaml / toml
@@ -580,6 +590,8 @@ class LoaderParser(BaseParser):
             ['{"a": "b"}', 'json', '']   => {'a': 'b'}
             ['a = "a"', 'toml', '']      => {'a': 'a'}
             ['animal: pets', 'yaml', ''] => {'animal': 'pets'}
+            ['a', 'b64encode', '']       => 'YQ=='
+            ['YQ==', 'b64decode', '']    => 'a'
 
     """
     name = 'loader'
@@ -592,6 +604,30 @@ class LoaderParser(BaseParser):
             'yaml': lib.yaml_full_load,
             'yaml_safe_load': lib.yaml_safe_load,
             'yaml_full_load': lib.yaml_full_load,
+            'b16decode': lambda input_object: b16decode(
+                input_object.encode(GlobalConfig.__encoding__)).decode(
+                    GlobalConfig.__encoding__),
+            'b16encode': lambda input_object: b16encode(
+                input_object.encode(GlobalConfig.__encoding__)).decode(
+                    GlobalConfig.__encoding__),
+            'b32decode': lambda input_object: b32decode(
+                input_object.encode(GlobalConfig.__encoding__)).decode(
+                    GlobalConfig.__encoding__),
+            'b32encode': lambda input_object: b32encode(
+                input_object.encode(GlobalConfig.__encoding__)).decode(
+                    GlobalConfig.__encoding__),
+            'b64decode': lambda input_object: b64decode(
+                input_object.encode(GlobalConfig.__encoding__)).decode(
+                    GlobalConfig.__encoding__),
+            'b64encode': lambda input_object: b64encode(
+                input_object.encode(GlobalConfig.__encoding__)).decode(
+                    GlobalConfig.__encoding__),
+            'b85decode': lambda input_object: b85decode(
+                input_object.encode(GlobalConfig.__encoding__)).decode(
+                    GlobalConfig.__encoding__),
+            'b85encode': lambda input_object: b85encode(
+                input_object.encode(GlobalConfig.__encoding__)).decode(
+                    GlobalConfig.__encoding__),
         }
         super().__init__()
 
@@ -637,8 +673,8 @@ class TimeParser(BaseParser):
 
     def _parse(self, input_object, param, value):
         value = value or "%Y-%m-%d %H:%M:%S"
-        tz_fix_seconds = (
-            self.LOCAL_TIME_ZONE - self._OS_LOCAL_TIME_ZONE) * 3600
+        tz_fix_seconds = (self.LOCAL_TIME_ZONE -
+                          self._OS_LOCAL_TIME_ZONE) * 3600
         if param == 'encode':
             # time string => timestamp
             if '%z' in value:
@@ -731,11 +767,10 @@ class ParseRule(JsonSerializable):
             self.__class__(**parse_rule) for parse_rule in child_rules or []
         ]
         self.context: dict = context or {}
-        super().__init__(
-            name=name,
-            chain_rules=chain_rules,
-            child_rules=child_rules,
-            **kwargs)
+        super().__init__(name=name,
+                         chain_rules=chain_rules,
+                         child_rules=child_rules,
+                         **kwargs)
         if iter_parse_child:
             self['iter_parse_child'] = iter_parse_child
 
@@ -816,12 +851,11 @@ class CrawlerRule(JsonSerializable):
             ParseRule(context=self.context, **parse_rule)
             for parse_rule in parse_rules or []
         ]
-        super().__init__(
-            name=name,
-            parse_rules=parse_rules,
-            request_args=_request_args,
-            regex=regex or '',
-            **kwargs)
+        super().__init__(name=name,
+                         parse_rules=parse_rules,
+                         request_args=_request_args,
+                         regex=regex or '',
+                         **kwargs)
 
     def get_request(self, **request):
         if not request:
@@ -969,10 +1003,10 @@ class Uniparser(object):
 
     def parse_parse_rule(self, input_object, rule: ParseRule, context=None):
         # if context, use context; else use rule.context
-        input_object = self.parse_chain(
-            input_object,
-            rule['chain_rules'],
-            context=context or getattr(rule, 'context', {}))
+        input_object = self.parse_chain(input_object,
+                                        rule['chain_rules'],
+                                        context=context or
+                                        getattr(rule, 'context', {}))
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
                 f'Schema check is not True: {input_object}')
@@ -1006,11 +1040,13 @@ class Uniparser(object):
               rule_object: Union[CrawlerRule, ParseRule],
               context=None):
         if isinstance(rule_object, CrawlerRule):
-            return self.parse_crawler_rule(
-                input_object=input_object, rule=rule_object, context=context)
+            return self.parse_crawler_rule(input_object=input_object,
+                                           rule=rule_object,
+                                           context=context)
         elif isinstance(rule_object, ParseRule):
-            return self.parse_parse_rule(
-                input_object=input_object, rule=rule_object, context=context)
+            return self.parse_parse_rule(input_object=input_object,
+                                         rule=rule_object,
+                                         context=context)
 
     def ensure_adapter(self, sync=True):
         if self.request_adapter:

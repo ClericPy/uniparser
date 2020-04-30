@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from base64 import b64encode
 from logging import getLogger
 # pip install fastapi uvicorn
 from pathlib import Path
@@ -13,7 +14,7 @@ from starlette.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 
 from .. import CrawlerRule, Uniparser, __version__
-from ..utils import ensure_request, get_available_async_request
+from ..utils import GlobalConfig, ensure_request, get_available_async_request
 
 app = FastAPI(title="Uniparser", version=__version__)
 logger = getLogger('uniparser')
@@ -24,12 +25,12 @@ if not adapter:
     )
 uni = Uniparser(adapter())
 GLOBAL_RESP = None
-templates = Jinja2Templates(
-    directory=str((Path(__file__).parent.parent / 'templates').absolute()))
-app.mount(
-    "/static",
-    StaticFiles(directory=str((Path(__file__).parent.parent / 'static').absolute())),
-    name="static")
+templates = Jinja2Templates(directory=str((Path(__file__).parent.parent /
+                                           'templates').absolute()))
+app.mount("/static",
+          StaticFiles(directory=str((Path(__file__).parent.parent /
+                                     'static').absolute())),
+          name="static")
 cdn_urls = {
     'VUE_JS_CDN': 'https://cdn.staticfile.org/vue/2.6.11/vue.min.js',
     'ELEMENT_CSS_CDN': 'https://cdn.staticfile.org/element-ui/2.13.0/theme-chalk/index.css',
@@ -55,25 +56,27 @@ async def exception_handler(request: Request, exc: Exception):
     )
 
 
-@app.get('/init_app')
-def init_app():
+@app.get("/")
+def index(request: Request):
     parser_name_choices = [{'value': i.name} for i in uni.parser_classes]
     parser_name_docs = {
         i.name: f'{i.__doc__}\n{i.doc_url}\n\n{i.test_url}'
         for i in uni.parser_classes
     }
     parser_name_docs[''] = 'Choose a parser_name'
-    return {
-        'parser_name_choices': parser_name_choices,
-        'parser_name_docs': parser_name_docs,
+    parser_name_docs['py'] = parser_name_docs['python']
+    init_vars = {
+        'options': parser_name_choices,
+        'docs': parser_name_docs,
     }
-
-
-@app.get("/")
-def index(request: Request):
+    init_vars_b64 = b64encode(
+        GlobalConfig.json_dumps(init_vars).encode('u8')).decode('u8')
     return templates.TemplateResponse(
         'index.html',
-        dict(cdn_urls=cdn_urls, version=__version__, request=request))
+        dict(cdn_urls=cdn_urls,
+             version=__version__,
+             init_vars_b64=init_vars_b64,
+             request=request))
 
 
 @app.post("/request")

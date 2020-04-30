@@ -10,3 +10,4 @@ class GlobalConfig:
     __schema__ = '__schema__'
     __request__ = '__request__'
     __result__ = '__result__'
+    __encoding__ = 'utf-8'

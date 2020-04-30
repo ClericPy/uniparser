@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 
-class RuleNotFoundError(BaseException):
+class RuleNotFoundError(Exception):
     pass
 
 
-class InvalidSchemaError(BaseException):
+class InvalidSchemaError(Exception):
     pass
 
 

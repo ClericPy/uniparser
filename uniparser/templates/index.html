@@ -76,7 +76,7 @@
             </el-input>
             <el-form-item label="Request Args">
               <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_curl"><b>cURL</b></el-button>
-              <el-button style="margin-left: 0;" size="mini" icon="el-icon-tickets" @click="show_request_template" v-if="crawler_rule.request_args"><b>Template</b></el-button>
+              <el-button style="margin-left: 0;" size="mini" icon="el-icon-tickets" @click="show_request_template" v-if="crawler_rule.request_template || crawler_rule.request_args" :type="crawler_rule.request_template?'success':'plain'"><b>Template</b></el-button>
               <el-input v-model="crawler_rule.request_args" placeholder="Json dict for Requests" type="textarea" autosize></el-input>
             </el-form-item>
             <el-form-item>

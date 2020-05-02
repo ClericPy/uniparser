@@ -1006,6 +1006,10 @@ class Uniparser(object):
             if isinstance(parser, BaseParser)
         ]
 
+    @property
+    def parser_classes(self):
+        return BaseParser.__subclasses__()
+
     def parse_chain(self, input_object, chain_rules: List, context=None):
         for parser_name, param, value in chain_rules:
             parser = getattr(self, parser_name)

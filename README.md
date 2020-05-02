@@ -246,8 +246,8 @@ Advanced Usage: [Create crawler rule](https://github.com/ClericPy/watchdogs/blob
 ```python
 from uniparser import Uniparser
 
-for i in Uniparser().parser_classes:
-    print(f'## {i.__name__} ({i.name})\n\n```\n{i.__doc__}\n```')
+for i in Uniparser().parsers:
+    print(f'## {i.__class__.__name__} ({i.name})\n\n```\n{i.doc}\n```')
 ```
 
 ## TODO

@@ -109,6 +109,11 @@ class BaseParser(ABC):
             # import traceback; traceback.print_exc()
             return err
 
+    @property
+    def doc(self):
+        # If need dynamic doc, overwrite this method.
+        return self.__doc__
+
 
 class CSSParser(BaseParser):
     """CSS selector parser, requires `bs4` and `lxml`(optional).
@@ -421,6 +426,10 @@ class UDFParser(BaseParser):
         'json_loads': GlobalConfig.json_loads,
         'json_dumps': GlobalConfig.json_dumps,
     }
+
+    @property
+    def doc(self):
+        return f'{self.__doc__}\n\n_GLOBALS_ARGS: {list(self._GLOBALS_ARGS.keys())}\n'
 
     @staticmethod
     def get_code_mode(code):
@@ -991,8 +1000,11 @@ class Uniparser(object):
         return self.python
 
     @property
-    def parser_classes(self):
-        return BaseParser.__subclasses__()
+    def parsers(self):
+        return [
+            parser for parser in self.__dict__.values()
+            if isinstance(parser, BaseParser)
+        ]
 
     def parse_chain(self, input_object, chain_rules: List, context=None):
         for parser_name, param, value in chain_rules:

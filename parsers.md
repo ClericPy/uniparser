@@ -164,27 +164,6 @@ JMESPath parser, requires `jmespath` lib.
             [{'a': {'b': {'c': 1}}}, 'a.b.c', ''] => 1
     
 ```
-## UDFParser (udf)
-
-```
-UDFParser. Python source code snippets. globals will contain `input_object` and `context` variables.
-    Since python input object may be any type, _RECURSION_LIST will be False.
-
-        param & value:
-            param: the python source code to be exec(param), either have the function named `parse`, or will return eval(param)
-            value: will be renamed to `context`, which can be used in parser function. `value` often be set as the dict of request & response.
-        examples:
-
-            ['a b c d', 'input_object[::-1]', '']                                                       => 'd c b a'
-            ['a b c d', 'context["key"]', {'key': 'value'}]                                             => 'value'
-            ['a b c d', 'md5(input_object)', '']                                                        => '713f592bd537f7725d491a03e837d64a'
-            ['["string"]', 'json_loads(input_object)', '']                                              => ['string']
-            ['["string"]', 'json_loads(obj)', '']                                                       => ['string']
-            [['string'], 'json_dumps(input_object)', '']                                                => '["string"]'
-            ['a b c d', 'parse = lambda input_object: input_object', '']                                => 'a b c d'
-            ['a b c d', 'def parse(input_object): context["key"]="new";return context', {'key': 'old'}] => {'key': 'new'}
-    
-```
 ## PythonParser (python)
 
 ```
@@ -235,6 +214,29 @@ PythonParser. Some frequently-used utils.
             [' ', 'default', 'b']                       => 'b'
 
 ```
+## UDFParser (udf)
+
+```
+UDFParser. Python source code snippets. globals will contain `input_object` and `context` variables.
+    Since python input object may be any type, _RECURSION_LIST will be False.
+
+        param & value:
+            param: the python source code to be exec(param), either have the function named `parse`, or will return eval(param)
+            value: will be renamed to `context`, which can be used in parser function. `value` often be set as the dict of request & response.
+        examples:
+
+            ['a b c d', 'input_object[::-1]', '']                                                       => 'd c b a'
+            ['a b c d', 'context["key"]', {'key': 'value'}]                                             => 'value'
+            ['a b c d', 'md5(input_object)', '']                                                        => '713f592bd537f7725d491a03e837d64a'
+            ['["string"]', 'json_loads(input_object)', '']                                              => ['string']
+            ['["string"]', 'json_loads(obj)', '']                                                       => ['string']
+            [['string'], 'json_dumps(input_object)', '']                                                => '["string"]'
+            ['a b c d', 'parse = lambda input_object: input_object', '']                                => 'a b c d'
+            ['a b c d', 'def parse(input_object): context["key"]="new";return context', {'key': 'old'}] => {'key': 'new'}
+    
+
+_GLOBALS_ARGS: ['md5', 'json_loads', 'json_dumps']
+```
 ## LoaderParser (loader)
 
 ```
@@ -282,5 +284,3 @@ TimeParser. Parse different format of time. Sometimes time string need a preproc
             ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S']  => 'Feb 03 2020 20:29:45'
 
     WARNING: time.struct_time do not have timezone info, so %z is always the local timezone
-    
-```

@@ -250,7 +250,7 @@ for i in Uniparser().parsers:
     print(f'## {i.__class__.__name__} ({i.name})\n\n```\n{i.doc}\n```')
 ```
 
-## TODO
+## Tasks
 
 - [x] Release to pypi.org
   - [x] Upload dist with Web UI

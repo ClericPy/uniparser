@@ -58,10 +58,7 @@ async def exception_handler(request: Request, exc: Exception):
 
 @app.get("/")
 def index(request: Request):
-    parser_name_docs = {
-        i.name: f'{i.doc}\n{i.doc_url}\n\n{i.test_url}'
-        for i in uni.parsers
-    }
+    parser_name_docs = {i.name: i.doc for i in uni.parsers}
     parser_name_choices = [{'value': name} for name in parser_name_docs]
     parser_name_docs[''] = 'Choose a parser_name'
     parser_name_docs['py'] = parser_name_docs['python']

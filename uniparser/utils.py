@@ -2,13 +2,17 @@
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
+from base64 import b64decode, b64encode
 from functools import partial
 from inspect import isawaitable
 from logging import getLogger
 from re import compile as re_compile
+from re import findall as re_findall
 from shlex import split as shlex_split
 from typing import Dict, Union
 from urllib.parse import urlparse
+
+from _codecs import escape_decode
 
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError
@@ -67,41 +71,44 @@ def curlparse(string, encoding="utf-8"):
       >>> requests.request(**request_args)
       <Response [200]>
     """
-    assert "\n" not in string, 'curl-string should not contain \\n, try r"...".'
+
+    def unescape_sig(s):
+        if s.startswith(escape_sig):
+            return decode_as_base64(s[len(escape_sig):], encoding=encoding)
+        else:
+            return s
+
+    escape_sig = u'fac4833e034b6771e5a1c74037e9153e'
     if string.startswith("http"):
         return {"url": string, "method": "get"}
-    try:
-        lex_list = shlex_split(string.strip())
-    except ValueError as e:
-        if str(e) == 'No closing quotation' and string.count("'") % 2 != 0:
-            new_err = "If `data` has single-quote ('), the `data` should be quote by double-quote, and add the `backslash`(\\) before original \"."
-            e.args += (new_err,)
-        raise e
+    # escape $'' ANSI-C strings
+    for arg in re_findall(r"\$'[\s\S]*(?<!\\)'", string):
+        _escaped = escape_decode(bytes(arg[2:-1], encoding))[0].decode(encoding)
+        string = string.replace(
+            arg, "'{}{}'".format(escape_sig,
+                                 encode_as_base64(_escaped, encoding=encoding)))
+    lex_list = shlex_split(string.strip())
     args, unknown = _Curl.parser.parse_known_args(lex_list)
     requests_args = {}
     headers = {}
-    requests_args["url"] = args.url
+    requests_args["url"] = unescape_sig(args.url)
     for header in args.header:
-        key, value = header.split(":", 1)
+        key, value = unescape_sig(header).split(":", 1)
         headers[key.title()] = value.strip()
     if args.user_agent:
-        headers["User-Agent"] = args.user_agent
+        headers["User-Agent"] = unescape_sig(args.user_agent)
     if headers:
         requests_args["headers"] = headers
     if args.user:
-        requests_args["auth"] = tuple(
-            u for u in args.user.split(":", 1) + [""])[:2]
+        requests_args["auth"] = [
+            u for u in unescape_sig(args.user).split(":", 1) + [""]
+        ][:2]
     # if args.proxy:
-    # pass
+    #     pass
     data = args.data or args.data_binary or args.form
     if data:
-        if data.startswith("$"):
-            data = data[1:]
         args.method = "post"
-        data = data.encode(
-            'latin-1',
-            'backslashreplace').decode('unicode-escape').encode(encoding)
-        requests_args["data"] = data
+        requests_args["data"] = unescape_sig(data).encode(encoding)
     requests_args["method"] = args.method.lower()
     if args.connect_timeout:
         requests_args["timeout"] = args.connect_timeout
@@ -584,3 +591,11 @@ async def ensure_await_result(result):
     if isawaitable(result):
         return await result
     return result
+
+
+def encode_as_base64(string, encoding='utf-8'):
+    return b64encode(string.encode(encoding)).decode(encoding)
+
+
+def decode_as_base64(string, encoding='utf-8'):
+    return b64decode(string.encode(encoding)).decode(encoding)

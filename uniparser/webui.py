@@ -52,10 +52,7 @@ app.error_handler[500] = exception_handler
 
 @app.get("/")
 def index():
-    parser_name_docs = {
-        i.name: f'{i.doc}\n{i.doc_url}\n\n{i.test_url}'
-        for i in uni.parsers
-    }
+    parser_name_docs = {i.name: i.doc for i in uni.parsers}
     parser_name_choices = [{'value': name} for name in parser_name_docs]
     parser_name_docs[''] = 'Choose a parser_name'
     parser_name_docs['py'] = parser_name_docs['python']

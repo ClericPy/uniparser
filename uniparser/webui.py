@@ -25,13 +25,7 @@ if not adapter:
     )
 uni = Uniparser(adapter())
 GLOBAL_RESP = None
-cdn_urls = {
-    'VUE_JS_CDN': 'https://cdn.staticfile.org/vue/2.6.11/vue.min.js',
-    'ELEMENT_CSS_CDN': 'https://cdn.staticfile.org/element-ui/2.13.0/theme-chalk/index.css',
-    'ELEMENT_JS_CDN': 'https://cdn.staticfile.org/element-ui/2.13.0/index.js',
-    'VUE_RESOURCE_CDN': 'https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js',
-    'CLIPBOARDJS_CDN': 'https://cdn.staticfile.org/clipboard.js/2.0.4/clipboard.min.js',
-}
+cdn_urls = GlobalConfig.cdn_urls
 root_path = Path(__file__).parent
 index_tpl_path = root_path / 'templates' / 'index.html'
 index_tpl_path_str = index_tpl_path.as_posix()

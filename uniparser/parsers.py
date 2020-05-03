@@ -515,6 +515,8 @@ class PythonParser(BaseParser):
                 value: value can be asc (default) / desc.
             9.  param: strip
                 value: chars. return str(input_object).strip(value)
+            10. param: base64_encode, base64_decode
+                from string to string.
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
@@ -536,6 +538,8 @@ class PythonParser(BaseParser):
             ['a', 'default', 'b']                       => 'a'
             ['', 'default', 'b']                        => 'b'
             [' ', 'default', 'b']                       => 'b'
+            ['a', 'base64_encode', '']                  => 'YQ=='
+            ['YQ==', 'base64_decode', '']               => 'a'
 """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -551,8 +555,7 @@ class PythonParser(BaseParser):
             'join': lambda input_object, param, value: value.join(input_object),
             'chain': lambda input_object, param, value: list(
                 chain(*input_object)),
-            'const': lambda input_object, param, value: value
-                     if value else input_object,
+            'const': lambda input_object, param, value: value or input_object,
             'template': self._handle_template,
             'index': lambda input_object, param, value: input_object[int(
                 value) if (value.isdigit() or value.startswith('-') and value[
@@ -562,10 +565,8 @@ class PythonParser(BaseParser):
                 reverse=(True if value.lower() == 'desc' else False)),
             'strip': self._handle_strip,
             'default': self._handle_default,
-            'base64_encode': lambda input_object, param, value:
-                             encode_as_base64(str(input_object)),
-            'base64_decode': lambda input_object, param, value:
-                             decode_as_base64(str(input_object)),
+            'base64_encode': self._handle_base64_encode,
+            'base64_decode': self._handle_base64_decode,
         }
 
     @property
@@ -578,6 +579,12 @@ class PythonParser(BaseParser):
 
     def _handle_strip(self, input_object, param, value):
         return str(input_object).strip(value or None)
+
+    def _handle_base64_encode(self, input_object, param, value):
+        return encode_as_base64(str(input_object))
+
+    def _handle_base64_decode(self, input_object, param, value):
+        return decode_as_base64(str(input_object))
 
     def _handle_default(self, input_object, param, value):
         if isinstance(input_object, str):
@@ -727,8 +734,8 @@ class TimeParser(BaseParser):
 
     def _parse(self, input_object, param, value):
         value = value or "%Y-%m-%d %H:%M:%S"
-        tz_fix_seconds = (self.LOCAL_TIME_ZONE -
-                          self._OS_LOCAL_TIME_ZONE) * 3600
+        tz_fix_hours = self.LOCAL_TIME_ZONE - self._OS_LOCAL_TIME_ZONE
+        tz_fix_seconds = tz_fix_hours * 3600
         if param == 'encode':
             # time string => timestamp
             if '%z' in value:
@@ -1064,10 +1071,11 @@ class Uniparser(object):
 
     def parse_parse_rule(self, input_object, rule: ParseRule, context=None):
         # if context, use context; else use rule.context
-        input_object = self.parse_chain(input_object,
-                                        rule['chain_rules'],
-                                        context=context or
-                                        getattr(rule, 'context', {}))
+        input_object = self.parse_chain(
+            input_object,
+            rule['chain_rules'],
+            context=context or getattr(rule, 'context', {}),
+        )
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
                 f'Schema check is not True: {input_object}')

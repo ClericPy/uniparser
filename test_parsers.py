@@ -488,6 +488,22 @@ def test_python_parser():
     # print(result)
     assert result == 'a'
 
+    # ===================== test base64 =====================
+    result = uni.python.parse('abc', 'base64_encode', '')
+    # print(result)
+    assert result == 'YWJj'
+    result = uni.python.parse('YWJj', 'base64_decode', '')
+    # print(result)
+    assert result == 'abc'
+
+    # ===================== test parser.__call__() =====================
+    result = uni.python('abc', 'base64_encode', '')
+    # print(result)
+    assert result == 'YWJj'
+    result = uni.python('YWJj', 'base64_decode', '')
+    # print(result)
+    assert result == 'abc'
+
 
 def test_udf_parser():
     uni = Uniparser()

@@ -16,8 +16,9 @@ from frequency_controller import AsyncFrequency, Frequency
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError, UnknownParserNameError
 from .utils import (AsyncRequestAdapter, LazyImporter, SyncRequestAdapter,
-                    ensure_request, get_available_async_request,
-                    get_available_sync_request, get_host)
+                    decode_as_base64, encode_as_base64, ensure_request,
+                    get_available_async_request, get_available_sync_request,
+                    get_host)
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'CSSParser',
@@ -84,7 +85,6 @@ class BaseParser(ABC):
             for i in args:
                 print(f'{str(i):<{max_len}} => {uni.python.parse(*i)}')
 
-
     """
     test_url = 'https://github.com/ClericPy/uniparser'
     doc_url = 'https://github.com/ClericPy/uniparser'
@@ -112,7 +112,10 @@ class BaseParser(ABC):
     @property
     def doc(self):
         # If need dynamic doc, overwrite this method.
-        return self.__doc__
+        return f'{self.__class__.__doc__}\n\n{self.doc_url}\n\n{self.test_url}'
+
+    def __call__(self, *args, **kwargs):
+        return self.parse(*args, **kwargs)
 
 
 class CSSParser(BaseParser):
@@ -164,6 +167,10 @@ class CSSParser(BaseParser):
         '$string': lambda element: str(element),
         '$self': return_self,
     }
+
+    @property
+    def doc(self):
+        return f'{self.__class__.__doc__}\n\nvalid value args: {list(self.operations.keys())}\n\n{self.doc_url}\n\n{self.test_url}'
 
     def _parse(self, input_object, param, value):
         result = []
@@ -222,6 +229,10 @@ class XMLParser(BaseParser):
         '$outerXML': lambda element: str(element),
         '$self': return_self,
     }
+
+    @property
+    def doc(self):
+        return f'{self.__class__.__doc__}\n\nvalid value args: {list(self.operations.keys())}\n\n{self.doc_url}\n\n{self.test_url}'
 
     def _parse(self, input_object, param, value):
         result = []
@@ -429,7 +440,7 @@ class UDFParser(BaseParser):
 
     @property
     def doc(self):
-        return f'{self.__doc__}\n\n_GLOBALS_ARGS: {list(self._GLOBALS_ARGS.keys())}\n'
+        return f'{self.__class__.__doc__}\n\n_GLOBALS_ARGS: {list(self._GLOBALS_ARGS.keys())}\n\n{self.doc_url}\n\n{self.test_url}'
 
     @staticmethod
     def get_code_mode(code):
@@ -504,10 +515,13 @@ class PythonParser(BaseParser):
                 value: value can be asc (default) / desc.
             9.  param: strip
                 value: chars. return str(input_object).strip(value)
+            10. param: base64_encode, base64_decode
+                from string to string.
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
             [[1, 2, 3], 'getitem', '[:2]']              => [1, 2]
+            ['abc', 'getitem', '[::-1]']              => 'cba'
             [{'a': '1'}, 'getitem', 'a']                => '1'
             ['a b\tc \n \td', 'split', '']              => ['a', 'b', 'c', 'd']
             [['a', 'b', 'c', 'd'], 'join', '']          => 'abcd'
@@ -524,6 +538,8 @@ class PythonParser(BaseParser):
             ['a', 'default', 'b']                       => 'a'
             ['', 'default', 'b']                        => 'b'
             [' ', 'default', 'b']                       => 'b'
+            ['a', 'base64_encode', '']                  => 'YQ=='
+            ['YQ==', 'base64_decode', '']               => 'a'
 """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -539,8 +555,7 @@ class PythonParser(BaseParser):
             'join': lambda input_object, param, value: value.join(input_object),
             'chain': lambda input_object, param, value: list(
                 chain(*input_object)),
-            'const': lambda input_object, param, value: value
-                     if value else input_object,
+            'const': lambda input_object, param, value: value or input_object,
             'template': self._handle_template,
             'index': lambda input_object, param, value: input_object[int(
                 value) if (value.isdigit() or value.startswith('-') and value[
@@ -550,7 +565,13 @@ class PythonParser(BaseParser):
                 reverse=(True if value.lower() == 'desc' else False)),
             'strip': self._handle_strip,
             'default': self._handle_default,
+            'base64_encode': self._handle_base64_encode,
+            'base64_decode': self._handle_base64_decode,
         }
+
+    @property
+    def doc(self):
+        return f'{self.__class__.__doc__}\n\nvalid param args: {list(self.param_functions.keys())}\n\n{self.doc_url}\n\n{self.test_url}'
 
     def _parse(self, input_object, param, value):
         function = self.param_functions.get(param, return_self)
@@ -558,6 +579,12 @@ class PythonParser(BaseParser):
 
     def _handle_strip(self, input_object, param, value):
         return str(input_object).strip(value or None)
+
+    def _handle_base64_encode(self, input_object, param, value):
+        return encode_as_base64(str(input_object))
+
+    def _handle_base64_decode(self, input_object, param, value):
+        return decode_as_base64(str(input_object))
 
     def _handle_default(self, input_object, param, value):
         if isinstance(input_object, str):
@@ -657,6 +684,10 @@ class LoaderParser(BaseParser):
         }
         super().__init__()
 
+    @property
+    def doc(self):
+        return f'{self.__class__.__doc__}\n\nvalid param args: {list(self.loaders.keys())}\n\n{self.doc_url}\n\n{self.test_url}'
+
     def _parse(self, input_object, param, value=''):
         loader = self.loaders.get(param, return_self)
         if value:
@@ -697,10 +728,14 @@ class TimeParser(BaseParser):
     _OS_LOCAL_TIME_ZONE: int = -int(timezone / 3600)
     LOCAL_TIME_ZONE: int = _OS_LOCAL_TIME_ZONE
 
+    @property
+    def doc(self):
+        return f'{self.__class__.__doc__}\n\n_OS_LOCAL_TIME_ZONE: {self._OS_LOCAL_TIME_ZONE}\nLOCAL_TIME_ZONE: {self.LOCAL_TIME_ZONE}\n\n{self.doc_url}\n\n{self.test_url}'
+
     def _parse(self, input_object, param, value):
         value = value or "%Y-%m-%d %H:%M:%S"
-        tz_fix_seconds = (self.LOCAL_TIME_ZONE -
-                          self._OS_LOCAL_TIME_ZONE) * 3600
+        tz_fix_hours = self.LOCAL_TIME_ZONE - self._OS_LOCAL_TIME_ZONE
+        tz_fix_seconds = tz_fix_hours * 3600
         if param == 'encode':
             # time string => timestamp
             if '%z' in value:
@@ -1036,10 +1071,11 @@ class Uniparser(object):
 
     def parse_parse_rule(self, input_object, rule: ParseRule, context=None):
         # if context, use context; else use rule.context
-        input_object = self.parse_chain(input_object,
-                                        rule['chain_rules'],
-                                        context=context or
-                                        getattr(rule, 'context', {}))
+        input_object = self.parse_chain(
+            input_object,
+            rule['chain_rules'],
+            context=context or getattr(rule, 'context', {}),
+        )
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
                 f'Schema check is not True: {input_object}')

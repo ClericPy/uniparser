@@ -25,19 +25,12 @@ if not adapter:
     )
 uni = Uniparser(adapter())
 GLOBAL_RESP = None
-templates = Jinja2Templates(directory=str((Path(__file__).parent.parent /
-                                           'templates').absolute()))
-app.mount("/static",
-          StaticFiles(directory=str((Path(__file__).parent.parent /
-                                     'static').absolute())),
-          name="static")
-cdn_urls = {
-    'VUE_JS_CDN': 'https://cdn.staticfile.org/vue/2.6.11/vue.min.js',
-    'ELEMENT_CSS_CDN': 'https://cdn.staticfile.org/element-ui/2.13.0/theme-chalk/index.css',
-    'ELEMENT_JS_CDN': 'https://cdn.staticfile.org/element-ui/2.13.0/index.js',
-    'VUE_RESOURCE_CDN': 'https://cdn.staticfile.org/vue-resource/1.5.1/vue-resource.min.js',
-    'CLIPBOARDJS_CDN': 'https://cdn.staticfile.org/clipboard.js/2.0.4/clipboard.min.js',
-}
+templates_directory = str(
+    (Path(__file__).parent.parent / 'templates').absolute())
+templates = Jinja2Templates(directory=templates_directory)
+static_directory = str((Path(__file__).parent.parent / 'static').absolute())
+app.mount("/static", StaticFiles(directory=static_directory), name="static")
+cdn_urls = GlobalConfig.cdn_urls
 
 
 @app.exception_handler(Exception)
@@ -58,10 +51,7 @@ async def exception_handler(request: Request, exc: Exception):
 
 @app.get("/")
 def index(request: Request):
-    parser_name_docs = {
-        i.name: f'{i.doc}\n{i.doc_url}\n\n{i.test_url}'
-        for i in uni.parsers
-    }
+    parser_name_docs = {i.name: i.doc for i in uni.parsers}
     parser_name_choices = [{'value': name} for name in parser_name_docs]
     parser_name_docs[''] = 'Choose a parser_name'
     parser_name_docs['py'] = parser_name_docs['python']

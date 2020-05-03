@@ -220,6 +220,8 @@ PythonParser. Some frequently-used utils.
                 value: value can be asc (default) / desc.
             9.  param: strip
                 value: chars. return str(input_object).strip(value)
+            10. param: base64_encode, base64_decode
+                from string to string.
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
@@ -241,9 +243,11 @@ PythonParser. Some frequently-used utils.
             ['a', 'default', 'b']                       => 'a'
             ['', 'default', 'b']                        => 'b'
             [' ', 'default', 'b']                       => 'b'
+            ['a', 'base64_encode', '']                  => 'YQ=='
+            ['YQ==', 'base64_decode', '']               => 'a'
 
 
-valid param args: ['getitem', 'get', 'split', 'join', 'chain', 'const', 'template', 'index', 'sort', 'strip', 'default']
+valid param args: ['getitem', 'get', 'split', 'join', 'chain', 'const', 'template', 'index', 'sort', 'strip', 'default', 'base64_encode', 'base64_decode']
 
 https://docs.python.org/3/
 

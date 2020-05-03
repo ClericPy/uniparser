@@ -30,14 +30,13 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'uniparser', '__init__.py'), encoding="u8") as f:
     version = re.search(r'''__version__ = ['"](.*?)['"]''', f.read()).group(1)
 
+keywords = "requests crawler parser tools universal lxml beautifulsoup bs4 jsonpath udf toml yaml"
+description = "Provide a universal solution for crawler platforms. Read more: https://github.com/ClericPy/uniparser."
 setup(
     name="uniparser",
     version=version,
-    keywords=
-    ("requests crawler parser tools universal lxml beautifulsoup bs4 jsonpath udf toml yaml"
-    ),
-    description=
-    "Provide a universal solution for crawler platforms. Read more: https://github.com/ClericPy/uniparser.",
+    keywords=keywords,
+    description=description,
     long_description=long_description,
     long_description_content_type='text/markdown',
     license="MIT License",

@@ -38,6 +38,12 @@ CSS selector parser, requires `bs4` and `lxml`(optional).
 
             WARNING: $self returns the original Tag object
     
+
+valid value args: ['@attr', '$text', '$innerHTML', '$html', '$outerHTML', '$string', '$self']
+
+https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors
+
+https://github.com/ClericPy/uniparser
 ```
 ## XMLParser (xml)
 
@@ -72,6 +78,12 @@ XML parser, requires `bs4` and `lxml`(necessary), but not support `xpath` for no
             ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$text']      => ['author']
             WARNING: $self returns the original Tag object
     
+
+valid value args: ['@attr', '$text', '$innerXML', '$outerXML', '$self']
+
+https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors
+
+https://github.com/ClericPy/uniparser
 ```
 ## RegexParser (re)
 
@@ -107,6 +119,10 @@ RegexParser. Parse the input object with standard regex, features from `re`.
             ['a a b b c c', 'a (a b)', '$1'] => ['a b']
             ['a a b b c c', 'b', '-']        => ['a a ', ' ', ' c c']
     
+
+https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference
+
+https://regex101.com/
 ```
 ## JSONPathParser (jsonpath)
 
@@ -127,6 +143,10 @@ JSONPath parser, requires `jsonpath-rw-ext` lib.
 
             [{'a': {'b': {'c': 1}}}, '$..c', ''] => [1]
     
+
+https://github.com/sileht/python-jsonpath-rw-ext
+
+https://jsonpath.com/
 ```
 ## ObjectPathParser (objectpath)
 
@@ -145,6 +165,10 @@ ObjectPath parser, requires `objectpath` lib.
 
             [{'a': {'b': {'c': 1}}}, '$..c', ''] => [1]
     
+
+http://github.com/adriank/ObjectPath
+
+http://objectpath.org/
 ```
 ## JMESPathParser (jmespath)
 
@@ -163,6 +187,10 @@ JMESPath parser, requires `jmespath` lib.
 
             [{'a': {'b': {'c': 1}}}, 'a.b.c', ''] => 1
     
+
+https://github.com/jmespath/jmespath.py
+
+http://jmespath.org/
 ```
 ## PythonParser (python)
 
@@ -192,10 +220,13 @@ PythonParser. Some frequently-used utils.
                 value: value can be asc (default) / desc.
             9.  param: strip
                 value: chars. return str(input_object).strip(value)
+            10. param: base64_encode, base64_decode
+                from string to string.
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
             [[1, 2, 3], 'getitem', '[:2]']              => [1, 2]
+            ['abc', 'getitem', '[::-1]']              => 'cba'
             [{'a': '1'}, 'getitem', 'a']                => '1'
             ['a b\tc \n \td', 'split', '']              => ['a', 'b', 'c', 'd']
             [['a', 'b', 'c', 'd'], 'join', '']          => 'abcd'
@@ -212,7 +243,15 @@ PythonParser. Some frequently-used utils.
             ['a', 'default', 'b']                       => 'a'
             ['', 'default', 'b']                        => 'b'
             [' ', 'default', 'b']                       => 'b'
+            ['a', 'base64_encode', '']                  => 'YQ=='
+            ['YQ==', 'base64_decode', '']               => 'a'
 
+
+valid param args: ['getitem', 'get', 'split', 'join', 'chain', 'const', 'template', 'index', 'sort', 'strip', 'default', 'base64_encode', 'base64_decode']
+
+https://docs.python.org/3/
+
+https://github.com/ClericPy/uniparser
 ```
 ## UDFParser (udf)
 
@@ -236,6 +275,10 @@ UDFParser. Python source code snippets. globals will contain `input_object` and 
     
 
 _GLOBALS_ARGS: ['md5', 'json_loads', 'json_dumps']
+
+https://docs.python.org/3/
+
+https://github.com/ClericPy/uniparser
 ```
 ## LoaderParser (loader)
 
@@ -260,6 +303,12 @@ LoaderParser. Loads string with json / yaml / toml standard format.
             ['YQ==', 'b64decode', '']    => 'a'
 
     
+
+valid param args: ['json', 'toml', 'yaml', 'yaml_safe_load', 'yaml_full_load', 'b16decode', 'b16encode', 'b32decode', 'b32encode', 'b64decode', 'b64encode', 'b85decode', 'b85encode']
+
+https://github.com/ClericPy/uniparser
+
+https://github.com/ClericPy/uniparser
 ```
 ## TimeParser (time)
 
@@ -284,3 +333,12 @@ TimeParser. Parse different format of time. Sometimes time string need a preproc
             ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S']  => 'Feb 03 2020 20:29:45'
 
     WARNING: time.struct_time do not have timezone info, so %z is always the local timezone
+    
+
+_OS_LOCAL_TIME_ZONE: 8
+LOCAL_TIME_ZONE: 8
+
+https://github.com/ClericPy/uniparser
+
+https://github.com/ClericPy/uniparser
+```

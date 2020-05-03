@@ -114,6 +114,9 @@ class BaseParser(ABC):
         # If need dynamic doc, overwrite this method.
         return f'{self.__class__.__doc__}\n\n{self.doc_url}\n\n{self.test_url}'
 
+    def __call__(self, *args, **kwargs):
+        return self.parse(*args, **kwargs)
+
 
 class CSSParser(BaseParser):
     """CSS selector parser, requires `bs4` and `lxml`(optional).

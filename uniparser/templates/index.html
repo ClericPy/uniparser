@@ -112,19 +112,21 @@
                             v-model="input_object">
                         </el-input>
                     </el-form-item>
-                    <el-form-item label="Parse Rules">
+                    <el-form-item label="ParseRules">
                         <br />
                         <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
                             <div class="rule">
                                 <el-input type="text" style="width: 50%; zoom: 100%;" autosize
                                     placeholder="Rule name for saving parse result" v-model="rule.name">
-                                    <template slot="prepend" class="sub-title">Rule Name</template>
+                                    <template slot="prepend" class="sub-title">ParseRule Name</template>
                                 </el-input>
-                                <i style="zoom: 1.5;"
+                                <el-button size="small" circle icon="el-icon-d-caret"
                                     title="Send this ParseRule to the tail of parse_rules, or as a child rule"
-                                    class="el-icon-d-caret" @click="open_send_child_dialog(index)"></i>
-                                <i style="zoom: 1.5;" title="Delete this ParseRule" class="el-icon-delete"
-                                    @click="del_rule(index)"></i>
+                                    @click="open_send_child_dialog(index)"></el-button>
+                                <el-button size="small" title="Delete this ParseRule" circle icon="el-icon-delete" style="margin-left: 0;"
+                                    @click="del_rule(index)"></el-button>
+                                <!-- <i style="zoom: 1.5;" title="Delete this ParseRule" class="el-icon-delete"
+                                    @click="del_rule(index)"></i> -->
                                 <br />
                                 <div v-if="rule.name">
                                     <div class="sub-title">Rules Chain</div>

@@ -67,16 +67,20 @@
     <template id="init_vars">{{init_vars_b64}}</template>
     <div id="app">
         <el-container>
-            <el-header style="margin-top: 2em;"><a href="https://github.com/ClericPy/uniparser" target="_blank"
+            <el-header style="margin-top: 2em; font-weight: 900;"><a href="https://github.com/ClericPy/uniparser" target="_blank"
                     title="Click to Github" rel="noopener noreferrer">Uniparser Test Console v{{version}}</a>
             </el-header>
             <el-main>
                 <el-form :model="crawler_rule">
                     <el-input clearable v-model="crawler_rule.name" style="width: 40%; zoom: 100%;"
-                        placeholder="Auto set after downloading"> <span slot="prepend">Rule Name</span> </el-input>
+                        placeholder="Auto set after downloading">
+                        <span slot="prepend">Rule Name</span>
+                    </el-input>
                     <br />
                     <el-input v-model="crawler_rule.regex" style="width: 40%; zoom: 100%;"
-                        placeholder="Regex to match the url"> <span slot="prepend">Regex Pattern</span> </el-input>
+                        placeholder="Regex to match the url">
+                        <span slot="prepend">Regex Pattern</span>
+                    </el-input>
                     <br />
                     <el-input v-model="encoding" style="width: 40%; zoom: 100%;"
                         placeholder="Encoding of request_args, defaults to None">
@@ -105,20 +109,24 @@
                     </el-form-item>
                     <el-form-item :label="'Response Body ' + request_status " id="request_status">
                         <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 5}" placeholder="" width="50%"
-                            v-model="input_object"> </el-input>
+                            v-model="input_object">
+                        </el-input>
                     </el-form-item>
-                    <el-form-item label="Parse Rules">
+                    <el-form-item label="ParseRules">
                         <br />
                         <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
                             <div class="rule">
                                 <el-input type="text" style="width: 50%; zoom: 100%;" autosize
                                     placeholder="Rule name for saving parse result" v-model="rule.name">
-                                    <template slot="prepend" class="sub-title">Rule Name</template>
+                                    <template slot="prepend" class="sub-title">ParseRule Name</template>
                                 </el-input>
-                                <i style="zoom: 1.5;" title="Send this ParseRule to child_rules" class="el-icon-d-caret"
-                                    @click="open_send_child_dialog(index)"></i>
-                                <i style="zoom: 1.5;" title="Delete this ParseRule" class="el-icon-delete"
-                                    @click="del_rule(index)"></i>
+                                <el-button size="small" circle icon="el-icon-d-caret"
+                                    title="Send this ParseRule to the tail of parse_rules, or as a child rule"
+                                    @click="open_send_child_dialog(index)"></el-button>
+                                <el-button size="small" title="Delete this ParseRule" circle icon="el-icon-delete" style="margin-left: 0;"
+                                    @click="del_rule(index)"></el-button>
+                                <!-- <i style="zoom: 1.5;" title="Delete this ParseRule" class="el-icon-delete"
+                                    @click="del_rule(index)"></i> -->
                                 <br />
                                 <div v-if="rule.name">
                                     <div class="sub-title">Rules Chain</div>
@@ -134,29 +142,43 @@
                                             :fetch-suggestions="querySearch" placeholder="Parser Name">
                                         </el-autocomplete>
                                         <el-input @keyup.ctrl.13.native="parse"
-                                            @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
-                                            style="width: 40%; zoom: 120%; display: inline-block;" :rows="1" autosize
-                                            placeholder="Param" title="Ctrl+Enter: submit; Alt+Enter: new chain"
-                                            v-model="r[1]"> </el-input>
+                                            @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea" style="
+                                                    width: 40%;
+                                                    zoom: 120%;
+                                                    display: inline-block;
+                                                " :rows="1" autosize placeholder="Param"
+                                            title="Ctrl+Enter: submit; Alt+Enter: new chain" v-model="r[1]">
+                                        </el-input>
                                         <el-input @keyup.ctrl.13.native="parse"
-                                            @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea"
-                                            style="width: 40%; zoom: 120%; display: inline-block;" :rows="1" autosize
-                                            placeholder="Value" title="Ctrl+Enter: submit; Alt+Enter: new chain"
-                                            v-model="r[2]"> </el-input>
+                                            @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea" style="
+                                                    width: 40%;
+                                                    zoom: 120%;
+                                                    display: inline-block;
+                                                " :rows="1" autosize placeholder="Value"
+                                            title="Ctrl+Enter: submit; Alt+Enter: new chain" v-model="r[2]">
+                                        </el-input>
                                         <i class="el-icon-delete" title="Delete this rule chain"
-                                            @click="del_rule_chain(index, i)"> </i>
+                                            @click="del_rule_chain(index, i)">
+                                        </i>
                                         <br />
                                     </div>
-                                    <i class="el-icon-circle-plus" style="margin: 0.5em 0 0.5em 45%; zoom: 1.2;"
-                                        title="Add a new rule chain" @click="add_new_rule_chain(index)"></i>
+                                    <i class="el-icon-circle-plus" style="
+                                                margin: 0.5em 0 0.5em 45%;
+                                                zoom: 1.2;
+                                            " title="Add a new rule chain" @click="add_new_rule_chain(index)"></i>
                                     <br />
-                                    <div class="sub-title">ChildRules<el-checkbox v-model="rule.iter_parse_child"
+                                    <div class="sub-title">
+                                        ChildRules<el-checkbox v-model="rule.iter_parse_child"
                                             title="Parse the upstream input_object one by one, and return the result list"
-                                            style="zoom: 0.9; margin-left: 2em;">Iter Parse</el-checkbox>
+                                            style="
+                                                    zoom: 0.9;
+                                                    margin-left: 2em;
+                                                ">Iter Parse</el-checkbox>
                                     </div>
                                     <el-input class="child-rules-input" type="textarea" autosize style="width: 60%;"
                                         placeholder="Child rules, JSON list of ParseRule objects"
-                                        v-model="rule.child_rules"> </el-input>
+                                        v-model="rule.child_rules">
+                                    </el-input>
                                     <br />
                                 </div>
                             </div>
@@ -171,7 +193,7 @@
                             <i class="el-icon-video-play"> Parse </i>
                         </el-button>
                         <el-button type="warning" @click="load_rule_popup" title="Load CrawlerRule from a JSON string">
-                            <i class="el-icon-edit-outline"> Loads </i>
+                            <i class="el-icon-edit-outline"> Load </i>
                         </el-button>
                     </el-form-item>
                     <hr />
@@ -180,20 +202,22 @@
                             title="Switch between 0 and 2 indent">Pretty</el-checkbox>
                         <el-button size="mini" icon="el-icon-document-copy"
                             data-clipboard-target="#current_crawler_rule_json" id="copy" title="Copy" circle
-                            class="cp-button"> </el-button>
+                            class="cp-button">
+                        </el-button>
                         <el-input title="Can be loaded by CrawlerRule.from_json" type="textarea" autosize placeholder=""
-                            id="current_crawler_rule_json" v-model="current_crawler_rule_json"> </el-input>
+                            id="current_crawler_rule_json" v-model="current_crawler_rule_json">
+                        </el-input>
                     </el-form-item>
                     <el-drawer close-on-press-escape="true" title="Parse Result" :visible.sync="drawer" size="50%"
                         direction="ttb">
                         <b style="font-size: 0.8em;">${parse_result.type}</b>
-                        <textarea name="doc" id="show_parse_result"
-                            style="width: 100%; height: 100%;">${parse_result.data}</textarea>
+                        <textarea name="doc" id="show_parse_result" style="width: 100%; height: 100%;">
+${parse_result.data}</textarea>
                     </el-drawer>
                     <el-drawer :close-on-press-escape="false" title="Doc" :visible.sync="doc_drawer" size="50%"
                         direction="ttb">
-                        <textarea name="doc" id="show_doc" style="width: 100%; height: 100%;"
-                            :v-model="current_doc">${current_doc}</textarea>
+                        <textarea name="doc" id="show_doc" style="width: 100%; height: 100%;" :v-model="current_doc">
+${current_doc}</textarea>
                     </el-drawer>
                 </el-form>
                 <el-dialog title="Input the JSON string" :visible.sync="new_rule_visible">
@@ -202,13 +226,25 @@
                             type="textarea" :autosize="{ minRows: 5, maxRows: 15}"></el-input>
                     </el-form>
                     <div slot="footer" class="dialog-footer">
-                        <el-button @click="new_rule_visible = false"> Cancel </el-button>
-                        <el-button type="primary" @click="load_rule()"> OK </el-button>
+                        <el-button @click="new_rule_visible = false">
+                            Cancel
+                        </el-button>
+                        <el-button type="primary" @click="load_rule()">
+                            OK
+                        </el-button>
                     </div>
                 </el-dialog>
-                <el-dialog title="Choose the rule name you want to send" :visible.sync="send_child_rule_visible">
-                    <template v-for="(item, index) in parse_rules_to_be_send" class="rule">
-                        <el-button type="primary" @click="send_child(item)"> ${item.rule.name} </el-button>
+                <el-dialog title="Choose where you want to send this rule" :visible.sync="send_child_rule_visible">
+                    <el-button type="warning" @click="tail_rule()"
+                        title="Move this ParseRule to the tail of parse_rules to reset the sequence.">
+                        Move to tail
+                    </el-button>
+                    <hr />
+                    <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
+                        <el-button v-if="rule.name && parse_rule_idx_to_send!=index" type="primary"
+                            @click="send_child(rule, index)">
+                            ${rule.name}
+                        </el-button>
                     </template>
                 </el-dialog>
                 <el-dialog title="Request Template" :visible.sync="template_visible">
@@ -241,7 +277,8 @@
         </el-container>
     </div>
     <!-- [CSS Minifier](https://cssminifier.com/)
-    [JavaScript Minifier](https://javascript-minifier.com/) -->
+    [JavaScript Minifier](https://javascript-minifier.com/)
+    [HTML Minifier](https://html-minifier.com/) -->
     <!-- <script src="static/uniparser.js"></script> -->
     <script src="static/uniparser.min.js"></script>
 </body>

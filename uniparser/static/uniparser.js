@@ -2,7 +2,7 @@ var Main = {
     data() {
         return {
             downloading: false,
-            pretty_json: true,
+            pretty_json: false,
             drawer: false,
             options: "",
             encoding: "",

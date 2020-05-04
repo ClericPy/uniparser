@@ -1048,7 +1048,7 @@ class Uniparser(object):
     def parse_chain(self, input_object, chain_rules: List, context=None):
         for parser_name, param, value in chain_rules:
             parser = getattr(self, parser_name)
-            if not parser:
+            if parser is None:
                 msg = f'Unknown parser name: {parser_name}'
                 logger.error(msg)
                 raise UnknownParserNameError(msg)

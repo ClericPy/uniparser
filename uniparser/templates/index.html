@@ -67,8 +67,9 @@
     <template id="init_vars">{{init_vars_b64}}</template>
     <div id="app">
         <el-container>
-            <el-header style="margin-top: 2em; font-weight: 900;"><a href="https://github.com/ClericPy/uniparser" target="_blank"
-                    title="Click to Github" rel="noopener noreferrer">Uniparser Test Console v{{version}}</a>
+            <el-header style="margin-top: 2em; font-weight: 900;"><a href="https://github.com/ClericPy/uniparser"
+                    target="_blank" title="Click to Github" rel="noopener noreferrer">Uniparser Test Console
+                    v{{version}}</a>
             </el-header>
             <el-main>
                 <el-form :model="crawler_rule">
@@ -97,9 +98,9 @@
                             type="textarea" autosize></el-input>
                     </el-form-item>
                     <el-form-item>
-                        <el-button type="primary" @click="download">
-                            <i v-show="!downloading" class="el-icon-download"></i><i v-show="downloading"
-                                class="el-icon-loading"></i>
+                        <el-button size="medium" type="" @click="download">
+                            <i v-show="!downloading" class="el-icon-download"></i>
+                            <i v-show="downloading" class="el-icon-loading"></i>
                             Download
                         </el-button>
                         <el-link style="margin-left: 1em;" target="_blank" title="Current URL"
@@ -123,8 +124,8 @@
                                 <el-button size="small" circle icon="el-icon-d-caret"
                                     title="Send this ParseRule to the tail of parse_rules, or as a child rule"
                                     @click="open_send_child_dialog(index)"></el-button>
-                                <el-button size="small" title="Delete this ParseRule" circle icon="el-icon-delete" style="margin-left: 0;"
-                                    @click="del_rule(index)"></el-button>
+                                <el-button size="small" title="Delete this ParseRule" circle icon="el-icon-delete"
+                                    style="margin-left: 0;" @click="del_rule(index)"></el-button>
                                 <!-- <i style="zoom: 1.5;" title="Delete this ParseRule" class="el-icon-delete"
                                     @click="del_rule(index)"></i> -->
                                 <br />
@@ -187,12 +188,17 @@
                             style="margin: 0.5em 0 0.5em 45%; zoom: 1.5;"></i>
                     </el-form-item>
                     <el-form-item>
-                        <el-button type="primary" :disabled="!input_object"
+                        <el-button size="medium" type="" @click="download">
+                            <i v-show="!downloading" class="el-icon-download"></i><i v-show="downloading"
+                                class="el-icon-loading"></i>
+                            Download
+                        </el-button>
+                        <el-button size="medium" :type="input_object?'primary':''" :disabled="!input_object"
                             title="Parse the input object with the CrawlerRule, press Download button before parsing"
                             @click="parse">
                             <i class="el-icon-video-play"> Parse </i>
                         </el-button>
-                        <el-button type="warning" @click="load_rule_popup" title="Load CrawlerRule from a JSON string">
+                        <el-button size="medium" @click="load_rule_popup" title="Load CrawlerRule from a JSON string">
                             <i class="el-icon-edit-outline"> Load </i>
                         </el-button>
                     </el-form-item>

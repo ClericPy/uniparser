@@ -766,6 +766,8 @@ class CompiledString(str):
     @classmethod
     def compile(cls, obj, string, mode=None):
         if mode == 'jmespath':
+            if string.startswith('JSON.'):
+                string = string[5:]
             obj.code = lib.jmespath_compile(string)
         elif mode == 'jsonpath':
             obj.code = lib.jp_parse(string)

@@ -67,9 +67,26 @@
     <template id="init_vars">{{init_vars_b64}}</template>
     <div id="app">
         <el-container>
-            <el-header style="margin-top: 2em; font-weight: 900;"><a href="https://github.com/ClericPy/uniparser"
-                    target="_blank" title="Click to Github" rel="noopener noreferrer">Uniparser Test Console
-                    v{{version}}</a>
+            <el-header style="margin-top: 2em; font-weight: 900;">
+                <a href="https://github.com/ClericPy/uniparser" target="_blank" title="Click to Github"
+                    rel="noopener noreferrer">
+                    Uniparser Test Console v{{version}}
+                </a>
+                <el-dropdown show-timeout="0" title="Init rules with demos" @command="demo_handle_click"
+                    style="margin-left: 1em;">
+                    <el-button icon='el-icon-help' type="" size="mini">
+                        Demos
+                        <i class="el-icon-arrow-down el-icon--right"></i>
+                    </el-button>
+                    <el-dropdown-menu slot="dropdown">
+                        <el-dropdown-item command="CSS">CSS</el-dropdown-item>
+                        <el-dropdown-item command="XML(RSS)">XML(RSS)</el-dropdown-item>
+                        <el-dropdown-item command="Regex">Regex</el-dropdown-item>
+                        <el-dropdown-item command="JSON">JSON</el-dropdown-item>
+                        <el-dropdown-item command="UDF">UDF</el-dropdown-item>
+                        <el-dropdown-item command="Null">Null</el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
             </el-header>
             <el-main>
                 <el-form :model="crawler_rule">
@@ -94,6 +111,10 @@
                             @click="show_request_template"
                             v-if="crawler_rule.request_template || crawler_rule.request_args"
                             :type="crawler_rule.request_template?'success':'plain'"><b>Template</b></el-button>
+                        <el-link style="margin-left: 1em;" target="_blank" title="Current URL"
+                            :href="current_request_url" type="primary">
+                            ${current_request_url}
+                        </el-link>
                         <el-input v-model="crawler_rule.request_args" placeholder="Json dict for Requests"
                             type="textarea" autosize></el-input>
                     </el-form-item>
@@ -103,10 +124,14 @@
                             <i v-show="downloading" class="el-icon-loading"></i>
                             Download
                         </el-button>
-                        <el-link style="margin-left: 1em;" target="_blank" title="Current URL"
-                            :href="current_request_url" type="primary">
-                            ${current_request_url}
-                        </el-link>
+                        <el-button size="medium" :type="input_object?'primary':''" :disabled="!input_object"
+                            title="Parse the input object with the CrawlerRule, press Download button before parsing"
+                            @click="parse">
+                            <i class="el-icon-video-play"> Parse </i>
+                        </el-button>
+                        <el-button size="medium" @click="load_rule_popup" title="Load CrawlerRule from a JSON string">
+                            <i class="el-icon-edit-outline"> Load </i>
+                        </el-button>
                     </el-form-item>
                     <el-form-item :label="'Response Body ' + request_status " id="request_status">
                         <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 5}" placeholder="" width="50%"

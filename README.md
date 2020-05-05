@@ -234,9 +234,10 @@ if __name__ == "__main__":
 
 ## More Usage
 
-> Doc is on the way.
 
-Test code: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
+Some Demos: **Click the dropdown buttons on top of the Web UI**
+
+Test Code: [test_parsers.py](https://github.com/ClericPy/uniparser/blob/master/test_parsers.py)
 
 Advanced Usage: [Create crawler rule](https://github.com/ClericPy/watchdogs/blob/master/quick_start.md#create-a-crawlerrule) for  [watchdogs](https://github.com/ClericPy/watchdogs)
 

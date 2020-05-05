@@ -165,6 +165,10 @@ class SyncRequestAdapter(ABC):
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
+        # list and tuple compatible issue
+        auth = request_args.get('auth')
+        if auth and isinstance(auth, tuple):
+            request_args['auth'] = list(auth)
         for _ in range(retry + 1):
             try:
                 resp = self.session.request(**request_args)
@@ -195,6 +199,31 @@ class AsyncRequestAdapter(ABC):
         async with XXAdapter() as req:
             text, resp = await req.request(**request_args)
             """
+
+    def fix_aiohttp_request_args(self, request_args):
+        if 'timeout' in request_args:
+            # for timeout=(1,2) and timeout=5
+            timeout = request_args['timeout']
+            if isinstance(timeout, (int, float)):
+                request_args['timeout'] = self.ClientTimeout(
+                    sock_connect=timeout, sock_read=timeout)
+            elif isinstance(timeout, (tuple, list)):
+                request_args['timeout'] = self.ClientTimeout(
+                    sock_connect=timeout[0], sock_read=timeout[1])
+            elif timeout is None or isinstance(timeout, self.ClientTimeout):
+                pass
+            else:
+                raise ValueError('Bad timeout type')
+        if "verify" in request_args:
+            request_args["ssl"] = request_args.pop('verify')
+        if "proxies" in request_args:
+            # aiohttp not support https proxy
+            request_args["proxy"] = "http://%s" % request_args.pop(
+                'proxies')['http']
+        if "auth" in request_args and isinstance(request_args['auth'],
+                                                 (list, tuple)):
+            request_args["auth"] = self.BasicAuth(*request_args['auth'])
+        return request_args
 
     @abstractmethod
     async def __aenter__(self):
@@ -303,10 +332,11 @@ class HTTPXAsyncAdapter(AsyncRequestAdapter):
 class AiohttpAsyncAdapter(AsyncRequestAdapter):
 
     def __init__(self, session=None, **kwargs):
-        from aiohttp import ClientSession, ClientError
+        from aiohttp import ClientSession, ClientError, BasicAuth, ClientTimeout
         self.session = session
         self.session_class = partial(ClientSession, **kwargs)
         self.error = (ClientError, InvalidSchemaError)
+        self.BasicAuth, self.ClientTimeout = BasicAuth, ClientTimeout
 
     async def __aenter__(self):
         if not self.session:
@@ -329,6 +359,7 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
+        request_args = self.fix_aiohttp_request_args(request_args)
         for _ in range(retry + 1):
             try:
                 resp = await self.session.request(**request_args)
@@ -345,6 +376,8 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
 
     def __init__(self, session=None, **kwargs):
         from torequests.dummy import Requests, FailureException
+        from aiohttp import BasicAuth, ClientTimeout
+        self.BasicAuth, self.ClientTimeout = BasicAuth, ClientTimeout
         if session:
             kwargs['session'] = session
         self.req = Requests(catch_exception=False, **kwargs)
@@ -362,6 +395,7 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
+        request_args = self.fix_aiohttp_request_args(request_args)
         for _ in range(retry + 1):
             try:
                 resp = await self.req.request(**request_args)
@@ -384,6 +418,8 @@ class TorequestsAiohttpAsyncAdapter(AsyncRequestAdapter):
 
     def __init__(self, session=None, **kwargs):
         from torequests.aiohttp_dummy import Requests, FailureException
+        from aiohttp import BasicAuth, ClientTimeout
+        self.BasicAuth, self.ClientTimeout = BasicAuth, ClientTimeout
         if session:
             kwargs['session'] = session
         self.req = Requests(catch_exception=False, **kwargs)
@@ -400,6 +436,7 @@ class TorequestsAiohttpAsyncAdapter(AsyncRequestAdapter):
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
+        request_args = self.fix_aiohttp_request_args(request_args)
         for _ in range(retry + 1):
             try:
                 resp = await self.req.request(**request_args)

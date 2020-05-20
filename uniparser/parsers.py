@@ -600,9 +600,11 @@ class PythonParser(BaseParser):
     def _handle_template(self, input_object, param, value):
         if isinstance(input_object, dict):
             return Template(value).safe_substitute(input_object=input_object,
+                                                   obj=input_object,
                                                    **input_object)
         else:
-            return Template(value).safe_substitute(input_object=input_object)
+            return Template(value).safe_substitute(input_object=input_object,
+                                                   obj=input_object)
 
     def _handle_getitem(self, input_object, param, value):
         if value and (value[0], value[-1]) == ('[', ']'):

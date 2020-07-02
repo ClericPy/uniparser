@@ -712,18 +712,20 @@ def test_crawler_rule():
     # yapf: disable
     assert crawler_rule == {'name': 'test', 'parse_rules': [{'name': 'rule1', 'chain_rules': [['objectpath', 'JSON.url', ''], ['python', 'getitem', '[:4]'], ['udf', '(context["resp"].url, context["request_args"]["url"], input_object)', '']], 'child_rules': []}], 'request_args': {'url': 'http://httpbin.org/get', 'method': 'get'}, 'regex': '', 'context': {'a': 1, 'b': {'c': 2}}}
     # yapf: enable
-    rule = HostRule('importpython.com')
-    crawler_rule_json = '{"name":"C-1583501370","request_args":{"method":"get","url":"https://importpython.com/blog/feed/"},"parse_rules":[{"name":"text","chain_rules":[["xml","channel>item>title","$text"],["python","getitem","[0]"]],"childs":""},{"name":"url","chain_rules":[["xml","channel>item>link","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"https://asdfa.com/blog/feed/$","encoding":""}'
+    host_rule = HostRule('importpython.com')
+    crawler_rule_json = '{"name":"C-1583501370","request_args":{"method":"get","url":"https://importpython.com/blog/feed/"},"parse_rules":[{"name":"text","chain_rules":[["xml","channel>item>title","$text"],["python","getitem","[0]"]],"childs":""},{"name":"url","chain_rules":[["xml","channel>item>link","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"https://bad_url_host.com/blog/feed/$","encoding":""}'
     try:
-        rule.add_crawler_rule(crawler_rule_json)
+        host_rule.add_crawler_rule(crawler_rule_json)
         assert NotImplementedError
     except AssertionError as err:
         assert err
-    assert rule['crawler_rules'] == {}
+    assert host_rule['crawler_rules'] == {}
     crawler_rule = CrawlerRule.loads(crawler_rule_json)
-    crawler_rule['regex'] = 'https://importpython.com/blog/feed/'
-    rule.add_crawler_rule(crawler_rule)
-    assert rule['crawler_rules']
+    crawler_rule['regex'] = r'https?://importpython\.com/.*'
+    host_rule.add_crawler_rule(crawler_rule)
+    assert host_rule['crawler_rules']
+    assert not host_rule.findall('https://bad_url_host.com/')
+    assert host_rule.findall('https://importpython.com/')
 
 
 def test_default_usage():

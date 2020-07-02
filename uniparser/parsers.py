@@ -430,7 +430,7 @@ class UDFParser(BaseParser):
     _ALLOW_IMPORT = False
     # strict protection
     _ALLOW_EXEC_EVAL = False
-    _DANGEROUS_WORDS = {'open', 'exec', 'eval'}
+    _DANGEROUS_WORDS_REGEX = r'\bopen\b|\binput\b|\bexec\b|\beval\b'
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
     # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
@@ -470,10 +470,10 @@ class UDFParser(BaseParser):
             raise RuntimeError(
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
-        if not self._ALLOW_EXEC_EVAL and any(
-                word in param for word in self._DANGEROUS_WORDS):
+        if not self._ALLOW_EXEC_EVAL and self._DANGEROUS_WORDS_REGEX and re.search(
+                param, self._DANGEROUS_WORDS_REGEX):
             raise RuntimeError(
-                f'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not contain dangerous words like: {self._DANGEROUS_WORDS}. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually, or clear the UDFParser._DANGEROUS_WORDS.'
+                f'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not contain dangerous words like: {self._DANGEROUS_WORDS_REGEX}. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually, or clear the UDFParser._DANGEROUS_WORDS_REGEX.'
             )
         # obj is an alias for input_object
         local_vars = {

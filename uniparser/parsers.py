@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import re
 from abc import ABC, abstractmethod
 from base64 import (b16decode, b16encode, b32decode, b32encode, b64decode,
                     b64encode, b85decode, b85encode)
@@ -436,6 +437,9 @@ class UDFParser(BaseParser):
         'md5': md5,
         'json_loads': GlobalConfig.json_loads,
         'json_dumps': GlobalConfig.json_dumps,
+        're': re,
+        'encode_as_base64': encode_as_base64,
+        'decode_as_base64': decode_as_base64,
     }
 
     @property

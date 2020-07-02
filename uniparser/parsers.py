@@ -430,7 +430,7 @@ class UDFParser(BaseParser):
     _ALLOW_IMPORT = False
     # strict protection
     _ALLOW_EXEC_EVAL = False
-    _DANGEROUS_WORDS = {'open', 'input', 'exec', 'eval'}
+    _DANGEROUS_WORDS = {'open', 'exec', 'eval'}
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
     # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
@@ -592,8 +592,14 @@ class PythonParser(BaseParser):
         except (IndexError, ValueError, KeyError, TypeError):
             return value
 
+    def _handle_others(self, input_object, param, value):
+        if param.isdigit():
+            return self._handle_index(input_object, param, value)
+        else:
+            return return_self(input_object)
+
     def _parse(self, input_object, param, value):
-        function = self.param_functions.get(param, self._handle_index)
+        function = self.param_functions.get(param, self._handle_others)
         return function(input_object, param, value)
 
     def _handle_strip(self, input_object, param, value):

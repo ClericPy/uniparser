@@ -966,11 +966,16 @@ class HostRule(JsonSerializable):
         }
         super().__init__(host=host, crawler_rules=crawler_rules, **kwargs)
 
-    def find(self, url, strategy=''):
-        rules = [
+    def findall(self, url, strategy=''):
+        # find all the rules which matched the given URL, strategy could be: match, search, findall
+        return [
             rule for rule in self['crawler_rules'].values()
             if rule.check_regex(url, strategy)
         ]
+
+    def find(self, url, strategy=''):
+        # find only one rule which matched the given URL, strategy could be: match, search, findall
+        rules = self.findall(url=url, strategy=strategy)
         if len(rules) > 1:
             raise ValueError(f'{url} matched more than 1 rule. {rules}')
         if rules:

@@ -504,6 +504,13 @@ def test_python_parser():
     # print(result)
     assert result == 'abc'
 
+    # test index int
+    assert uni.python(*['a', '0', 'b']) == 'a'
+    assert uni.python(*['', '0', 'b']) == 'b'
+    assert uni.python(*[None, '0', 'b']) == 'b'
+    assert uni.python(*[{0: 'a'}, '0', 'a']) == 'a'
+    assert uni.python(*[['a'], '0', 'b']) == 'a'
+
 
 def test_udf_parser():
     uni = Uniparser()

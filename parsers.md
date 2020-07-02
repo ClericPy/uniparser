@@ -222,6 +222,9 @@ PythonParser. Some frequently-used utils.
                 value: chars. return str(input_object).strip(value)
             10. param: base64_encode, base64_decode
                 from string to string.
+            11. param: a number for index, will try to get input_object.__getitem__(int(param))
+                value: default string
+                similar to `param=default` if param is 0
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
@@ -245,6 +248,10 @@ PythonParser. Some frequently-used utils.
             [' ', 'default', 'b']                       => 'b'
             ['a', 'base64_encode', '']                  => 'YQ=='
             ['YQ==', 'base64_decode', '']               => 'a'
+            ['a', '0', 'b']                             => 'a'
+            ['', '0', 'b']                              => 'b'
+            [None, '0', 'b']                            => 'b'
+            [{0: 'a'}, '0', 'a']                        => 'a'
 
 
 valid param args: ['getitem', 'get', 'split', 'join', 'chain', 'const', 'template', 'index', 'sort', 'strip', 'default', 'base64_encode', 'base64_decode']
@@ -274,7 +281,7 @@ UDFParser. Python source code snippets. globals will contain `input_object` and 
             ['a b c d', 'def parse(input_object): context["key"]="new";return context', {'key': 'old'}] => {'key': 'new'}
     
 
-_GLOBALS_ARGS: ['md5', 'json_loads', 'json_dumps']
+_GLOBALS_ARGS: ['md5', 'json_loads', 'json_dumps', 're', 'encode_as_base64', 'decode_as_base64']
 
 https://docs.python.org/3/
 

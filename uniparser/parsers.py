@@ -523,6 +523,9 @@ class PythonParser(BaseParser):
                 value: chars. return str(input_object).strip(value)
             10. param: base64_encode, base64_decode
                 from string to string.
+            11. param: a number for index, will try to get input_object.__getitem__(int(param))
+                value: default string
+                similar to `param=default` if param is 0
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
@@ -546,6 +549,10 @@ class PythonParser(BaseParser):
             [' ', 'default', 'b']                       => 'b'
             ['a', 'base64_encode', '']                  => 'YQ=='
             ['YQ==', 'base64_decode', '']               => 'a'
+            ['a', '0', 'b']                             => 'a'
+            ['', '0', 'b']                              => 'b'
+            [None, '0', 'b']                            => 'b'
+            [{0: 'a'}, '0', 'a']                        => 'a'
 """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -579,8 +586,14 @@ class PythonParser(BaseParser):
     def doc(self):
         return f'{self.__class__.__doc__}\n\nvalid param args: {list(self.param_functions.keys())}\n\n{self.doc_url}\n\n{self.test_url}'
 
+    def _handle_index(self, input_object, param, value):
+        try:
+            return input_object[int(param)]
+        except (IndexError, ValueError, KeyError, TypeError):
+            return value
+
     def _parse(self, input_object, param, value):
-        function = self.param_functions.get(param, return_self)
+        function = self.param_functions.get(param, self._handle_index)
         return function(input_object, param, value)
 
     def _handle_strip(self, input_object, param, value):

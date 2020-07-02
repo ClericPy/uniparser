@@ -515,6 +515,13 @@ def test_python_parser():
 def test_udf_parser():
     uni = Uniparser()
     context = {'a': 1}
+    # ===================== test dangerous words =====================
+    assert isinstance(uni.udf.parse('abcd', 'open', context), RuntimeError)
+    assert isinstance(uni.udf.parse('abcd', 'input', context), RuntimeError)
+    assert not isinstance(uni.udf.parse('abcd', 'input_object', context), RuntimeError)
+    assert isinstance(uni.udf.parse('abcd', 'exec', context), RuntimeError)
+    assert isinstance(uni.udf.parse('abcd', 'eval', context), RuntimeError)
+
     # ===================== test udf with context=====================
     # return a variable like context, one line code.
     result = uni.udf.parse('abcd', 'context', context)

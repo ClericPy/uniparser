@@ -1065,7 +1065,7 @@ class Uniparser(object):
         parse_rules = rule['parse_rules']
         parse_result: Dict[str, Any] = {}
         context = context or rule.context
-        context['request_args'] = rule['request_args']
+        context.setdefault('request_args', rule['request_args'])
         for parse_rule in parse_rules:
             context['parse_result'] = parse_result
             parse_result[parse_rule['name']] = self.parse_parse_rule(
@@ -1135,13 +1135,16 @@ class Uniparser(object):
         return self.request_adapter
 
     def download(self,
-                 crawler_rule: CrawlerRule,
+                 crawler_rule: CrawlerRule = None,
                  request_adapter=None,
                  **request):
         request_adapter = request_adapter or self.ensure_adapter(sync=True)
         if not isinstance(request_adapter, SyncRequestAdapter):
             raise RuntimeError('bad request_adapter type')
-        request_args = crawler_rule.get_request(**request)
+        if isinstance(crawler_rule, CrawlerRule):
+            request_args = crawler_rule.get_request(**request)
+        else:
+            request_args = request
         host = get_host(request_args['url'])
         freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_FREQUENCY)
         with freq:
@@ -1154,8 +1157,9 @@ class Uniparser(object):
               request_adapter=None,
               context=None,
               **request):
-        input_object, resp = self.download(crawler_rule, request_adapter,
-                                           **request)
+        request_args = crawler_rule.get_request(**request)
+        input_object, resp = self.download(None, request_adapter,
+                                           **request_args)
         if isinstance(resp, Exception):
             return resp
         context = context or crawler_rule.context
@@ -1163,16 +1167,20 @@ class Uniparser(object):
             if k not in context:
                 context[k] = v
         context['resp'] = resp
+        context['request_args'] = request_args
         return self.parse(input_object, crawler_rule, context)
 
     async def adownload(self,
-                        crawler_rule: CrawlerRule,
+                        crawler_rule: CrawlerRule = None,
                         request_adapter=None,
                         **request):
         request_adapter = request_adapter or self.ensure_adapter(sync=False)
         if not isinstance(request_adapter, AsyncRequestAdapter):
             raise RuntimeError('bad request_adapter type')
-        request_args = crawler_rule.get_request(**request)
+        if isinstance(crawler_rule, CrawlerRule):
+            request_args = crawler_rule.get_request(**request)
+        else:
+            request_args = request
         host = get_host(request_args['url'])
         freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_ASYNC_FREQUENCY)
         async with freq:
@@ -1185,8 +1193,9 @@ class Uniparser(object):
                      request_adapter=None,
                      context=None,
                      **request):
-        input_object, resp = await self.adownload(crawler_rule, request_adapter,
-                                                  **request)
+        request_args = crawler_rule.get_request(**request)
+        input_object, resp = await self.adownload(None, request_adapter,
+                                                  **request_args)
         if isinstance(resp, Exception):
             return resp
         context = context or crawler_rule.context
@@ -1194,6 +1203,7 @@ class Uniparser(object):
             if k not in context:
                 context[k] = v
         context['resp'] = resp
+        context['request_args'] = request_args
         return self.parse(input_object, crawler_rule, context)
 
     @classmethod

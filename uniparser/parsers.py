@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import re
 from abc import ABC, abstractmethod
 from base64 import (b16decode, b16encode, b32decode, b32encode, b64decode,
                     b64encode, b85decode, b85encode)
@@ -429,6 +430,7 @@ class UDFParser(BaseParser):
     _ALLOW_IMPORT = False
     # strict protection
     _ALLOW_EXEC_EVAL = False
+    _DANGEROUS_WORDS_REGEX = r'\bopen\b|\binput\b|\bexec\b|\beval\b'
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
     # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
@@ -436,6 +438,9 @@ class UDFParser(BaseParser):
         'md5': md5,
         'json_loads': GlobalConfig.json_loads,
         'json_dumps': GlobalConfig.json_dumps,
+        're': re,
+        'encode_as_base64': encode_as_base64,
+        'decode_as_base64': decode_as_base64,
     }
 
     @property
@@ -465,9 +470,10 @@ class UDFParser(BaseParser):
             raise RuntimeError(
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
-        if not self._ALLOW_EXEC_EVAL and 'exec' in param or 'eval' in param:
+        if not self._ALLOW_EXEC_EVAL and self._DANGEROUS_WORDS_REGEX and re.search(
+                self._DANGEROUS_WORDS_REGEX, param):
             raise RuntimeError(
-                'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not has `exec` `eval` strictly. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually'
+                f'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not contain dangerous words like: {self._DANGEROUS_WORDS_REGEX}. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually, or clear the UDFParser._DANGEROUS_WORDS_REGEX.'
             )
         # obj is an alias for input_object
         local_vars = {
@@ -517,6 +523,9 @@ class PythonParser(BaseParser):
                 value: chars. return str(input_object).strip(value)
             10. param: base64_encode, base64_decode
                 from string to string.
+            11. param: a number for index, will try to get input_object.__getitem__(int(param))
+                value: default string
+                similar to `param=default` if param is 0
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
@@ -540,6 +549,10 @@ class PythonParser(BaseParser):
             [' ', 'default', 'b']                       => 'b'
             ['a', 'base64_encode', '']                  => 'YQ=='
             ['YQ==', 'base64_decode', '']               => 'a'
+            ['a', '0', 'b']                             => 'a'
+            ['', '0', 'b']                              => 'b'
+            [None, '0', 'b']                            => 'b'
+            [{0: 'a'}, '0', 'a']                        => 'a'
 """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -573,8 +586,20 @@ class PythonParser(BaseParser):
     def doc(self):
         return f'{self.__class__.__doc__}\n\nvalid param args: {list(self.param_functions.keys())}\n\n{self.doc_url}\n\n{self.test_url}'
 
+    def _handle_index(self, input_object, param, value):
+        try:
+            return input_object[int(param)]
+        except (IndexError, ValueError, KeyError, TypeError):
+            return value
+
+    def _handle_others(self, input_object, param, value):
+        if param.isdigit():
+            return self._handle_index(input_object, param, value)
+        else:
+            return return_self(input_object)
+
     def _parse(self, input_object, param, value):
-        function = self.param_functions.get(param, return_self)
+        function = self.param_functions.get(param, self._handle_others)
         return function(input_object, param, value)
 
     def _handle_strip(self, input_object, param, value):
@@ -600,9 +625,11 @@ class PythonParser(BaseParser):
     def _handle_template(self, input_object, param, value):
         if isinstance(input_object, dict):
             return Template(value).safe_substitute(input_object=input_object,
+                                                   obj=input_object,
                                                    **input_object)
         else:
-            return Template(value).safe_substitute(input_object=input_object)
+            return Template(value).safe_substitute(input_object=input_object,
+                                                   obj=input_object)
 
     def _handle_getitem(self, input_object, param, value):
         if value and (value[0], value[-1]) == ('[', ']'):
@@ -964,11 +991,16 @@ class HostRule(JsonSerializable):
         }
         super().__init__(host=host, crawler_rules=crawler_rules, **kwargs)
 
-    def find(self, url, strategy=''):
-        rules = [
+    def findall(self, url, strategy=''):
+        # find all the rules which matched the given URL, strategy could be: match, search, findall
+        return [
             rule for rule in self['crawler_rules'].values()
             if rule.check_regex(url, strategy)
         ]
+
+    def find(self, url, strategy=''):
+        # find only one rule which matched the given URL, strategy could be: match, search, findall
+        rules = self.findall(url=url, strategy=strategy)
         if len(rules) > 1:
             raise ValueError(f'{url} matched more than 1 rule. {rules}')
         if rules:
@@ -1063,7 +1095,7 @@ class Uniparser(object):
         parse_rules = rule['parse_rules']
         parse_result: Dict[str, Any] = {}
         context = context or rule.context
-        context['request_args'] = rule['request_args']
+        context.setdefault('request_args', rule['request_args'])
         for parse_rule in parse_rules:
             context['parse_result'] = parse_result
             parse_result[parse_rule['name']] = self.parse_parse_rule(
@@ -1133,18 +1165,25 @@ class Uniparser(object):
         return self.request_adapter
 
     def download(self,
-                 crawler_rule: CrawlerRule,
+                 crawler_rule: CrawlerRule = None,
                  request_adapter=None,
                  **request):
         request_adapter = request_adapter or self.ensure_adapter(sync=True)
         if not isinstance(request_adapter, SyncRequestAdapter):
             raise RuntimeError('bad request_adapter type')
-        request_args = crawler_rule.get_request(**request)
+        if isinstance(crawler_rule, CrawlerRule):
+            request_args = crawler_rule.get_request(**request)
+        else:
+            request_args = request
         host = get_host(request_args['url'])
-        freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_FREQUENCY)
-        with freq:
-            with request_adapter as req:
-                input_object, resp = req.request(**request_args)
+        if request_args['url'].startswith('http'):
+            freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_FREQUENCY)
+            with freq:
+                with request_adapter as req:
+                    input_object, resp = req.request(**request_args)
+        else:
+            # non-http request will skip the downloading process, request_args as input_object
+            input_object, resp = request_args, None
         return input_object, resp
 
     def crawl(self,
@@ -1152,8 +1191,9 @@ class Uniparser(object):
               request_adapter=None,
               context=None,
               **request):
-        input_object, resp = self.download(crawler_rule, request_adapter,
-                                           **request)
+        request_args = crawler_rule.get_request(**request)
+        input_object, resp = self.download(None, request_adapter,
+                                           **request_args)
         if isinstance(resp, Exception):
             return resp
         context = context or crawler_rule.context
@@ -1161,21 +1201,30 @@ class Uniparser(object):
             if k not in context:
                 context[k] = v
         context['resp'] = resp
+        context['request_args'] = request_args
         return self.parse(input_object, crawler_rule, context)
 
     async def adownload(self,
-                        crawler_rule: CrawlerRule,
+                        crawler_rule: CrawlerRule = None,
                         request_adapter=None,
                         **request):
         request_adapter = request_adapter or self.ensure_adapter(sync=False)
         if not isinstance(request_adapter, AsyncRequestAdapter):
             raise RuntimeError('bad request_adapter type')
-        request_args = crawler_rule.get_request(**request)
+        if isinstance(crawler_rule, CrawlerRule):
+            request_args = crawler_rule.get_request(**request)
+        else:
+            request_args = request
         host = get_host(request_args['url'])
-        freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_ASYNC_FREQUENCY)
-        async with freq:
-            async with request_adapter as req:
-                input_object, resp = await req.request(**request_args)
+        if request_args['url'].startswith('http'):
+            freq = self._HOST_FREQUENCIES.get(host,
+                                              self._DEFAULT_ASYNC_FREQUENCY)
+            async with freq:
+                async with request_adapter as req:
+                    input_object, resp = await req.request(**request_args)
+        else:
+            # non-http request will skip the downloading process, request_args as input_object
+            input_object, resp = request_args, None
         return input_object, resp
 
     async def acrawl(self,
@@ -1183,8 +1232,9 @@ class Uniparser(object):
                      request_adapter=None,
                      context=None,
                      **request):
-        input_object, resp = await self.adownload(crawler_rule, request_adapter,
-                                                  **request)
+        request_args = crawler_rule.get_request(**request)
+        input_object, resp = await self.adownload(None, request_adapter,
+                                                  **request_args)
         if isinstance(resp, Exception):
             return resp
         context = context or crawler_rule.context
@@ -1192,6 +1242,7 @@ class Uniparser(object):
             if k not in context:
                 context[k] = v
         context['resp'] = resp
+        context['request_args'] = request_args
         return self.parse(input_object, crawler_rule, context)
 
     @classmethod

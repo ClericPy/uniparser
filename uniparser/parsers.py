@@ -471,7 +471,7 @@ class UDFParser(BaseParser):
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
         if not self._ALLOW_EXEC_EVAL and self._DANGEROUS_WORDS_REGEX and re.search(
-                param, self._DANGEROUS_WORDS_REGEX):
+                self._DANGEROUS_WORDS_REGEX, param):
             raise RuntimeError(
                 f'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not contain dangerous words like: {self._DANGEROUS_WORDS_REGEX}. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually, or clear the UDFParser._DANGEROUS_WORDS_REGEX.'
             )
@@ -1176,10 +1176,14 @@ class Uniparser(object):
         else:
             request_args = request
         host = get_host(request_args['url'])
-        freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_FREQUENCY)
-        with freq:
-            with request_adapter as req:
-                input_object, resp = req.request(**request_args)
+        if request_args['url'].startswith('http'):
+            freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_FREQUENCY)
+            with freq:
+                with request_adapter as req:
+                    input_object, resp = req.request(**request_args)
+        else:
+            # non-http request will skip the downloading process, request_args as input_object
+            input_object, resp = request_args, None
         return input_object, resp
 
     def crawl(self,
@@ -1212,10 +1216,15 @@ class Uniparser(object):
         else:
             request_args = request
         host = get_host(request_args['url'])
-        freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_ASYNC_FREQUENCY)
-        async with freq:
-            async with request_adapter as req:
-                input_object, resp = await req.request(**request_args)
+        if request_args['url'].startswith('http'):
+            freq = self._HOST_FREQUENCIES.get(host,
+                                              self._DEFAULT_ASYNC_FREQUENCY)
+            async with freq:
+                async with request_adapter as req:
+                    input_object, resp = await req.request(**request_args)
+        else:
+            # non-http request will skip the downloading process, request_args as input_object
+            input_object, resp = request_args, None
         return input_object, resp
 
     async def acrawl(self,

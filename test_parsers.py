@@ -518,7 +518,8 @@ def test_udf_parser():
     # ===================== test dangerous words =====================
     assert isinstance(uni.udf.parse('abcd', 'open', context), RuntimeError)
     assert isinstance(uni.udf.parse('abcd', 'input', context), RuntimeError)
-    assert not isinstance(uni.udf.parse('abcd', 'input_object', context), RuntimeError)
+    assert not isinstance(uni.udf.parse('abcd', 'input_object', context),
+                          RuntimeError)
     assert isinstance(uni.udf.parse('abcd', 'exec', context), RuntimeError)
     assert isinstance(uni.udf.parse('abcd', 'eval', context), RuntimeError)
 
@@ -954,6 +955,19 @@ def test_uni_parser():
     # print(result)
     assert result == {'HelloWorld': {'rule1': 'http://httpbin.org/get', 'rule2': 'http://httpbin.org/get'}}
     # yapf: enable
+
+    # test url with non-http scheme, will ignore download
+    # yapf: disable
+    crawler_rule = CrawlerRule.loads(r'''{"name":"HelloWorld","request_args":{"method":"get","url":"http://httpbin.org/get","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"only_req","chain_rules":[["udf","obj['url'].startswith('ftp://')",""]],"child_rules":[],"iter_parse_child":false}],"regex":".*://httpbin.org/get$","encoding":""}''')
+    # yapf: enable
+    result = uni.crawl(crawler_rule, url='ftp://httpbin.org/get')
+    # print(result)
+    assert result == {'HelloWorld': {'only_req': True}}
+
+    async def _test():
+        return await uni.acrawl(crawler_rule, url='ftp://httpbin.org/get')
+
+    assert asyncio.get_event_loop().run_until_complete(_test()) == {'HelloWorld': {'only_req': True}}
 
 
 def test_sync_adapters():

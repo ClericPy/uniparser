@@ -24,6 +24,7 @@ if not adapter:
         "one of these libs should be installed: ('requests', 'httpx', 'torequests')"
     )
 uni = Uniparser(adapter())
+GLOBAL_REQ = None
 GLOBAL_RESP = None
 cdn_urls = GlobalConfig.cdn_urls
 root_path = Path(__file__).parent
@@ -64,7 +65,7 @@ def index():
 
 @app.post("/request")
 def send_request():
-    global GLOBAL_RESP
+    global GLOBAL_RESP, GLOBAL_REQ
     rule = CrawlerRule(**request.json)
     regex = rule['regex']
     url = rule['request_args']['url']
@@ -76,6 +77,7 @@ def send_request():
         }
     body, r = uni.download(rule)
     GLOBAL_RESP = r
+    GLOBAL_REQ = rule['request_args']
     return {
         'text': body,
         'status': f'[{getattr(r, "status_code", 0)}]',
@@ -114,7 +116,7 @@ def parse_rule():
         # print(rule)
         result = uni.parse(input_object, rule, {
             'resp': GLOBAL_RESP,
-            'request_args': rule['request_args']
+            'request_args': GLOBAL_REQ
         })
         return {'type': str(type(result)), 'data': repr(result)}
     except BaseException as err:

@@ -825,7 +825,12 @@ class JsonSerializable(dict):
     def loads(cls, json_string):
         if isinstance(json_string, cls):
             return json_string
-        return cls(**GlobalConfig.json_loads(json_string))
+        elif isinstance(json_string, str):
+            return cls(**GlobalConfig.json_loads(json_string))
+        elif isinstance(json_string, dict):
+            return cls(**json_string)
+        else:
+            raise TypeError('Only can be loaded from JSON / cls / dict.')
 
     @classmethod
     def from_json(cls, json_string):

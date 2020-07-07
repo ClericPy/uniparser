@@ -1094,10 +1094,10 @@ class Uniparser(object):
     def parse_crawler_rule(self, input_object, rule: CrawlerRule, context=None):
         parse_rules = rule['parse_rules']
         parse_result: Dict[str, Any] = {}
-        context = context or rule.context
+        context = rule.context if context is None else context
         context.setdefault('request_args', rule['request_args'])
+        context['parse_result'] = parse_result
         for parse_rule in parse_rules:
-            context['parse_result'] = parse_result
             parse_result[parse_rule['name']] = self.parse_parse_rule(
                 input_object, parse_rule, context).get(parse_rule['name'])
         context.pop('parse_result', None)
@@ -1196,10 +1196,12 @@ class Uniparser(object):
                                            **request_args)
         if isinstance(resp, Exception):
             return resp
-        context = context or crawler_rule.context
-        for k, v in crawler_rule.context.items():
-            if k not in context:
-                context[k] = v
+        if context is None:
+            context = crawler_rule.context
+        else:
+            for k, v in crawler_rule.context.items():
+                if k not in context:
+                    context[k] = v
         context['resp'] = resp
         context['request_args'] = request_args
         return self.parse(input_object, crawler_rule, context)
@@ -1237,10 +1239,12 @@ class Uniparser(object):
                                                   **request_args)
         if isinstance(resp, Exception):
             return resp
-        context = context or crawler_rule.context
-        for k, v in crawler_rule.context.items():
-            if k not in context:
-                context[k] = v
+        if context is None:
+            context = crawler_rule.context
+        else:
+            for k, v in crawler_rule.context.items():
+                if k not in context:
+                    context[k] = v
         context['resp'] = resp
         context['request_args'] = request_args
         return self.parse(input_object, crawler_rule, context)

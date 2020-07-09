@@ -10,7 +10,7 @@ from logging import getLogger
 from re import compile as re_compile
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
-from typing import Any, Dict, List, Union
+from typing import Any, Callable, Dict, List, Union
 
 from frequency_controller import AsyncFrequency, Frequency
 
@@ -426,11 +426,15 @@ class UDFParser(BaseParser):
     """
     name = 'udf'
     doc_url = 'https://docs.python.org/3/'
-    # can not import other libs
-    _ALLOW_IMPORT = False
+    # able to import other libs
+    _ALLOW_IMPORT = True
     # strict protection
-    _ALLOW_EXEC_EVAL = False
-    _DANGEROUS_WORDS_REGEX = r'\bopen\b|\binput\b|\bexec\b|\beval\b'
+    _FORBIDDEN_FUNCS = {
+        "input": NotImplemented,
+        "open": NotImplemented,
+        "eval": NotImplemented,
+        "exec": NotImplemented,
+    }
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
     # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
@@ -470,17 +474,13 @@ class UDFParser(BaseParser):
             raise RuntimeError(
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
-        if not self._ALLOW_EXEC_EVAL and self._DANGEROUS_WORDS_REGEX and re.search(
-                self._DANGEROUS_WORDS_REGEX, param):
-            raise RuntimeError(
-                f'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not contain dangerous words like: {self._DANGEROUS_WORDS_REGEX}. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually, or clear the UDFParser._DANGEROUS_WORDS_REGEX.'
-            )
         # obj is an alias for input_object
         local_vars = {
             'input_object': input_object,
             'context': context,
-            'obj': input_object
+            'obj': input_object,
         }
+        local_vars.update(self._FORBIDDEN_FUNCS)
         local_vars.update(self._GLOBALS_ARGS)
         # run code
         code = getattr(param, 'code', param)
@@ -825,7 +825,12 @@ class JsonSerializable(dict):
     def loads(cls, json_string):
         if isinstance(json_string, cls):
             return json_string
-        return cls(**GlobalConfig.json_loads(json_string))
+        elif isinstance(json_string, str):
+            return cls(**GlobalConfig.json_loads(json_string))
+        elif isinstance(json_string, dict):
+            return cls(**json_string)
+        else:
+            raise TypeError('Only can be loaded from JSON / cls / dict.')
 
     @classmethod
     def from_json(cls, json_string):
@@ -1040,10 +1045,18 @@ class Uniparser(object):
 
     def __init__(self,
                  request_adapter: Union[AsyncRequestAdapter,
-                                        SyncRequestAdapter] = None):
+                                        SyncRequestAdapter] = None,
+                 parse_validator: Callable = None):
+        """
+        :param request_adapter: request_adapter for downloading, defaults to None
+        :type request_adapter: Union[AsyncRequestAdapter, SyncRequestAdapter], optional
+        :param parse_validator: the validator to ensure the result from parsing: function(rule, result) -> bool, defaults to None. Often used to stop parsing CrawlerRule.
+        :type parse_validator: Callable, optional
+        """
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
         self.request_adapter = request_adapter
+        self.parse_validator = parse_validator
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()
@@ -1094,10 +1107,10 @@ class Uniparser(object):
     def parse_crawler_rule(self, input_object, rule: CrawlerRule, context=None):
         parse_rules = rule['parse_rules']
         parse_result: Dict[str, Any] = {}
-        context = context or rule.context
+        context = rule.context if context is None else context
         context.setdefault('request_args', rule['request_args'])
+        context['parse_result'] = parse_result
         for parse_rule in parse_rules:
-            context['parse_result'] = parse_result
             parse_result[parse_rule['name']] = self.parse_parse_rule(
                 input_object, parse_rule, context).get(parse_rule['name'])
         context.pop('parse_result', None)
@@ -1112,7 +1125,7 @@ class Uniparser(object):
         )
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
-                f'Schema check is not True: {input_object}')
+                f'Schema check is not True: {repr(input_object)[:50]}')
         result = {rule['name']: input_object}
         if not rule['child_rules']:
             return {rule['name']: input_object}
@@ -1143,13 +1156,18 @@ class Uniparser(object):
               rule_object: Union[CrawlerRule, ParseRule],
               context=None):
         if isinstance(rule_object, CrawlerRule):
-            return self.parse_crawler_rule(input_object=input_object,
+            result = self.parse_crawler_rule(input_object=input_object,
+                                             rule=rule_object,
+                                             context=context)
+        elif isinstance(rule_object, ParseRule):
+            result = self.parse_parse_rule(input_object=input_object,
                                            rule=rule_object,
                                            context=context)
-        elif isinstance(rule_object, ParseRule):
-            return self.parse_parse_rule(input_object=input_object,
-                                         rule=rule_object,
-                                         context=context)
+        if self.parse_validator is not None and not self.parse_validator(
+                rule_object, result):
+            raise InvalidSchemaError(
+                f'Invalid parse result for rule {rule_object["name"]}: {repr(result)[:50]}')
+        return result
 
     def ensure_adapter(self, sync=True):
         if self.request_adapter:
@@ -1196,10 +1214,12 @@ class Uniparser(object):
                                            **request_args)
         if isinstance(resp, Exception):
             return resp
-        context = context or crawler_rule.context
-        for k, v in crawler_rule.context.items():
-            if k not in context:
-                context[k] = v
+        if context is None:
+            context = crawler_rule.context
+        else:
+            for k, v in crawler_rule.context.items():
+                if k not in context:
+                    context[k] = v
         context['resp'] = resp
         context['request_args'] = request_args
         return self.parse(input_object, crawler_rule, context)
@@ -1237,10 +1257,12 @@ class Uniparser(object):
                                                   **request_args)
         if isinstance(resp, Exception):
             return resp
-        context = context or crawler_rule.context
-        for k, v in crawler_rule.context.items():
-            if k not in context:
-                context[k] = v
+        if context is None:
+            context = crawler_rule.context
+        else:
+            for k, v in crawler_rule.context.items():
+                if k not in context:
+                    context[k] = v
         context['resp'] = resp
         context['request_args'] = request_args
         return self.parse(input_object, crawler_rule, context)

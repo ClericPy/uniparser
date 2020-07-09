@@ -2,12 +2,18 @@
 
 
 class RuleNotFoundError(Exception):
-    pass
+
+    def __bool__(self):
+        return False
 
 
 class InvalidSchemaError(Exception):
-    pass
+
+    def __bool__(self):
+        return False
 
 
 class UnknownParserNameError(ValueError):
-    pass
+
+    def __bool__(self):
+        return False

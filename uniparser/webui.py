@@ -24,6 +24,7 @@ if not adapter:
         "one of these libs should be installed: ('requests', 'httpx', 'torequests')"
     )
 uni = Uniparser(adapter())
+GLOBAL_REQ = None
 GLOBAL_RESP = None
 cdn_urls = GlobalConfig.cdn_urls
 root_path = Path(__file__).parent
@@ -53,6 +54,7 @@ def index():
     init_vars = {
         'options': parser_name_choices,
         'docs': parser_name_docs,
+        'demo_choices': GlobalConfig.demo_choices,
     }
     init_vars_b64 = b64encode(
         GlobalConfig.json_dumps(init_vars).encode('u8')).decode('u8')
@@ -64,7 +66,7 @@ def index():
 
 @app.post("/request")
 def send_request():
-    global GLOBAL_RESP
+    global GLOBAL_RESP, GLOBAL_REQ
     rule = CrawlerRule(**request.json)
     regex = rule['regex']
     url = rule['request_args']['url']
@@ -76,6 +78,7 @@ def send_request():
         }
     body, r = uni.download(rule)
     GLOBAL_RESP = r
+    GLOBAL_REQ = rule['request_args']
     return {
         'text': body,
         'status': f'[{getattr(r, "status_code", 0)}]',
@@ -88,10 +91,7 @@ def curl_parse():
     curl = request.body.read().decode('u8')
     result = ensure_request(curl)
     if isinstance(curl, str) and curl.startswith('http'):
-        result.setdefault(
-            'headers', {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
-            })
+        result.setdefault('headers', {"User-Agent": GlobalConfig.DEFAULT_UA})
     return {'result': result, 'ok': True}
 
 
@@ -114,11 +114,19 @@ def parse_rule():
         # print(rule)
         result = uni.parse(input_object, rule, {
             'resp': GLOBAL_RESP,
-            'request_args': rule['request_args']
+            'request_args': GLOBAL_REQ
         })
-        return {'type': str(type(result)), 'data': repr(result)}
+        try:
+            json_result = GlobalConfig.json_dumps(result)
+        except Exception as e:
+            json_result = repr(e)
+        return {
+            'type': str(type(result)),
+            'data': repr(result),
+            'json': json_result
+        }
     except BaseException as err:
-        return {'type': str(type(err)), 'data': repr(err)}
+        return {'type': str(type(err)), 'data': repr(err), 'json': json_result}
 
 
 if __name__ == "__main__":

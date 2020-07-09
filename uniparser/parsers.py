@@ -426,11 +426,15 @@ class UDFParser(BaseParser):
     """
     name = 'udf'
     doc_url = 'https://docs.python.org/3/'
-    # can not import other libs
-    _ALLOW_IMPORT = False
+    # able to import other libs
+    _ALLOW_IMPORT = True
     # strict protection
-    _ALLOW_EXEC_EVAL = False
-    _DANGEROUS_WORDS_REGEX = r'\bopen\b|\binput\b|\bexec\b|\beval\b'
+    _FORBIDDEN_FUNCS = {
+        "input": NotImplemented,
+        "open": NotImplemented,
+        "eval": NotImplemented,
+        "exec": NotImplemented,
+    }
     # Differ from others, treate list as list object
     _RECURSION_LIST = False
     # for udf globals, here could save some module can be used, such as: _GLOBALS_ARGS = {'requests': requests}
@@ -470,17 +474,13 @@ class UDFParser(BaseParser):
             raise RuntimeError(
                 'UDFParser._ALLOW_IMPORT is False, so source code should not has `import` strictly. If you really want it, set `UDFParser._ALLOW_IMPORT = True` manually'
             )
-        if not self._ALLOW_EXEC_EVAL and self._DANGEROUS_WORDS_REGEX and re.search(
-                self._DANGEROUS_WORDS_REGEX, param):
-            raise RuntimeError(
-                f'UDFParser._ALLOW_EXEC_EVAL is False, so source code should not contain dangerous words like: {self._DANGEROUS_WORDS_REGEX}. If you really want it, set `UDFParser._ALLOW_EXEC_EVAL = True` manually, or clear the UDFParser._DANGEROUS_WORDS_REGEX.'
-            )
         # obj is an alias for input_object
         local_vars = {
             'input_object': input_object,
             'context': context,
-            'obj': input_object
+            'obj': input_object,
         }
+        local_vars.update(self._FORBIDDEN_FUNCS)
         local_vars.update(self._GLOBALS_ARGS)
         # run code
         code = getattr(param, 'code', param)

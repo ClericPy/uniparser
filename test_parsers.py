@@ -516,12 +516,11 @@ def test_udf_parser():
     uni = Uniparser()
     context = {'a': 1}
     # ===================== test dangerous words =====================
-    assert isinstance(uni.udf.parse('abcd', 'open', context), RuntimeError)
-    assert isinstance(uni.udf.parse('abcd', 'input', context), RuntimeError)
-    assert not isinstance(uni.udf.parse('abcd', 'input_object', context),
-                          RuntimeError)
-    assert isinstance(uni.udf.parse('abcd', 'exec', context), RuntimeError)
-    assert isinstance(uni.udf.parse('abcd', 'eval', context), RuntimeError)
+    assert uni.udf.parse('abcd', 'open', context) is NotImplemented
+    assert uni.udf.parse('abcd', 'input', context) is NotImplemented
+    assert uni.udf.parse('abcd', 'input_object', context) is not NotImplemented
+    assert uni.udf.parse('abcd', 'exec', context) is NotImplemented
+    assert uni.udf.parse('abcd', 'eval', context) is NotImplemented
 
     # ===================== test udf with context=====================
     # return a variable like context, one line code.
@@ -570,7 +569,7 @@ def parse(item):
 '''
     result = uni.udf.parse(JSON, scode, '')
     # print(result)
-    assert isinstance(result, Exception)
+    assert result == 'John'
 
     # test python code with import, no raise RuntimeError
     uni.udf._ALLOW_IMPORT = True

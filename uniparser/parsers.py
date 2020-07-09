@@ -10,7 +10,7 @@ from logging import getLogger
 from re import compile as re_compile
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
-from typing import Any, Dict, List, Union
+from typing import Any, Callable, Dict, List, Union
 
 from frequency_controller import AsyncFrequency, Frequency
 
@@ -1045,10 +1045,18 @@ class Uniparser(object):
 
     def __init__(self,
                  request_adapter: Union[AsyncRequestAdapter,
-                                        SyncRequestAdapter] = None):
+                                        SyncRequestAdapter] = None,
+                 parse_validator: Callable = None):
+        """
+        :param request_adapter: request_adapter for downloading, defaults to None
+        :type request_adapter: Union[AsyncRequestAdapter, SyncRequestAdapter], optional
+        :param parse_validator: the validator to ensure the result from parsing: function(rule, result) -> bool, defaults to None. Often used to stop parsing CrawlerRule.
+        :type parse_validator: Callable, optional
+        """
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
         self.request_adapter = request_adapter
+        self.parse_validator = parse_validator
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()
@@ -1117,7 +1125,7 @@ class Uniparser(object):
         )
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
-                f'Schema check is not True: {input_object}')
+                f'Schema check is not True: {repr(input_object)[:50]}')
         result = {rule['name']: input_object}
         if not rule['child_rules']:
             return {rule['name']: input_object}
@@ -1148,13 +1156,18 @@ class Uniparser(object):
               rule_object: Union[CrawlerRule, ParseRule],
               context=None):
         if isinstance(rule_object, CrawlerRule):
-            return self.parse_crawler_rule(input_object=input_object,
+            result = self.parse_crawler_rule(input_object=input_object,
+                                             rule=rule_object,
+                                             context=context)
+        elif isinstance(rule_object, ParseRule):
+            result = self.parse_parse_rule(input_object=input_object,
                                            rule=rule_object,
                                            context=context)
-        elif isinstance(rule_object, ParseRule):
-            return self.parse_parse_rule(input_object=input_object,
-                                         rule=rule_object,
-                                         context=context)
+        if self.parse_validator is not None and not self.parse_validator(
+                rule_object, result):
+            raise InvalidSchemaError(
+                f'Invalid parse result for rule {rule_object["name"]}: {repr(result)[:50]}')
+        return result
 
     def ensure_adapter(self, sync=True):
         if self.request_adapter:

@@ -71,6 +71,8 @@ var Main = {
             send_child_rule_visible: false,
             template_visible: false,
             request_template_values: {},
+            show_parse_result_as_json: false,
+            custom_args: "",
         }
     },
     methods: {
@@ -246,6 +248,19 @@ var Main = {
             }
             try {
                 var new_rule = JSON.parse(this.new_rule_json)
+                var known_keys = [
+                    "name",
+                    "regex",
+                    "parse_rules",
+                    "request_args",
+                ]
+                var custom_args = {}
+                for (key in new_rule) {
+                    if (known_keys.indexOf(key) < 0) {
+                        custom_args[key] = new_rule[key]
+                    }
+                }
+                this.custom_args = JSON.stringify(custom_args)
                 if (new_rule.request_args && new_rule.request_args.url) {
                     new_rule.request_args = JSON.stringify(
                         new_rule.request_args,
@@ -336,18 +351,7 @@ var Main = {
             }
         },
         demo_handle_click(choice) {
-            let choices = {
-                CSS:
-                    '{"name":"","request_args":{"method":"get","url":"http://httpbin.org/html","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"text","chain_rules":[["css","body h1","$text"],["python","getitem","[0]"]],"child_rules":""}],"regex":"^http://httpbin.org/html$","encoding":""}',
-                "XML(RSS)":
-                    '{"name":"","request_args":{"method":"get","url":"https://importpython.com/blog/feed/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"text","chain_rules":[["xml","channel>item>title","$text"],["python","getitem","[0]"]],"child_rules":""},{"name":"url","chain_rules":[["xml","channel>item>link","$text"],["python","getitem","[0]"]],"child_rules":""}],"regex":"^https?://importpython.com/blog/feed/$","encoding":""}',
-                Regex:
-                    '{"name":"","request_args":{"method":"get","url":"http://myip.ipip.net/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"find one","chain_rules":[["re","(\\\\d+\\\\.){3}\\\\d+","$0"]],"child_rules":[]},{"name":"findall","chain_rules":[["re","\\\\d+",""]],"child_rules":[],"iter_parse_child":false},{"name":"find group","chain_rules":[["re","(\\\\d+\\\\.){3}\\\\d+","$1"]],"child_rules":[],"iter_parse_child":false},{"name":"Zero-Length Assertions: find the aa not a or aaa","chain_rules":[["py","const","aaababaaccc"],["re","(?<=[^a])aa(?=[^a])",""]],"child_rules":[],"iter_parse_child":false},{"name":"re.sub","chain_rules":[["re","(\\\\d+)","@\\\\1+"]],"child_rules":[],"iter_parse_child":false},{"name":"re.split","chain_rules":[["re","\\\\s","-"]],"child_rules":[],"iter_parse_child":false}],"regex":"^http://myip\\\\.ipip\\\\.net/$"}',
-                JSON: `{"name":"U-1588672624","request_args":{"method":"get","url":"http://httpbin.org/json","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"jmes_demo","chain_rules":[["jmespath","JSON.slideshow.slides[1].title",""]],"child_rules":[],"iter_parse_child":false},{"name":"jsonpath_demo","chain_rules":[["jsonpath","JSON.slideshow.slides[1].title",""]],"child_rules":[],"iter_parse_child":false},{"name":"jsonpath_demo2","chain_rules":[["jsonpath","$.slideshow.slides[1].title",""]],"child_rules":[],"iter_parse_child":false},{"name":"objectpath_demo","chain_rules":[["objectpath","$.slideshow.slides[1].title",""]],"child_rules":[],"iter_parse_child":false},{"name":"objectpath_demo2","chain_rules":[["objectpath","JSON.slideshow.slides[1].title",""]],"child_rules":[],"iter_parse_child":false}],"regex":"^http://httpbin\\\\.org/json$"}`,
-                UDF: `{"name":"","request_args":{"method":"get","url":"http://httpbin.org/json","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"context_resp_demo","chain_rules":[["udf","context['resp'].url",""]],"child_rules":[],"iter_parse_child":false},{"name":"context_parse_result_demo","chain_rules":[["udf","context['parse_result']['context_resp_demo']",""]],"child_rules":[],"iter_parse_child":false},{"name":"lambda_demo","chain_rules":[["udf","parse = lambda input_object: 123",""]],"child_rules":[],"iter_parse_child":false},{"name":"context_and_function_demo","chain_rules":[["udf","def parse(input_object):\\n    context['a'] = 1\\n    return 2",""],["udf","context['a'] + input_object",""]],"child_rules":[],"iter_parse_child":false},{"name":"obj_alias_demo","chain_rules":[["udf","1",""],["udf","int(obj)",""]],"child_rules":[],"iter_parse_child":false}],"regex":"^http://httpbin\\\\.org/json$"}`,
-                Null:
-                    '{"name":"","request_args":"{}","parse_rules":[],"regex":"","encoding":""}',
-            }
+            let choices = this.demo_choices
             this.new_rule_json = choices[choice]
             this.input_object = ""
             this.request_status = ""
@@ -446,6 +450,12 @@ var Main = {
                     request_args: JSON.parse(this.crawler_rule.request_args),
                     parse_rules: rules,
                     regex: this.crawler_rule.regex,
+                }
+                var custom_args = JSON.parse(this.custom_args || "{}")
+                for (const key in custom_args) {
+                    if (custom_args.hasOwnProperty(key)) {
+                        data[key] = custom_args[key]
+                    }
                 }
                 if (this.crawler_rule.request_template) {
                     data.request_template = JSON.parse(

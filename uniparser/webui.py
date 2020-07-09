@@ -54,6 +54,7 @@ def index():
     init_vars = {
         'options': parser_name_choices,
         'docs': parser_name_docs,
+        'demo_choices': GlobalConfig.demo_choices,
     }
     init_vars_b64 = b64encode(
         GlobalConfig.json_dumps(init_vars).encode('u8')).decode('u8')
@@ -90,10 +91,7 @@ def curl_parse():
     curl = request.body.read().decode('u8')
     result = ensure_request(curl)
     if isinstance(curl, str) and curl.startswith('http'):
-        result.setdefault(
-            'headers', {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"
-            })
+        result.setdefault('headers', {"User-Agent": GlobalConfig.DEFAULT_UA})
     return {'result': result, 'ok': True}
 
 
@@ -118,9 +116,17 @@ def parse_rule():
             'resp': GLOBAL_RESP,
             'request_args': GLOBAL_REQ
         })
-        return {'type': str(type(result)), 'data': repr(result)}
+        try:
+            json_result = GlobalConfig.json_dumps(result)
+        except Exception as e:
+            json_result = repr(e)
+        return {
+            'type': str(type(result)),
+            'data': repr(result),
+            'json': json_result
+        }
     except BaseException as err:
-        return {'type': str(type(err)), 'data': repr(err)}
+        return {'type': str(type(err)), 'data': repr(err), 'json': json_result}
 
 
 if __name__ == "__main__":

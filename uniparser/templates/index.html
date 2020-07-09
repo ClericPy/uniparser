@@ -104,6 +104,10 @@
                         placeholder="Encoding of request_args, defaults to None">
                         <span slot="prepend">Encoding</span>
                     </el-input>
+                    <br />
+                    <el-input type="textarea" style="width: 40%;zoom: 120%;display: inline-block;" :rows="1" autosize
+                        placeholder="custom_args" v-model="custom_args">
+                    </el-input>
                     <el-form-item label="Request Args">
                         <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_curl">
                             <b>cURL</b></el-button>
@@ -241,9 +245,13 @@
                     </el-form-item>
                     <el-drawer close-on-press-escape="true" title="Parse Result" :visible.sync="drawer" size="50%"
                         direction="ttb">
-                        <b style="font-size: 0.8em;">${parse_result.type}</b>
-                        <textarea name="doc" id="show_parse_result" style="width: 100%; height: 100%; padding-bottom: 3em;">
-${parse_result.data}</textarea>
+                        <b style="font-size: 0.8em;padding: 1em;">${parse_result.type}</b>
+                        <el-switch v-model="show_parse_result_as_json" active-text="JSON" inactive-text="REPR"
+                            style="font-size: 0.8em;padding: 1em;">
+                        </el-switch>
+                        <textarea name="doc" id="show_parse_result"
+                            style="width: 100%; height: 100%; padding-bottom: 3em;">
+${show_parse_result_as_json?parse_result.json:parse_result.data}</textarea>
                     </el-drawer>
                     <el-drawer :close-on-press-escape="false" title="Doc" :visible.sync="doc_drawer" size="50%"
                         direction="ttb">

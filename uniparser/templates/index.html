@@ -21,7 +21,6 @@
             margin: 0 auto;
             background-color: #eceff1;
             word-wrap: break-word;
-            zoom: 1.2;
         }
 
         .sub-title {
@@ -133,6 +132,17 @@
                         <el-button size="medium" @click="load_rule_popup" title="Load CrawlerRule from a JSON string">
                             <i class="el-icon-edit-outline"> Load </i>
                         </el-button>
+                        <el-dropdown style="margin-left: 10px;" @command="handle_cache" mediumsize="medium" split-button
+                            @click="handle_cache('save')">
+                            <span class="el-dropdown-link">
+                                Cache
+                            </span>
+                            <el-dropdown-menu slot="dropdown">
+                                <el-dropdown-item command="save">Save</el-dropdown-item>
+                                <el-dropdown-item command="load">Load</el-dropdown-item>
+                                <el-dropdown-item command="clear">Clear</el-dropdown-item>
+                            </el-dropdown-menu>
+                        </el-dropdown>
                     </el-form-item>
                     <el-form-item :label="'Response Body ' + request_status " id="request_status">
                         <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 5}" placeholder="" width="50%"
@@ -228,6 +238,17 @@
                         <el-button size="medium" @click="load_rule_popup" title="Load CrawlerRule from a JSON string">
                             <i class="el-icon-edit-outline"> Load </i>
                         </el-button>
+                        <el-dropdown style="margin-left: 10px;" @command="handle_cache" mediumsize="medium" split-button
+                            @click="handle_cache('save')">
+                            <span class="el-dropdown-link">
+                                Cache
+                            </span>
+                            <el-dropdown-menu slot="dropdown">
+                                <el-dropdown-item command="save">Save</el-dropdown-item>
+                                <el-dropdown-item command="load">Load</el-dropdown-item>
+                                <el-dropdown-item command="clear">Clear</el-dropdown-item>
+                            </el-dropdown-menu>
+                        </el-dropdown>
                     </el-form-item>
                     <hr />
                     <el-form-item label="CrawlerRule JSON">
@@ -317,8 +338,8 @@ ${current_doc}</textarea>
     <!-- [CSS Minifier](https://cssminifier.com/)
     [JavaScript Minifier](https://javascript-minifier.com/)
     [HTML Minifier](https://html-minifier.com/) -->
-    <script src="static/uniparser.js"></script>
-    <!-- <script src="static/uniparser.min.js"></script> -->
+    <!-- <script src="static/uniparser.js"></script> -->
+    <script src="static/uniparser.min.js"></script>
 </body>
 
 </html>

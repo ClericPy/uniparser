@@ -408,6 +408,31 @@ var Main = {
                 })
                 .catch(() => {})
         },
+        handle_cache(action) {
+            switch (action) {
+                case "save":
+                    localStorage.setItem(
+                        "uniparser_cache",
+                        this.current_crawler_rule_json
+                    )
+                    this.openAlert("Cache saved")
+                    break
+                case "load":
+                    var rule = localStorage.getItem("uniparser_cache")
+                    if (rule) {
+                        this.new_rule_json = rule
+                        this.load_rule()
+                        this.openAlert("Cache loaded")
+                    }
+                    break
+                case "clear":
+                    localStorage.clear("uniparser_cache")
+                    this.openAlert("Cache cleared")
+                    break
+                default:
+                    break
+            }
+        },
     },
     watch: {
         encoding() {
@@ -490,7 +515,7 @@ function init_app(app) {
     //   init vars
     let node = document.getElementById("init_vars")
     let args = JSON.parse(window.atob(node.innerHTML))
-    console.log(args)
+    // console.log(args)
     Object.keys(args).forEach((name) => {
         app[name] = args[name]
     })
@@ -505,6 +530,7 @@ function init_app(app) {
     })
     // init demo[0]
     app.demo_handle_click(0)
+    app.handle_cache("load")
 }
 var vue_app = Vue.extend(Main)
 var app = new vue_app({

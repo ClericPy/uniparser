@@ -51,10 +51,6 @@ var Main = {
                     {
                         method: "get",
                         url: "https://httpbin.org/html",
-                        headers: {
-                            "User-Agent":
-                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36",
-                        },
                     },
                     null,
                     2
@@ -383,10 +379,15 @@ var Main = {
                                 if (url) {
                                     this.crawler_rule.regex =
                                         "^" +
-                                        url.replace(
-                                            /([\.\?\+\*\^\$])/g,
-                                            "\\$1"
-                                        ) +
+                                        url
+                                            .replace(
+                                                /([\.\?\+\*\^\$])/g,
+                                                "\\$1"
+                                            )
+                                            .replace(
+                                                /^https?:\/\//,
+                                                "https?://"
+                                            ) +
                                         "$"
                                 }
                             } else {

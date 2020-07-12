@@ -18,9 +18,10 @@
         html>body {
             width: 60%;
             height: 98%;
-            margin: 0 0 0 20%;
+            margin: 0 auto;
             background-color: #eceff1;
             word-wrap: break-word;
+            zoom: 1.2;
         }
 
         .sub-title {
@@ -86,26 +87,24 @@
             </el-header>
             <el-main>
                 <el-form :model="crawler_rule">
-                    <el-input clearable v-model="crawler_rule.name" style="width: 40%; zoom: 100%;"
-                        placeholder="Auto set after downloading">
+                    <el-input clearable v-model="crawler_rule.name" style="width: 100%;"
+                        placeholder="Rule name of CrawlerRule, auto set after downloading">
                         <span slot="prepend">Rule Name</span>
                     </el-input>
-                    <br />
-                    <el-input v-model="crawler_rule.regex" style="width: 40%; zoom: 100%;"
-                        placeholder="Regex to match the url" title="Regex to match the url">
+                    <el-input v-model="crawler_rule.regex" style="width: 100%;" placeholder="Regex to match the url"
+                        title="Regex to match the url">
                         <span slot="prepend">Regex Pattern</span>
                     </el-input>
-                    <br />
-                    <el-input v-model="encoding" style="width: 40%; zoom: 100%;"
+                    <el-input v-model="encoding" style="width: 100%;"
                         placeholder="Encoding of request_args, defaults to None"
                         title="Encoding of request_args, defaults to None">
                         <span slot="prepend">Encoding</span>
                     </el-input>
-                    <br />
-                    <el-input type="textarea" style="width: 40%;zoom: 120%;display: inline-block;" :rows="1" autosize
-                        placeholder="Custom Args for CrawlerRule as JSON" title="Custom Args for CrawlerRule as JSON"
-                        v-model="custom_args">
+                    <el-input style="width: 100%;zoom: 100%;" placeholder="Custom Args for CrawlerRule, JSON required"
+                        title="Custom Args for CrawlerRule, JSON required" v-model="custom_args">
+                        <span slot="prepend">Custom Args</span>
                     </el-input>
+                    <hr>
                     <el-form-item label="Request Args">
                         <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_curl">
                             <b>cURL</b></el-button>
@@ -140,11 +139,12 @@
                             v-model="input_object">
                         </el-input>
                     </el-form-item>
+                    <hr>
                     <el-form-item label="ParseRules">
                         <br />
                         <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
                             <div class="rule">
-                                <el-input type="text" style="width: 50%; zoom: 100%;" autosize
+                                <el-input type="text" style="width: 50%;" autosize
                                     placeholder="Rule name for saving parse result" v-model="rule.name">
                                     <template slot="prepend" class="sub-title">ParseRule Name</template>
                                 </el-input>
@@ -166,21 +166,21 @@
                                             class="el-icon-warning-outline"></i>
                                         <el-autocomplete @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" class="inline-input"
-                                            style="width: 10%; zoom: 100%;" v-model="r[0]"
-                                            :fetch-suggestions="querySearch" placeholder="Parser Name">
+                                            style="width: 10%;" v-model="r[0]" :fetch-suggestions="querySearch"
+                                            placeholder="Parser Name">
                                         </el-autocomplete>
                                         <el-input @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea" style="
-                                                    width: 40%;
-                                                    zoom: 120%;
+                                                    width: 55%;
+                                                    zoom: 1.2;
                                                     display: inline-block;
                                                 " :rows="1" autosize placeholder="Param"
                                             title="Ctrl+Enter: submit; Alt+Enter: new chain" v-model="r[1]">
                                         </el-input>
                                         <el-input @keyup.ctrl.13.native="parse"
                                             @keyup.alt.13.native="add_new_rule_chain(index)" type="textarea" style="
-                                                    width: 40%;
-                                                    zoom: 120%;
+                                                    width: 25%;
+                                                    zoom: 1.2;
                                                     display: inline-block;
                                                 " :rows="1" autosize placeholder="Value"
                                             title="Ctrl+Enter: submit; Alt+Enter: new chain" v-model="r[2]">
@@ -260,7 +260,8 @@ ${current_doc}</textarea>
                 <el-dialog title="Input the JSON string" :visible.sync="new_rule_visible">
                     <el-form>
                         <el-input ref="load_json_input" v-model="new_rule_json" placeholder="Json dict for Requests"
-                            type="textarea" :autosize="{ minRows: 5, maxRows: 15}"></el-input>
+                            type="textarea" @keyup.ctrl.13.native="load_rule()" :autosize="{ minRows: 5, maxRows: 15}">
+                        </el-input>
                     </el-form>
                     <div slot="footer" class="dialog-footer">
                         <el-button @click="new_rule_visible = false">
@@ -316,8 +317,8 @@ ${current_doc}</textarea>
     <!-- [CSS Minifier](https://cssminifier.com/)
     [JavaScript Minifier](https://javascript-minifier.com/)
     [HTML Minifier](https://html-minifier.com/) -->
-    <!-- <script src="static/uniparser.js"></script> -->
-    <script src="static/uniparser.min.js"></script>
+    <script src="static/uniparser.js"></script>
+    <!-- <script src="static/uniparser.min.js"></script> -->
 </body>
 
 </html>

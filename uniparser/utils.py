@@ -8,9 +8,10 @@ from inspect import isawaitable
 from logging import getLogger
 from re import compile as re_compile
 from re import findall as re_findall
+from re import match as re_match
 from shlex import split as shlex_split
 from typing import Dict, Union
-from urllib.parse import urlparse
+from urllib.parse import quote_plus, urlparse
 
 from _codecs import escape_decode
 
@@ -41,22 +42,29 @@ class _Curl:
 
     parser = ArgumentParser()
     parser.add_argument("curl")
-    parser.add_argument("url")
-    parser.add_argument("-X", "--method", default="get")
+    parser.add_argument("--url", default='')
+    parser.add_argument("-X", "--request", default="get")
     parser.add_argument("-A", "--user-agent")
+    parser.add_argument("-e", "--referer")
     parser.add_argument("-u", "--user")  # <user[:password]>
     parser.add_argument("-x", "--proxy")  # proxy.com:port
-    parser.add_argument("-d", "--data")
-    parser.add_argument("-F", "--form")
+    parser.add_argument("-d", "--data", "--data-raw")
+    parser.add_argument("-F", "--form", "--form-string")
     parser.add_argument("--data-binary")
+    parser.add_argument("--data-urlencode")
+    parser.add_argument("-I", "--head", action="store_true")
+    parser.add_argument("-L", "--location", action="store_true")
+    # for retry
+    parser.add_argument("--retry-max-time", type=int, default=0)
     parser.add_argument("--connect-timeout", type=float)
-    parser.add_argument("-H", "--header", action="append",
-                        default=[])  # key: value
+    parser.add_argument("-m", "--max-time", type=float)
+    # key: value
+    parser.add_argument("-H", "--header", action="append", default=[])
     parser.add_argument("--compressed", action="store_true")
 
 
-def curlparse(string, encoding="utf-8"):
-    """Translate curl-string into dict of request.
+def curlparse(string, encoding="utf-8", remain_unknown_args=False):
+    """Translate curl-string into dict of request. Do not support file upload which contains @file_path.
         :param string: standard curl-string, like `r'''curl ...'''`.
         :param encoding: encoding for post-data encoding.
     Copy from torequests.
@@ -92,11 +100,18 @@ def curlparse(string, encoding="utf-8"):
     requests_args = {}
     headers = {}
     requests_args["url"] = unescape_sig(args.url)
+    if not requests_args["url"]:
+        for arg in unknown:
+            if re_match(r'https?://', arg):
+                requests_args["url"] = arg
+                break
     for header in args.header:
         key, value = unescape_sig(header).split(":", 1)
         headers[key.title()] = value.strip()
     if args.user_agent:
         headers["User-Agent"] = unescape_sig(args.user_agent)
+    if args.referer:
+        headers["Referer"] = args.referer
     if headers:
         requests_args["headers"] = headers
     if args.user:
@@ -106,12 +121,33 @@ def curlparse(string, encoding="utf-8"):
     # if args.proxy:
     #     pass
     data = args.data or args.data_binary or args.form
+    if args.data_urlencode:
+        data = quote_plus(args.data_urlencode)
     if data:
-        args.method = "post"
+        args.request = "post"
+        # if PY2:
+        #     # not fix the UnicodeEncodeError, so use `replace`, damn python2.x.
+        #     data = data.replace(r'\r', '\r').replace(r'\n', '\n')
+        # else:
+        #     data = data.encode(
+        #         'latin-1',
+        #         'backslashreplace').decode('unicode-escape').encode(encoding)
         requests_args["data"] = unescape_sig(data).encode(encoding)
-    requests_args["method"] = args.method.lower()
-    if args.connect_timeout:
+    requests_args["method"] = args.request.lower()
+    if args.head:
+        requests_args['method'] = 'head'
+    if args.connect_timeout and args.max_time:
+        requests_args["timeout"] = (args.connect_timeout, args.max_time)
+    elif args.connect_timeout:
         requests_args["timeout"] = args.connect_timeout
+    elif args.max_time:
+        requests_args["timeout"] = args.max_time
+    if remain_unknown_args:
+        requests_args['unknown_args'] = unknown
+    if args.location:
+        requests_args['allow_redirects'] = True
+    if args.retry_max_time:
+        requests_args['retry'] = args.retry_max_time
     return requests_args
 
 

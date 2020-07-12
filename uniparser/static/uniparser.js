@@ -51,10 +51,6 @@ var Main = {
                     {
                         method: "get",
                         url: "https://httpbin.org/html",
-                        headers: {
-                            "User-Agent":
-                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36",
-                        },
                     },
                     null,
                     2
@@ -73,6 +69,7 @@ var Main = {
             request_template_values: {},
             show_parse_result_as_json: false,
             custom_args: "",
+            demo_choices: [],
         }
     },
     methods: {
@@ -260,7 +257,11 @@ var Main = {
                         custom_args[key] = new_rule[key]
                     }
                 }
-                this.custom_args = JSON.stringify(custom_args)
+                if (Object.keys(custom_args)[0]) {
+                    this.custom_args = JSON.stringify(custom_args)
+                } else {
+                    this.custom_args = ""
+                }
                 if (new_rule.request_args && new_rule.request_args.url) {
                     new_rule.request_args = JSON.stringify(
                         new_rule.request_args,
@@ -351,8 +352,7 @@ var Main = {
             }
         },
         demo_handle_click(choice) {
-            let choices = this.demo_choices
-            this.new_rule_json = choices[choice]
+            this.new_rule_json = this.demo_choices[choice * 1][1]
             this.input_object = ""
             this.request_status = ""
             this.load_rule()
@@ -379,10 +379,15 @@ var Main = {
                                 if (url) {
                                     this.crawler_rule.regex =
                                         "^" +
-                                        url.replace(
-                                            /([\.\?\+\*\^\$])/g,
-                                            "\\$1"
-                                        ) +
+                                        url
+                                            .replace(
+                                                /([\.\?\+\*\^\$])/g,
+                                                "\\$1"
+                                            )
+                                            .replace(
+                                                /^https?:\/\//,
+                                                "https?://"
+                                            ) +
                                         "$"
                                 }
                             } else {
@@ -402,6 +407,31 @@ var Main = {
                     )
                 })
                 .catch(() => {})
+        },
+        handle_cache(action) {
+            switch (action) {
+                case "save":
+                    localStorage.setItem(
+                        "uniparser_cache",
+                        this.current_crawler_rule_json
+                    )
+                    this.openAlert("Cache saved")
+                    break
+                case "load":
+                    var rule = localStorage.getItem("uniparser_cache")
+                    if (rule) {
+                        this.new_rule_json = rule
+                        this.load_rule()
+                        this.openAlert("Cache loaded")
+                    }
+                    break
+                case "clear":
+                    localStorage.clear("uniparser_cache")
+                    this.openAlert("Cache cleared")
+                    break
+                default:
+                    break
+            }
         },
     },
     watch: {
@@ -451,7 +481,9 @@ var Main = {
                     parse_rules: rules,
                     regex: this.crawler_rule.regex,
                 }
-                var custom_args = JSON.parse(this.custom_args || "{}")
+                var custom_args = this.custom_args
+                    ? JSON.parse(this.custom_args)
+                    : {}
                 for (const key in custom_args) {
                     if (custom_args.hasOwnProperty(key)) {
                         data[key] = custom_args[key]
@@ -483,7 +515,7 @@ function init_app(app) {
     //   init vars
     let node = document.getElementById("init_vars")
     let args = JSON.parse(window.atob(node.innerHTML))
-    console.log(args)
+    // console.log(args)
     Object.keys(args).forEach((name) => {
         app[name] = args[name]
     })
@@ -496,6 +528,9 @@ function init_app(app) {
             type: "success",
         })
     })
+    // init demo[0]
+    app.demo_handle_click(0)
+    app.handle_cache("load")
 }
 var vue_app = Vue.extend(Main)
 var app = new vue_app({

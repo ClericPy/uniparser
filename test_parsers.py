@@ -974,18 +974,18 @@ def test_uni_parser():
         }
     }
 
-    # 67. test result parse_validator
-    def parse_validator(rule, result) -> bool:
+    # 7. test result parse_callback
+    def parse_callback(rule, result) -> bool:
         return rule['name'] == 'A' and result == {"A": 'a'}
 
-    uni = Uniparser(parse_validator=parse_validator)
+    uni = Uniparser(parse_callback=parse_callback)
     result = uni.parse('A', ParseRule('A', [['udf', 'obj.lower()', '']]))
     # print(result)
     assert result
     try:
         result = uni.parse('A', ParseRule('a', [['udf', 'obj.lower()', '']]))
         # print(result)
-        assert result
+        assert result is False
     except InvalidSchemaError:
         pass
 

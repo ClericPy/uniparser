@@ -73,6 +73,7 @@ var Main = {
             request_template_values: {},
             show_parse_result_as_json: false,
             custom_args: "",
+            demo_choices: [],
         }
     },
     methods: {
@@ -260,7 +261,11 @@ var Main = {
                         custom_args[key] = new_rule[key]
                     }
                 }
-                this.custom_args = JSON.stringify(custom_args)
+                if (Object.keys(custom_args)[0]) {
+                    this.custom_args = JSON.stringify(custom_args)
+                } else {
+                    this.custom_args = ""
+                }
                 if (new_rule.request_args && new_rule.request_args.url) {
                     new_rule.request_args = JSON.stringify(
                         new_rule.request_args,
@@ -351,8 +356,7 @@ var Main = {
             }
         },
         demo_handle_click(choice) {
-            let choices = this.demo_choices
-            this.new_rule_json = choices[choice]
+            this.new_rule_json = this.demo_choices[choice * 1][1]
             this.input_object = ""
             this.request_status = ""
             this.load_rule()
@@ -451,7 +455,9 @@ var Main = {
                     parse_rules: rules,
                     regex: this.crawler_rule.regex,
                 }
-                var custom_args = JSON.parse(this.custom_args || "{}")
+                var custom_args = this.custom_args
+                    ? JSON.parse(this.custom_args)
+                    : {}
                 for (const key in custom_args) {
                     if (custom_args.hasOwnProperty(key)) {
                         data[key] = custom_args[key]
@@ -496,6 +502,8 @@ function init_app(app) {
             type: "success",
         })
     })
+    // init demo[0]
+    app.demo_handle_click(0)
 }
 var vue_app = Vue.extend(Main)
 var app = new vue_app({

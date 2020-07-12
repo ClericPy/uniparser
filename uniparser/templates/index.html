@@ -79,12 +79,8 @@
                         <i class="el-icon-arrow-down el-icon--right"></i>
                     </el-button>
                     <el-dropdown-menu slot="dropdown">
-                        <el-dropdown-item command="CSS">CSS</el-dropdown-item>
-                        <el-dropdown-item command="XML(RSS)">XML(RSS)</el-dropdown-item>
-                        <el-dropdown-item command="Regex">Regex</el-dropdown-item>
-                        <el-dropdown-item command="JSON">JSON</el-dropdown-item>
-                        <el-dropdown-item command="UDF">UDF</el-dropdown-item>
-                        <el-dropdown-item command="Null">Null</el-dropdown-item>
+                        <el-dropdown-item v-for="(demo, index) in demo_choices" :command="index">${demo[0]}
+                        </el-dropdown-item>
                     </el-dropdown-menu>
                 </el-dropdown>
             </el-header>
@@ -96,17 +92,19 @@
                     </el-input>
                     <br />
                     <el-input v-model="crawler_rule.regex" style="width: 40%; zoom: 100%;"
-                        placeholder="Regex to match the url">
+                        placeholder="Regex to match the url" title="Regex to match the url">
                         <span slot="prepend">Regex Pattern</span>
                     </el-input>
                     <br />
                     <el-input v-model="encoding" style="width: 40%; zoom: 100%;"
-                        placeholder="Encoding of request_args, defaults to None">
+                        placeholder="Encoding of request_args, defaults to None"
+                        title="Encoding of request_args, defaults to None">
                         <span slot="prepend">Encoding</span>
                     </el-input>
                     <br />
                     <el-input type="textarea" style="width: 40%;zoom: 120%;display: inline-block;" :rows="1" autosize
-                        placeholder="custom_args" v-model="custom_args">
+                        placeholder="Custom Args for CrawlerRule as JSON" title="Custom Args for CrawlerRule as JSON"
+                        v-model="custom_args">
                     </el-input>
                     <el-form-item label="Request Args">
                         <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_curl">

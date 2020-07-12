@@ -1047,17 +1047,17 @@ class Uniparser(object):
     def __init__(self,
                  request_adapter: Union[AsyncRequestAdapter,
                                         SyncRequestAdapter] = None,
-                 parse_validator: Callable = None):
+                 parse_callback: Callable = None):
         """
         :param request_adapter: request_adapter for downloading, defaults to None
         :type request_adapter: Union[AsyncRequestAdapter, SyncRequestAdapter], optional
-        :param parse_validator: the validator to ensure the result from parsing: function(rule, result) -> bool, defaults to None. Often used to stop parsing CrawlerRule.
-        :type parse_validator: Callable, optional
+        :param parse_callback: the callback function called while parsing result. Accept two args: (rule, result)
+        :type parse_callback: Callable, optional
         """
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
         self.request_adapter = request_adapter
-        self.parse_validator = parse_validator
+        self.parse_callback = parse_callback
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()
@@ -1166,11 +1166,8 @@ class Uniparser(object):
             result = self.parse_parse_rule(input_object=input_object,
                                            rule=rule_object,
                                            context=context)
-        if self.parse_validator is not None and not self.parse_validator(
-                rule_object, result):
-            raise InvalidSchemaError(
-                f'Invalid parse result for rule {rule_object["name"]}: {repr(result)[:50]}'
-            )
+        if self.parse_callback:
+            return self.parse_callback(rule_object, result)
         return result
 
     def ensure_adapter(self, sync=True):

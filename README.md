@@ -315,8 +315,8 @@ python:      356988 calls / sec, [None, '0', 'b']
 python:      532092 calls / sec, [{0: 'a'}, '0', 'a']
 =================================================================================
 loader:      159737 calls / sec, ['{"a": "b"}', 'json', '']
-loader:      38540 calls / sec, ['a = "a"', 'toml', '']
-loader:      3972 calls / sec, ['animal: pets', 'yaml', '']
+loader:       38540 calls / sec, ['a = "a"', 'toml', '']
+loader:        3972 calls / sec, ['animal: pets', 'yaml', '']
 loader:      461297 calls / sec, ['a', 'b64encode', '']
 loader:      412507 calls / sec, ['YQ==', 'b64decode', '']
 =================================================================================

@@ -975,7 +975,7 @@ def test_uni_parser():
     }
 
     # 7. test result parse_callback
-    def parse_callback(rule, result) -> bool:
+    def parse_callback(rule, result, context) -> bool:
         return rule['name'] == 'A' and result == {"A": 'a'}
 
     uni = Uniparser(parse_callback=parse_callback)

@@ -251,6 +251,81 @@ for i in Uniparser().parsers:
     print(f'## {i.__class__.__name__} ({i.name})\n\n```\n{i.doc}\n```')
 ```
 
+## Benchmark
+
+> Compare parsers and choose a faster one
+
+```python
+css:         2558 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '@href']
+css:         2491 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$text']
+css:         2385 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML']
+css:         2495 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$html']
+css:         2296 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML']
+css:         2182 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$string']
+css:         2130 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$self']
+=================================================================================
+xml:         3171 calls / sec, ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$text']
+=================================================================================
+re:          220240 calls / sec, ['a a b b c c', 'a|c', '@b']
+re:          334206 calls / sec, ['a a b b c c', 'a', '']
+re:          199572 calls / sec, ['a a b b c c', 'a (a b)', '$0']
+re:          203122 calls / sec, ['a a b b c c', 'a (a b)', '$1']
+re:          256544 calls / sec, ['a a b b c c', 'b', '-']
+=================================================================================
+jsonpath:    28  calls / sec, [{'a': {'b': {'c': 1}}}, '$..c', '']
+=================================================================================
+objectpath:  42331 calls / sec, [{'a': {'b': {'c': 1}}}, '$..c', '']
+=================================================================================
+jmespath:    95449 calls / sec, [{'a': {'b': {'c': 1}}}, 'a.b.c', '']
+=================================================================================
+udf:         58236 calls / sec, ['a b c d', 'input_object[::-1]', '']
+udf:         64846 calls / sec, ['a b c d', 'context["key"]', {'key': 'value'}]
+udf:         55169 calls / sec, ['a b c d', 'md5(input_object)', '']
+udf:         45388 calls / sec, ['["string"]', 'json_loads(input_object)', '']
+udf:         50741 calls / sec, ['["string"]', 'json_loads(obj)', '']
+udf:         48974 calls / sec, [['string'], 'json_dumps(input_object)', '']
+udf:         41670 calls / sec, ['a b c d', 'parse = lambda input_object: input_object', '']
+udf:         31930 calls / sec, ['a b c d', 'def parse(input_object): context["key"]="new";return context', {'key': 'new'}]
+=================================================================================
+python:      383293 calls / sec, [[1, 2, 3], 'getitem', '[-1]']
+python:      350290 calls / sec, [[1, 2, 3], 'getitem', '[:2]']
+python:      325668 calls / sec, ['abc', 'getitem', '[::-1]']
+python:      634737 calls / sec, [{'a': '1'}, 'getitem', 'a']
+python:      654257 calls / sec, [{'a': '1'}, 'get', 'a']
+python:      642111 calls / sec, ['a b\tc \n \td', 'split', '']
+python:      674048 calls / sec, [['a', 'b', 'c', 'd'], 'join', '']
+python:      478239 calls / sec, [['aaa', ['b'], ['c', 'd']], 'chain', '']
+python:      191430 calls / sec, ['python', 'template', '1 $input_object 2']
+python:      556022 calls / sec, [[1], 'index', '0']
+python:      474540 calls / sec, ['python', 'index', '-1']
+python:      619489 calls / sec, [{'a': '1'}, 'index', 'a']
+python:      457317 calls / sec, ['adcb', 'sort', '']
+python:      494608 calls / sec, [[1, 3, 2, 4], 'sort', 'desc']
+python:      581480 calls / sec, ['aabbcc', 'strip', 'a']
+python:      419745 calls / sec, ['aabbcc', 'strip', 'ac']
+python:      615518 calls / sec, [' \t a ', 'strip', '']
+python:      632536 calls / sec, ['a', 'default', 'b']
+python:      655448 calls / sec, ['', 'default', 'b']
+python:      654189 calls / sec, [' ', 'default', 'b']
+python:      373153 calls / sec, ['a', 'base64_encode', '']
+python:      339589 calls / sec, ['YQ==', 'base64_decode', '']
+python:      495246 calls / sec, ['a', '0', 'b']
+python:      358796 calls / sec, ['', '0', 'b']
+python:      356988 calls / sec, [None, '0', 'b']
+python:      532092 calls / sec, [{0: 'a'}, '0', 'a']
+=================================================================================
+loader:      159737 calls / sec, ['{"a": "b"}', 'json', '']
+loader:      38540 calls / sec, ['a = "a"', 'toml', '']
+loader:      3972 calls / sec, ['animal: pets', 'yaml', '']
+loader:      461297 calls / sec, ['a', 'b64encode', '']
+loader:      412507 calls / sec, ['YQ==', 'b64decode', '']
+=================================================================================
+time:        39241 calls / sec, ['2020-02-03 20:29:45', 'encode', '']
+time:        83251 calls / sec, ['1580732985.1873155', 'decode', '']
+time:        48469 calls / sec, ['2020-02-03T20:29:45', 'encode', '%Y-%m-%dT%H:%M:%S']
+time:        74481 calls / sec, ['1580732985.1873155', 'decode', '%b %d %Y %H:%M:%S']
+```
+
 ## Tasks
 
 - [x] Release to pypi.org
@@ -258,3 +333,4 @@ for i in Uniparser().parsers:
 - [x] Add **github actions** for testing package
 - [x] Web UI for testing rules
 - [x] Complete the doc in detail
+- [x] Compare each parser's performance

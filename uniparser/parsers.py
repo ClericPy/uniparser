@@ -1051,7 +1051,7 @@ class Uniparser(object):
         """
         :param request_adapter: request_adapter for downloading, defaults to None
         :type request_adapter: Union[AsyncRequestAdapter, SyncRequestAdapter], optional
-        :param parse_callback: the callback function called while parsing result. Accept two args: (rule, result)
+        :param parse_callback: the callback function called while parsing result. Accept two args: (rule, result, context)
         :type parse_callback: Callable, optional
         """
         self._prepare_default_parsers()
@@ -1167,7 +1167,7 @@ class Uniparser(object):
                                            rule=rule_object,
                                            context=context)
         if self.parse_callback:
-            return self.parse_callback(rule_object, result)
+            return self.parse_callback(rule_object, result, context)
         return result
 
     def ensure_adapter(self, sync=True):

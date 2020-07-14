@@ -1129,29 +1129,28 @@ class Uniparser(object):
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
                 f'Schema check is not True: {repr(input_object)[:50]}')
-        result = {rule['name']: input_object}
-        if not rule['child_rules']:
-            return {rule['name']: input_object}
-        else:
-            result = {rule['name']: {}}
-        if rule.get('iter_parse_child', False):
-            result[rule['name']] = []
-            for partial_input_object in input_object:
-                partial_result = {}
+        if rule['child_rules']:
+            result: Dict[str, Any] = {rule['name']: {}}
+            if rule.get('iter_parse_child', False):
+                result[rule['name']] = []
+                for partial_input_object in input_object:
+                    partial_result = {}
+                    for sub_rule in rule['child_rules']:
+                        partial_result[
+                            sub_rule['name']] = self.parse_parse_rule(
+                                partial_input_object, sub_rule,
+                                context=context).get(sub_rule['name'])
+                    result[rule['name']].append(partial_result)
+            else:
                 for sub_rule in rule['child_rules']:
-                    partial_result[sub_rule['name']] = self.parse_parse_rule(
-                        partial_input_object,
-                        sub_rule,
-                        context=context,
-                    ).get(sub_rule['name'])
-                result[rule['name']].append(partial_result)
+                    result[rule['name']][
+                        sub_rule['name']] = self.parse_parse_rule(
+                            input_object, sub_rule,
+                            context=context).get(sub_rule['name'])
         else:
-            for sub_rule in rule['child_rules']:
-                result[rule['name']][sub_rule['name']] = self.parse_parse_rule(
-                    input_object,
-                    sub_rule,
-                    context=context,
-                ).get(sub_rule['name'])
+            result = {rule['name']: input_object}
+        if self.parse_callback:
+            return self.parse_callback(rule, result, context)
         return result
 
     def parse(self,
@@ -1166,8 +1165,6 @@ class Uniparser(object):
             result = self.parse_parse_rule(input_object=input_object,
                                            rule=rule_object,
                                            context=context)
-        if self.parse_callback:
-            return self.parse_callback(rule_object, result, context)
         return result
 
     def ensure_adapter(self, sync=True):

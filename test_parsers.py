@@ -13,7 +13,8 @@ from uniparser.crawler import RuleNotFoundError
 from uniparser.exceptions import InvalidSchemaError
 from uniparser.utils import (AiohttpAsyncAdapter, HTTPXAsyncAdapter,
                              HTTPXSyncAdapter, RequestsAdapter,
-                             TorequestsAsyncAdapter, TorequestsSyncAdapter)
+                             TorequestsAsyncAdapter, TorequestsSyncAdapter,
+                             fix_relative_path)
 
 warnings.filterwarnings('ignore', 'TimeParser')
 
@@ -1155,6 +1156,15 @@ def test_uni_parser_frequency():
     asyncio.get_event_loop().run_until_complete(test_async_crawl())
 
 
+def test_utils():
+    # test fix_relative_path
+    HTML = '<a href="/b">test</a><a href="./b">test</a><a href="../b">test</a><a href="../../b">test</a><img src="/b"><img src="./b"><img src="../b"><img src="../../b">'
+    base_url = 'http://www.abc.com/a/b/c/d/e?query=a#b'
+    result = fix_relative_path(base_url, HTML)
+    # print(result)
+    assert result == '<a href="http://www.abc.com/b">test</a><a href="http://www.abc.com/a/b/c/d/b">test</a><a href="http://www.abc.com/a/b/c/b">test</a><a href="http://www.abc.com/a/b/b">test</a><img src="http://www.abc.com/b"/><img src="http://www.abc.com/a/b/c/d/b"/><img src="http://www.abc.com/a/b/c/b"/><img src="http://www.abc.com/a/b/b"/>'
+
+
 def _partial_test_parser():
     from uniparser import Uniparser
 
@@ -1187,6 +1197,7 @@ if __name__ == "__main__":
             test_crawler_storage,
             test_uni_parser_frequency,
             test_crawler,
+            test_utils,
     ):
         case()
         print(case.__name__, 'ok')

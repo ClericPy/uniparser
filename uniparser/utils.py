@@ -10,8 +10,10 @@ from re import compile as re_compile
 from re import findall as re_findall
 from re import match as re_match
 from shlex import split as shlex_split
-from typing import Dict, Union
-from urllib.parse import quote_plus, urlparse
+from typing import Dict, List, Union
+from urllib.parse import quote_plus, urljoin, urlparse
+
+from bs4 import BeautifulSoup
 
 from _codecs import escape_decode
 
@@ -672,3 +674,18 @@ def encode_as_base64(string, encoding='utf-8'):
 
 def decode_as_base64(string, encoding='utf-8'):
     return b64decode(string.encode(encoding)).decode(encoding)
+
+
+def fix_relative_path(base_url: str, html: str, attrs: List[str] = None):
+    dom = BeautifulSoup(html, 'lxml')
+    attrs = attrs or ['src', 'href']
+    for attr in attrs:
+        for item in dom.select(f'[{attr}]'):
+            value = item.get(attr)
+            if not value:
+                continue
+            item[attr] = urljoin(base_url, value)
+    if '</body></html>' in html:
+        return str(dom)
+    else:
+        return dom.select_one('body').decode_contents()

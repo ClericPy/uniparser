@@ -7,11 +7,15 @@ from functools import partial
 from inspect import isawaitable
 from logging import getLogger
 from re import compile as re_compile
+from re import escape as re_escape
 from re import findall as re_findall
 from re import match as re_match
+from re import search as re_search
 from shlex import split as shlex_split
-from typing import Dict, Union
-from urllib.parse import quote_plus, urlparse
+from typing import Dict, List, Union
+from urllib.parse import quote_plus, urljoin, urlparse
+
+from bs4 import BeautifulSoup
 
 from _codecs import escape_decode
 
@@ -672,3 +676,26 @@ def encode_as_base64(string, encoding='utf-8'):
 
 def decode_as_base64(string, encoding='utf-8'):
     return b64decode(string.encode(encoding)).decode(encoding)
+
+
+def fix_relative_path(base_url: str,
+                      html: str,
+                      attrs: List[str] = None,
+                      strict=False):
+    attrs = attrs or ['src', 'href']
+    if not strict and not re_search(
+            f'\\s({"|".join((re_escape(attr) for attr in attrs))})=[\'"](?!https?://)',
+            html):
+        # no need to fix
+        return html
+    dom = BeautifulSoup(html, 'lxml')
+    for attr in attrs:
+        for item in dom.select(f'[{attr}]'):
+            value = item.get(attr)
+            if not value:
+                continue
+            item[attr] = urljoin(base_url, value)
+    if '</body></html>' in html:
+        return str(dom)
+    else:
+        return dom.select_one('body').decode_contents()

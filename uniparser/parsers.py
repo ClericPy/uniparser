@@ -192,7 +192,7 @@ class CSSParser(BaseParser):
         return result
 
 
-class CSSParserSingleReturn(CSSParser):
+class CSSSingleParser(CSSParser):
     """Similar to CSSParser but use select_one instead of select method.
         examples:
 
@@ -289,7 +289,7 @@ class SelectolaxParser(BaseParser):
         return result
 
 
-class SelectolaxParserSingleReturn(SelectolaxParser):
+class SelectolaxSingleParser(SelectolaxParser):
     """Similar to SelectolaxParser but use css_first instead of select method.
         examples:
 
@@ -1191,9 +1191,9 @@ class Uniparser(object):
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()
-        self.css1 = CSSParserSingleReturn()
+        self.css1 = CSSSingleParser()
         self.selectolax = SelectolaxParser()
-        self.selectolax1 = SelectolaxParserSingleReturn()
+        self.selectolax1 = SelectolaxSingleParser()
         self.xml = XMLParser()
         self.re = RegexParser()
         self.jsonpath = JSONPathParser()

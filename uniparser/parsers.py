@@ -192,6 +192,37 @@ class CSSParser(BaseParser):
         return result
 
 
+class CSSParserSingleReturn(CSSParser):
+    """Similar to CSSParser but use select_one instead of select method.
+        examples:
+
+            ['<a class="url" href="/">title</a>', 'a.url1', '@href']      => None
+            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => '/'
+            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => '<a class="url" href="/">title</a>'
+            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => '<a class="url" href="/">title</a>'
+            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => <a class="url" href="/">title</a>
+    """
+    name = 'css1'
+
+    def _parse(self, input_object, param, value):
+        result = []
+        if not input_object:
+            return result
+        # ensure input_object is instance of BeautifulSoup
+        if not isinstance(input_object, lib.Tag):
+            input_object = lib.BeautifulSoup(input_object, 'lxml')
+        operate = self.operations.get(value, return_self)
+        item = input_object.select_one(param)
+        if item is None:
+            return None
+        if value.startswith('@'):
+            return item.get(value[1:], '')
+        return operate(item)
+
+
 class SelectolaxParser(BaseParser):
     """CSS selector parser based on `selectolax`, faster than lxml.
     Since HTML input object always should be string, _RECURSION_LIST will be True.
@@ -1129,6 +1160,7 @@ class Uniparser(object):
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()
+        self.css1 = CSSParserSingleReturn()
         self.selectolax = SelectolaxParser()
         self.xml = XMLParser()
         self.re = RegexParser()

@@ -182,12 +182,12 @@ class CSSParser(BaseParser):
         # ensure input_object is instance of BeautifulSoup
         if not isinstance(input_object, lib.Tag):
             input_object = lib.BeautifulSoup(input_object, 'lxml')
-        operate = self.operations.get(value, return_self)
         if value.startswith('@'):
             result = [
-                item.get(value[1:], '') for item in input_object.select(param)
+                item.get(value[1:], None) for item in input_object.select(param)
             ]
         else:
+            operate = self.operations.get(value, return_self)
             result = [operate(item) for item in input_object.select(param)]
         return result
 
@@ -214,12 +214,12 @@ class CSSParserSingleReturn(CSSParser):
         # ensure input_object is instance of BeautifulSoup
         if not isinstance(input_object, lib.Tag):
             input_object = lib.BeautifulSoup(input_object, 'lxml')
-        operate = self.operations.get(value, return_self)
         item = input_object.select_one(param)
         if item is None:
             return None
         if value.startswith('@'):
-            return item.get(value[1:], '')
+            return item.get(value[1:], None)
+        operate = self.operations.get(value, return_self)
         return operate(item)
 
 
@@ -275,18 +275,49 @@ class SelectolaxParser(BaseParser):
         result = []
         if not input_object:
             return result
-        # ensure input_object is instance of BeautifulSoup
+        # ensure input_object is instance of Node
         if not isinstance(input_object, lib.Node):
             input_object = lib.HTMLParser(input_object)
         if value.startswith('@'):
             result = [
-                item.attributes.get(value[1:], '')
+                item.attributes.get(value[1:], None)
                 for item in input_object.css(param)
             ]
         else:
             operate = self.operations.get(value, return_self)
             result = [operate(item) for item in input_object.css(param)]
         return result
+
+
+class SelectolaxParserSingleReturn(SelectolaxParser):
+    """Similar to SelectolaxParser but use css_first instead of select method.
+        examples:
+
+            ['<a class="url" href="/">title</a>', 'a.url1', '@href']      => None
+            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => '/'
+            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => '<a class="url" href="/">title</a>'
+            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => '<a class="url" href="/">title</a>'
+            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => <a class="url" href="/">title</a>
+    """
+    name = 'se1'
+
+    def _parse(self, input_object, param, value):
+        result = []
+        if not input_object:
+            return result
+        # ensure input_object is instance of Node
+        if not isinstance(input_object, lib.Node):
+            input_object = lib.HTMLParser(input_object)
+        item = input_object.css_first(param)
+        if item is None:
+            return None
+        if value.startswith('@'):
+            return item.attributes.get(value[1:], None)
+        operate = self.operations.get(value, return_self)
+        return operate(item)
 
 
 class XMLParser(BaseParser):
@@ -343,7 +374,7 @@ class XMLParser(BaseParser):
             input_object = lib.BeautifulSoup(input_object, 'lxml-xml')
         if value.startswith('@'):
             result = [
-                item.get(value[1:], '') for item in input_object.select(param)
+                item.get(value[1:], None) for item in input_object.select(param)
             ]
         else:
             operate = self.operations.get(value, return_self)
@@ -1162,6 +1193,7 @@ class Uniparser(object):
         self.css = CSSParser()
         self.css1 = CSSParserSingleReturn()
         self.selectolax = SelectolaxParser()
+        self.selectolax1 = SelectolaxParserSingleReturn()
         self.xml = XMLParser()
         self.re = RegexParser()
         self.jsonpath = JSONPathParser()
@@ -1187,6 +1219,11 @@ class Uniparser(object):
     @property
     def se(self):
         return self.selectolax
+
+    # for alias
+    @property
+    def se1(self):
+        return self.selectolax1
 
     @property
     def parsers(self):

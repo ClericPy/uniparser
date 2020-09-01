@@ -23,8 +23,9 @@ from .utils import (AsyncRequestAdapter, LazyImporter, SyncRequestAdapter,
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'CSSParser',
-    'XMLParser', 'RegexParser', 'JSONPathParser', 'ObjectPathParser',
-    'JMESPathParser', 'PythonParser', 'UDFParser', 'LoaderParser', 'Uniparser'
+    'SelectolaxParser', 'XMLParser', 'RegexParser', 'JSONPathParser',
+    'ObjectPathParser', 'JMESPathParser', 'PythonParser', 'UDFParser',
+    'LoaderParser', 'Uniparser'
 ]
 
 logger = getLogger('uniparser')

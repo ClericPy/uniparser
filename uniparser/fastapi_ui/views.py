@@ -108,6 +108,7 @@ def parse_rule(kwargs: dict):
     if not input_object:
         return 'Null input_object?'
     rule_json = kwargs['rule']
+    json_result = ""
     try:
         rule = CrawlerRule.loads(rule_json)
         # print(rule)

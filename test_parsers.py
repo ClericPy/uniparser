@@ -197,6 +197,32 @@ def test_css_parser():
     # print(result)
     assert result == [['d1'], ['d2']]
 
+    # =================== test css1 ===================
+    result = uni.css1.parse('<a class="url" href="/">title</a>', 'a.url1',
+                            '@href')
+    assert result is None
+    result = uni.css1.parse('<a class="url" href="/">title</a>', 'a.url',
+                            '@href')
+    assert result == '/'
+    result = uni.css1.parse('<a class="url" href="/">title</a>', 'a.url',
+                            '$text')
+    assert result == 'title'
+    result = uni.css1.parse('<a class="url" href="/">title</a>', 'a.url',
+                            '$innerHTML')
+    assert result == 'title'
+    result = uni.css1.parse('<a class="url" href="/">title</a>', 'a.url',
+                            '$html')
+    assert result == 'title'
+    result = uni.css1.parse('<a class="url" href="/">title</a>', 'a.url',
+                            '$outerHTML')
+    assert result == '<a class="url" href="/">title</a>'
+    result = uni.css1.parse('<a class="url" href="/">title</a>', 'a.url',
+                            '$string')
+    assert result == '<a class="url" href="/">title</a>'
+    result = uni.css1.parse('<a class="url" href="/">title</a>', 'a.url',
+                            '$self')
+    assert isinstance(result, Tag)
+
 
 def test_selectolax_parser():
     uni = Uniparser()

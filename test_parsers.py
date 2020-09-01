@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 import requests
 from bs4 import Tag
+from selectolax.parser import Node
 
 from uniparser import (Crawler, CrawlerRule, HostRule, JSONRuleStorage,
                        ParseRule, Uniparser)
@@ -193,6 +194,52 @@ def test_css_parser():
     # test parsing list of input_object
     tags = uni.css.parse(HTML, 'div', '$self')
     result = uni.css.parse(tags, 'span', '$text')
+    # print(result)
+    assert result == [['d1'], ['d2']]
+
+
+def test_selectolax_parser():
+    uni = Uniparser()
+    # test get attribute
+    result = uni.se.parse(HTML, 'a', '@href')
+    # print(result)
+    assert result == ['', 'http://example.com/2', 'http://example.com/3']
+
+    # test get text
+    result = uni.se.parse(HTML, 'a.a', '$text')
+    # print(result)
+    assert result == ['', 'a2', 'a3']
+
+    # test get outerHTML, html
+    result = uni.se.parse(HTML, 'a', '$outerHTML')
+    # print(result)
+    assert result == [
+        '<a class="a" id="link1"><!--invisible comment--></a>',
+        '<a class="a" href="http://example.com/2" id="link2">a2</a>',
+        '<a class="a" href="http://example.com/3" id="link3">a3</a>'
+    ]
+    result = uni.se.parse(HTML, 'a', '$html')
+    # print(result)
+    assert result == [
+        '<a class="a" id="link1"><!--invisible comment--></a>',
+        '<a class="a" href="http://example.com/2" id="link2">a2</a>',
+        '<a class="a" href="http://example.com/3" id="link3">a3</a>'
+    ]
+
+    # test get Tag object self
+    result = uni.se.parse(HTML, 'a', '$self')
+    # print(result)
+    assert all([isinstance(i, Node) for i in result])
+
+    # test parsing Tag object
+    tag = uni.se.parse(HTML, 'p.body', '$self')[0]
+    result = uni.se.parse(tag, 'a', '$text')
+    # print(result)
+    assert result == ['', 'a2', 'a3']
+
+    # test parsing list of input_object
+    tags = uni.se.parse(HTML, 'div', '$self')
+    result = uni.se.parse(tags, 'span', '$text')
     # print(result)
     assert result == [['d1'], ['d2']]
 
@@ -1182,6 +1229,7 @@ if __name__ == "__main__":
     GlobalConfig.GLOBAL_TIMEOUT = 5
     for case in (
             test_css_parser,
+            test_selectolax_parser,
             test_xml_parser,
             test_re_parser,
             test_jsonpath_parser,

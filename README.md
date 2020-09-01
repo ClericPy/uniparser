@@ -264,6 +264,26 @@ css:         2296 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$
 css:         2182 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$string']
 css:         2130 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$self']
 =================================================================================
+css1:        2525 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '@href']
+css1:        2402 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$text']
+css1:        2321 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML']
+css1:        2256 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$html']
+css1:        2122 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML']
+css1:        2142 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$string']
+css1:        2483 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$self']
+=================================================================================
+selectolax:  15187 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '@href']
+selectolax:  19164 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$text']
+selectolax:  19699 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$html']
+selectolax:  20659 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML']
+selectolax:  20369 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$self']
+=================================================================================
+selectolax1: 17572 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '@href']
+selectolax1: 19096 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$text']
+selectolax1: 17997 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$html']
+selectolax1: 18100 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML']
+selectolax1: 19137 calls / sec, ['<a class="url" href="/">title</a>', 'a.url', '$self']
+=================================================================================
 xml:         3171 calls / sec, ['<dc:creator><![CDATA[author]]></dc:creator>', 'creator', '$text']
 =================================================================================
 re:          220240 calls / sec, ['a a b b c c', 'a|c', '@b']

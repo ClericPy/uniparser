@@ -149,7 +149,7 @@ def test_css_parser():
     # test get attribute
     result = uni.css.parse(HTML, 'a', '@href')
     # print(result)
-    assert result == ['', 'http://example.com/2', 'http://example.com/3']
+    assert result == [None, 'http://example.com/2', 'http://example.com/3']
 
     # test get text
     result = uni.css.parse(HTML, 'a.a', '$text')
@@ -229,7 +229,7 @@ def test_selectolax_parser():
     # test get attribute
     result = uni.se.parse(HTML, 'a', '@href')
     # print(result)
-    assert result == ['', 'http://example.com/2', 'http://example.com/3']
+    assert result == [None, 'http://example.com/2', 'http://example.com/3']
 
     # test get text
     result = uni.se.parse(HTML, 'a.a', '$text')
@@ -269,13 +269,36 @@ def test_selectolax_parser():
     # print(result)
     assert result == [['d1'], ['d2']]
 
+    # =================== test se1 ===================
+    result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url1',
+                           '@href')
+    assert result is None, result
+    result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
+                           '@href')
+    assert result == '/', result
+    result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
+                           '$text')
+    assert result == 'title', result
+    result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
+                           '$html')
+    assert result == '<a class="url" href="/">title</a>', result
+    result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
+                           '$outerHTML')
+    assert result == '<a class="url" href="/">title</a>', result
+    result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
+                           '$string')
+    assert result == '<a class="url" href="/">title</a>', result
+    result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
+                           '$self')
+    assert isinstance(result, Node), result
+
 
 def test_xml_parser():
     uni = Uniparser()
     # test get attribute
     result = uni.xml.parse(XML, 'link', '@href')
     # print(result)
-    assert result == ['https://www.example.com/feed/', '', '', '']
+    assert result == ['https://www.example.com/feed/', None, None, None]
 
     # test get text
     result = uni.xml.parse(XML, 'creator', '$text')

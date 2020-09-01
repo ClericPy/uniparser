@@ -45,6 +45,93 @@ https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors
 
 https://github.com/ClericPy/uniparser
 ```
+## CSSSingleParser (css1)
+
+```
+Similar to CSSParser but use select_one instead of select method.
+        examples:
+
+            ['<a class="url" href="/">title</a>', 'a.url1', '@href']      => None
+            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => '/'
+            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => '<a class="url" href="/">title</a>'
+            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => '<a class="url" href="/">title</a>'
+            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => <a class="url" href="/">title</a>
+    
+
+valid value args: ['@attr', '$text', '$innerHTML', '$html', '$outerHTML', '$string', '$self']
+
+https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors
+
+https://github.com/ClericPy/uniparser
+```
+## SelectolaxParser (selectolax)
+
+```
+CSS selector parser based on `selectolax`, faster than lxml.
+    Since HTML input object always should be string, _RECURSION_LIST will be True.
+
+    Parse the input object with standard css selector.
+
+        :param input_object: input object, could be Node or str.
+        :type input_object: [Node, str]
+        :param param: css selector path
+        :type param: [str]
+        :param value: operation for each item of result
+        :type value: [str]
+
+            @attribute: return element.attributes.get(xxx)
+
+            $text: return element.text
+
+            $outerHTML, $html: return element.html
+
+            $self: return element
+
+        :return: list of Node / str
+        :rtype: List[Union[str, Node]]
+
+        examples:
+
+            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => ['/']
+            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => ['title']
+            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => [<a class="url" href="/">title</a>]
+
+            WARNING: $self returns the original Node object
+    
+
+valid value args: ['@attr', '$text', '$html', '$outerHTML', '$self']
+
+https://github.com/rushter/selectolax
+
+https://github.com/ClericPy/uniparser
+```
+## SelectolaxSingleParser (se1)
+
+```
+Similar to SelectolaxParser but use css_first instead of select method.
+        examples:
+
+            ['<a class="url" href="/">title</a>', 'a.url1', '@href']      => None
+            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => '/'
+            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$innerHTML'] => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => 'title'
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => '<a class="url" href="/">title</a>'
+            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => '<a class="url" href="/">title</a>'
+            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => <a class="url" href="/">title</a>
+    
+
+valid value args: ['@attr', '$text', '$html', '$outerHTML', '$self']
+
+https://github.com/rushter/selectolax
+
+https://github.com/ClericPy/uniparser
+```
 ## XMLParser (xml)
 
 ```
@@ -229,8 +316,9 @@ PythonParser. Some frequently-used utils.
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
             [[1, 2, 3], 'getitem', '[:2]']              => [1, 2]
-            ['abc', 'getitem', '[::-1]']              => 'cba'
+            ['abc', 'getitem', '[::-1]']                => 'cba'
             [{'a': '1'}, 'getitem', 'a']                => '1'
+            [{'a': '1'}, 'get', 'a']                    => '1'
             ['a b\tc \n \td', 'split', '']              => ['a', 'b', 'c', 'd']
             [['a', 'b', 'c', 'd'], 'join', '']          => 'abcd'
             [['aaa', ['b'], ['c', 'd']], 'chain', '']   => ['a', 'a', 'a', 'b', 'c', 'd']

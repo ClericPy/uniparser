@@ -118,7 +118,7 @@ def parse_rule():
             'request_args': GLOBAL_REQ
         })
         try:
-            json_result = GlobalConfig.json_dumps(result)
+            json_result = GlobalConfig.json_dumps(result, default=repr)
         except Exception as e:
             json_result = repr(e)
         return {

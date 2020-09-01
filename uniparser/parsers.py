@@ -38,6 +38,8 @@ lib.register('from objectpath import Tree as OP_Tree', 'OP_Tree')
 lib.register('from objectpath.core import ITER_TYPES', 'ITER_TYPES')
 lib.register('from yaml import full_load as yaml_full_load', 'yaml_full_load')
 lib.register('from yaml import safe_load as yaml_safe_load', 'yaml_safe_load')
+lib.register('from selectolax.parser import HTMLParser', 'HTMLParser')
+lib.register('from selectolax.parser import Node', 'Node')
 
 
 def return_self(self, *args, **kwargs):
@@ -190,6 +192,72 @@ class CSSParser(BaseParser):
         return result
 
 
+class SelectolaxParser(BaseParser):
+    """CSS selector parser based on `selectolax`, faster than lxml.
+    Since HTML input object always should be string, _RECURSION_LIST will be True.
+
+    Parse the input object with standard css selector.
+
+        :param input_object: input object, could be Node or str.
+        :type input_object: [Node, str]
+        :param param: css selector path
+        :type param: [str]
+        :param value: operation for each item of result
+        :type value: [str]
+
+            @attribute: return element.attributes.get(xxx)
+
+            $text: return element.text
+
+            $outerHTML, $html: return element.html
+
+            $self: return element
+
+        :return: list of Node / str
+        :rtype: List[Union[str, Node]]
+
+        examples:
+
+            ['<a class="url" href="/">title</a>', 'a.url', '@href']      => ['/']
+            ['<a class="url" href="/">title</a>', 'a.url', '$text']      => ['title']
+            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$self']      => [<a class="url" href="/">title</a>]
+
+            WARNING: $self returns the original Node object
+    """
+    name = 'selectolax'
+    doc_url = 'https://github.com/rushter/selectolax'
+    operations = {
+        '@attr': lambda element: element.attributes.get(...),
+        '$text': lambda element: element.text(),
+        '$html': lambda element: element.html,
+        '$outerHTML': lambda element: element.html,
+        '$self': return_self,
+    }
+
+    @property
+    def doc(self):
+        return f'{self.__class__.__doc__}\n\nvalid value args: {list(self.operations.keys())}\n\n{self.doc_url}\n\n{self.test_url}'
+
+    def _parse(self, input_object, param, value):
+        result = []
+        if not input_object:
+            return result
+        # ensure input_object is instance of BeautifulSoup
+        if not isinstance(input_object, lib.Node):
+            input_object = lib.HTMLParser(input_object)
+        if value.startswith('@'):
+            result = [
+                item.attributes.get(value[1:], '')
+                for item in input_object.css(param)
+            ]
+        else:
+            operate = self.operations.get(value, return_self)
+            result = [operate(item) for item in input_object.css(param)]
+        return result
+
+
 class XMLParser(BaseParser):
     """XML parser, requires `bs4` and `lxml`(necessary), but not support `xpath` for now.
     Since XML input object always should be string, _RECURSION_LIST will be True.
@@ -242,12 +310,12 @@ class XMLParser(BaseParser):
         # ensure input_object is instance of BeautifulSoup
         if not isinstance(input_object, lib.Tag):
             input_object = lib.BeautifulSoup(input_object, 'lxml-xml')
-        operate = self.operations.get(value, return_self)
         if value.startswith('@'):
             result = [
                 item.get(value[1:], '') for item in input_object.select(param)
             ]
         else:
+            operate = self.operations.get(value, return_self)
             result = [operate(item) for item in input_object.select(param)]
         return result
 
@@ -1061,6 +1129,7 @@ class Uniparser(object):
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()
+        self.selectolax = SelectolaxParser()
         self.xml = XMLParser()
         self.re = RegexParser()
         self.jsonpath = JSONPathParser()
@@ -1081,6 +1150,11 @@ class Uniparser(object):
     @property
     def py(self):
         return self.python
+
+    # for alias
+    @property
+    def se(self):
+        return self.selectolax
 
     @property
     def parsers(self):

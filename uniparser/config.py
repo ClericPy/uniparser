@@ -25,6 +25,10 @@ class GlobalConfig:
             r'{"name":"CSS demo","request_args":{"method":"get","url":"http://httpbin.org/forms/post","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"Tag attribute","chain_rules":[["css","form","@method"],["py","index","0"]],"child_rules":[]},{"name":"Tag text","chain_rules":[["css","legend","$text"]],"child_rules":[],"iter_parse_child":false},{"name":"Tag outerHTML","chain_rules":[["css","[name=\"custname\"]","$string"],["py","index","0"]],"child_rules":[],"iter_parse_child":false}],"regex":"^http://httpbin\\.org/forms/post$"}'
         ],
         [
+            'Selectolax',
+            r'{"name":"Selectolax demo","request_args":{"method":"get","url":"http://httpbin.org/forms/post","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"Node attribute","chain_rules":[["se","form","@method"],["py","index","0"]],"child_rules":[]},{"name":"Node text","chain_rules":[["se","legend","$text"]],"child_rules":[],"iter_parse_child":false},{"name":"Node outerHTML","chain_rules":[["se","[name=\"custname\"]","$string"],["py","index","0"]],"child_rules":[],"iter_parse_child":false}],"regex":"^http://httpbin\\.org/forms/post$"}'
+        ],
+        [
             "XML(RSS)",
             '{"name":"XML(RSS) demo","request_args":{"method":"get","url":"https://importpython.com/blog/feed/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"text","chain_rules":[["xml","channel>item>title","$text"],["python","getitem","[0]"]],"child_rules":""},{"name":"url","chain_rules":[["xml","channel>item>link","$text"],["python","getitem","[0]"]],"child_rules":""}],"regex":"^https?://importpython.com/blog/feed/$"}'
         ],

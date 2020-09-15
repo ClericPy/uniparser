@@ -7,7 +7,7 @@ from base64 import (b16decode, b16encode, b32decode, b32encode, b64decode,
 from hashlib import md5 as _md5
 from itertools import chain
 from logging import getLogger
-from re import compile as re_compile
+from re import compile as re_compile, search
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
 from typing import Any, Callable, Dict, List, Union
@@ -252,18 +252,30 @@ class SelectolaxParser(BaseParser):
 
             ['<a class="url" href="/">title</a>', 'a.url', '@href']      => ['/']
             ['<a class="url" href="/">title</a>', 'a.url', '$text']      => ['title']
-            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => ['<a class="url" href="/">title</a>']
             ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => ['<a class="url" href="/">title</a>']
             ['<a class="url" href="/">title</a>', 'a.url', '$self']      => [<a class="url" href="/">title</a>]
-
+            ['<div>a <b>b</b> c</div>', 'div', '$html']                  => ['a <b>b</b> c']
+            ['<div>a <b>b</b> c</div>', 'div', '$innerHTML']             => ['a <b>b</b> c']
             WARNING: $self returns the original Node object
     """
     name = 'selectolax'
     doc_url = 'https://github.com/rushter/selectolax'
+
+    def get_inner_html(element):
+        result = []
+        element = element.child
+        while element:
+            result.append(element.html)
+            element = element.next
+        return ''.join(result)
+
     operations = {
         '@attr': lambda element: element.attributes.get(...),
         '$text': lambda element: element.text(),
-        '$html': lambda element: element.html,
+        '$html': get_inner_html,
+        '$innerHTML': get_inner_html,
+        '$string': lambda element: element.html,
         '$outerHTML': lambda element: element.html,
         '$self': return_self,
     }
@@ -314,7 +326,7 @@ class SelectolaxSingleParser(SelectolaxParser):
             input_object = lib.HTMLParser(input_object)
         item = input_object.css_first(param)
         if item is None:
-            return None
+            return ''
         if value.startswith('@'):
             return item.attributes.get(value[1:], None)
         operate = self.operations.get(value, return_self)
@@ -404,6 +416,8 @@ class RegexParser(BaseParser):
 
             -: return re.split(param, input_object)
 
+            #: return re.search(param, input_object).group(int(value[1:])), return '' if not matched.
+
         :return: list of str
         :rtype: List[Union[str]]
 
@@ -414,17 +428,24 @@ class RegexParser(BaseParser):
             ['a a b b c c', 'a (a b)', '$0'] => ['a a b']
             ['a a b b c c', 'a (a b)', '$1'] => ['a b']
             ['a a b b c c', 'b', '-']        => ['a a ', ' ', ' c c']
+            ['abcd', '(b.)d', '#0']          => 'bcd'
+            ['abcd', '(b.)', '#1']           => 'bc'
+            ['abcd', '(b.)', '#2']           => ''
+            ['abcd', '.(?:d)', '#0']         => 'cd'
+            ['abcd', '.(?:d)', '#1']         => ''
+            ['abcd', '.(?<=c).', '#0']       => 'cd'
+            ['abcd', '.(?<=c).', '#1']       => ''
     """
     name = 're'
     test_url = 'https://regex101.com/'
     doc_url = 'https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference'
-    VALID_VALUE_PATTERN = re_compile(r'^@|^\$\d+|^-$')
+    VALID_VALUE_PATTERN = re_compile(r'^@|^\$\d+|^-$|^#\d+')
 
     def _parse(self, input_object, param, value):
-        assert isinstance(input_object,
-                          str), ValueError(r'input_object type should be str')
+        msg = f'input_object type should be str, but given {repr(input_object)[:30]}'
+        assert isinstance(input_object, str), ValueError(msg)
         assert self.VALID_VALUE_PATTERN.match(value) or not value, ValueError(
-            r'args1 should match ^@|^\$\d+')
+            r'args1 should match ^@|^\$\d+|^-$|^#\d+')
         com = re_compile(param)
         if not value:
             return com.findall(input_object)
@@ -436,6 +457,18 @@ class RegexParser(BaseParser):
             return [match.group(int(arg)) for match in result]
         elif prefix == '-':
             return com.split(input_object)
+        elif prefix == '#':
+            matched = com.search(input_object)
+            if not matched:
+                return ''
+            try:
+                if arg.isdigit():
+                    index = int(arg)
+                else:
+                    index = 1
+                return matched.group(index)
+            except IndexError:
+                return ""
 
 
 class JSONPathParser(BaseParser):
@@ -911,6 +944,28 @@ class TimeParser(BaseParser):
             return input_object
 
 
+class ContextParser(BaseParser):
+    """Return a value from input_object with given key(param), input_object often be set with context dict.
+
+        :param input_object: will be ignore
+        :param param: the key in context
+        :type param: [str]
+        :param value: default value if context not contains the key(param)
+        :type value: [str]
+
+    """
+    name = 'context'
+
+    @property
+    def doc(self):
+        return f'{self.__class__.__doc__}'
+
+    def _parse(self, input_object, param, value):
+        if not input_object or param not in input_object:
+            return value
+        return input_object[param]
+
+
 class CompiledString(str):
     __slots__ = ('operator', 'code')
     __support__ = ('jmespath', 'jsonpath', 'udf')
@@ -1204,6 +1259,7 @@ class Uniparser(object):
         self.udf = UDFParser()
         self.loader = LoaderParser()
         self.time = TimeParser()
+        self.context = ContextParser()
 
     def _prepare_custom_parsers(self):
         # handle the other sublclasses
@@ -1239,12 +1295,14 @@ class Uniparser(object):
 
     def parse_chain(self, input_object, chain_rules: List, context=None):
         for parser_name, param, value in chain_rules:
-            parser = getattr(self, parser_name)
+            parser: BaseParser = getattr(self, parser_name)
             if parser is None:
                 msg = f'Unknown parser name: {parser_name}'
                 logger.error(msg)
                 raise UnknownParserNameError(msg)
-            if context and parser_name == 'udf' and not value:
+            if parser_name == 'context':
+                input_object = context
+            elif context and parser_name == 'udf' and not value:
                 value = context
             input_object = parser.parse(input_object, param, value)
         return input_object

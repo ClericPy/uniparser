@@ -139,6 +139,9 @@ var Main = {
                         "#request_status>label"
                     ).style.color = color
                     this.downloading = false
+                    if (r.body.msg) {
+                        this.openAlert(r.body.msg)
+                    }
                 },
                 (r) => {
                     this.status =

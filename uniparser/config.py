@@ -22,7 +22,7 @@ class GlobalConfig:
     demo_choices = [
         [
             'CSS',
-            r'{"name":"CSS demo","request_args":{"method":"get","url":"http://httpbin.org/forms/post","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"Tag attribute","chain_rules":[["css","form","@method"],["py","index","0"]],"child_rules":[]},{"name":"Tag text","chain_rules":[["css","legend","$text"]],"child_rules":[],"iter_parse_child":false},{"name":"Tag outerHTML","chain_rules":[["css","[name=\"custname\"]","$string"],["py","index","0"]],"child_rules":[],"iter_parse_child":false}],"regex":"^http://httpbin\\.org/forms/post$"}'
+            r'{"name":"CSS demo","request_args":{"method":"get","url":"http://httpbin.org/forms/post","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36"}},"parse_rules":[{"name":"Tag attribute","chain_rules":[["css","form","@method"],["py","index","0"]],"child_rules":[]},{"name":"Tag text","chain_rules":[["css","legend","$text"]],"child_rules":[],"iter_parse_child":false},{"name":"Tag outerHTML","chain_rules":[["css","[name=\"custname\"]","$string"],["py","index","0"]],"child_rules":[],"iter_parse_child":false},{"name":"context demo","chain_rules":[["context","resp",""],["udf","obj.url == context[\"resp\"].url",""]],"child_rules":[],"iter_parse_child":false}],"regex":"^http://httpbin\\.org/forms/post$"}'
         ],
         [
             'Selectolax',

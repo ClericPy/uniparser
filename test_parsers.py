@@ -381,7 +381,14 @@ def test_re_parser():
     result = uni.re.parse('a\t \nb  c', r'\s+', '-')
     # print(result)
     assert result == ['a', 'b', 'c']
-
+    # ======================
+    # test #
+    result = uni.re.parse('a\t \nb  c', r'(\s+)', '#1')
+    # print(result)
+    assert result == '\t \n'
+    result = uni.re.parse('a\t \nb  c', r'b(\s+)', '#0')
+    # print(result)
+    assert result == 'b  '
 
 def test_jsonpath_parser():
     uni = Uniparser()

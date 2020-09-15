@@ -7,7 +7,7 @@ from base64 import (b16decode, b16encode, b32decode, b32encode, b64decode,
 from hashlib import md5 as _md5
 from itertools import chain
 from logging import getLogger
-from re import compile as re_compile
+from re import compile as re_compile, search
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
 from typing import Any, Callable, Dict, List, Union
@@ -404,6 +404,8 @@ class RegexParser(BaseParser):
 
             -: return re.split(param, input_object)
 
+            #: return re.search(param, input_object).group(int(value[1:])), return '' if not matched.
+
         :return: list of str
         :rtype: List[Union[str]]
 
@@ -414,17 +416,24 @@ class RegexParser(BaseParser):
             ['a a b b c c', 'a (a b)', '$0'] => ['a a b']
             ['a a b b c c', 'a (a b)', '$1'] => ['a b']
             ['a a b b c c', 'b', '-']        => ['a a ', ' ', ' c c']
+            ['abcd', '(b.)d', '#0']          => 'bcd'
+            ['abcd', '(b.)', '#1']           => 'bc'
+            ['abcd', '(b.)', '#2']           => ''
+            ['abcd', '.(?:d)', '#0']         => 'cd'
+            ['abcd', '.(?:d)', '#1']         => ''
+            ['abcd', '.(?<=c).', '#0']       => 'cd'
+            ['abcd', '.(?<=c).', '#1']       => ''
     """
     name = 're'
     test_url = 'https://regex101.com/'
     doc_url = 'https://docs.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference'
-    VALID_VALUE_PATTERN = re_compile(r'^@|^\$\d+|^-$')
+    VALID_VALUE_PATTERN = re_compile(r'^@|^\$\d+|^-$|^#\d+')
 
     def _parse(self, input_object, param, value):
         assert isinstance(input_object,
                           str), ValueError(r'input_object type should be str')
         assert self.VALID_VALUE_PATTERN.match(value) or not value, ValueError(
-            r'args1 should match ^@|^\$\d+')
+            r'args1 should match ^@|^\$\d+|^-$|^#\d+')
         com = re_compile(param)
         if not value:
             return com.findall(input_object)
@@ -436,6 +445,18 @@ class RegexParser(BaseParser):
             return [match.group(int(arg)) for match in result]
         elif prefix == '-':
             return com.split(input_object)
+        elif prefix == '#':
+            matched = com.search(input_object)
+            if not matched:
+                return ''
+            try:
+                if arg.isdigit():
+                    index = int(arg)
+                else:
+                    index = 1
+                return matched.group(index)
+            except IndexError:
+                return ""
 
 
 class JSONPathParser(BaseParser):

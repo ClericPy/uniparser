@@ -71,18 +71,17 @@ def send_request():
     regex = rule['regex']
     url = rule['request_args']['url']
     if not regex or not rule.check_regex(url):
-        return {
-            'text': f'regex `{regex}` not match url: {url}',
-            'status': -1,
-            'ok': False
-        }
+        msg = f'regex `{regex}` not match url: {url}'
+    else:
+        msg = ''
     body, r = uni.download(rule)
     GLOBAL_RESP = r
     GLOBAL_REQ = rule['request_args']
     return {
         'text': body,
         'status': f'[{getattr(r, "status_code", 0)}]',
-        'ok': getattr(r, "status_code", 0) in range(200, 300)
+        'ok': getattr(r, "status_code", 0) in range(200, 300),
+        'msg': msg
     }
 
 

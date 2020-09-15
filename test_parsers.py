@@ -256,7 +256,7 @@ def test_selectolax_parser():
         '<a class="a" href="http://example.com/2" id="link2">a2</a>',
         '<a class="a" href="http://example.com/3" id="link3">a3</a>'
     ]
-    result = uni.se.parse(HTML, 'a', '$html')
+    result = uni.se.parse(HTML, 'a', '$string')
     # print(result)
     assert result == [
         '<a class="a" id="link1"><!--invisible comment--></a>',
@@ -292,7 +292,7 @@ def test_selectolax_parser():
                            '$text')
     assert result == 'title', result
     result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
-                           '$html')
+                           '$string')
     assert result == '<a class="url" href="/">title</a>', result
     result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
                            '$outerHTML')
@@ -303,6 +303,12 @@ def test_selectolax_parser():
     result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
                            '$self')
     assert isinstance(result, Node), result
+    result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
+                           '$html')
+    assert result == 'title', result
+    result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
+                           '$innerHTML')
+    assert result == 'title', result
 
 
 def test_xml_parser():

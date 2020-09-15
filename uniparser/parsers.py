@@ -252,18 +252,30 @@ class SelectolaxParser(BaseParser):
 
             ['<a class="url" href="/">title</a>', 'a.url', '@href']      => ['/']
             ['<a class="url" href="/">title</a>', 'a.url', '$text']      => ['title']
-            ['<a class="url" href="/">title</a>', 'a.url', '$html']      => ['<a class="url" href="/">title</a>']
+            ['<a class="url" href="/">title</a>', 'a.url', '$string']    => ['<a class="url" href="/">title</a>']
             ['<a class="url" href="/">title</a>', 'a.url', '$outerHTML'] => ['<a class="url" href="/">title</a>']
             ['<a class="url" href="/">title</a>', 'a.url', '$self']      => [<a class="url" href="/">title</a>]
-
+            ['<div>a <b>b</b> c</div>', 'div', '$html']                  => ['a <b>b</b> c']
+            ['<div>a <b>b</b> c</div>', 'div', '$innerHTML']             => ['a <b>b</b> c']
             WARNING: $self returns the original Node object
     """
     name = 'selectolax'
     doc_url = 'https://github.com/rushter/selectolax'
+
+    def get_inner_html(element):
+        result = []
+        element = element.child
+        while element:
+            result.append(element.html)
+            element = element.next
+        return ''.join(result)
+
     operations = {
         '@attr': lambda element: element.attributes.get(...),
         '$text': lambda element: element.text(),
-        '$html': lambda element: element.html,
+        '$html': get_inner_html,
+        '$innerHTML': get_inner_html,
+        '$string': lambda element: element.html,
         '$outerHTML': lambda element: element.html,
         '$self': return_self,
     }

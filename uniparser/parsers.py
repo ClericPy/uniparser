@@ -314,7 +314,7 @@ class SelectolaxSingleParser(SelectolaxParser):
             input_object = lib.HTMLParser(input_object)
         item = input_object.css_first(param)
         if item is None:
-            return None
+            return ''
         if value.startswith('@'):
             return item.attributes.get(value[1:], None)
         operate = self.operations.get(value, return_self)
@@ -430,8 +430,8 @@ class RegexParser(BaseParser):
     VALID_VALUE_PATTERN = re_compile(r'^@|^\$\d+|^-$|^#\d+')
 
     def _parse(self, input_object, param, value):
-        assert isinstance(input_object,
-                          str), ValueError(r'input_object type should be str')
+        msg = f'input_object type should be str, but given {repr(input_object)[:30]}'
+        assert isinstance(input_object, str), ValueError(msg)
         assert self.VALID_VALUE_PATTERN.match(value) or not value, ValueError(
             r'args1 should match ^@|^\$\d+|^-$|^#\d+')
         com = re_compile(param)
@@ -932,6 +932,28 @@ class TimeParser(BaseParser):
             return input_object
 
 
+class ContextParser(BaseParser):
+    """Return a value from input_object with given key(param), input_object often be set with context dict.
+
+        :param input_object: will be ignore
+        :param param: the key in context
+        :type param: [str]
+        :param value: default value if context not contains the key(param)
+        :type value: [str]
+
+    """
+    name = 'context'
+
+    @property
+    def doc(self):
+        return f'{self.__class__.__doc__}'
+
+    def _parse(self, input_object, param, value):
+        if not input_object or param not in input_object:
+            return value
+        return input_object[param]
+
+
 class CompiledString(str):
     __slots__ = ('operator', 'code')
     __support__ = ('jmespath', 'jsonpath', 'udf')
@@ -1225,6 +1247,7 @@ class Uniparser(object):
         self.udf = UDFParser()
         self.loader = LoaderParser()
         self.time = TimeParser()
+        self.context = ContextParser()
 
     def _prepare_custom_parsers(self):
         # handle the other sublclasses
@@ -1260,12 +1283,14 @@ class Uniparser(object):
 
     def parse_chain(self, input_object, chain_rules: List, context=None):
         for parser_name, param, value in chain_rules:
-            parser = getattr(self, parser_name)
+            parser: BaseParser = getattr(self, parser_name)
             if parser is None:
                 msg = f'Unknown parser name: {parser_name}'
                 logger.error(msg)
                 raise UnknownParserNameError(msg)
-            if context and parser_name == 'udf' and not value:
+            if parser_name == 'context':
+                input_object = context
+            elif context and parser_name == 'udf' and not value:
                 value = context
             input_object = parser.parse(input_object, param, value)
         return input_object

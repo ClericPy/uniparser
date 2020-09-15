@@ -10,6 +10,7 @@ from selectolax.parser import Node
 
 from uniparser import (Crawler, CrawlerRule, HostRule, JSONRuleStorage,
                        ParseRule, Uniparser)
+import uniparser
 from uniparser.crawler import RuleNotFoundError
 from uniparser.exceptions import InvalidSchemaError
 from uniparser.utils import (AiohttpAsyncAdapter, HTTPXAsyncAdapter,
@@ -144,6 +145,17 @@ enabled = true
 """
 
 
+def test_context_parser():
+    uni = Uniparser()
+    # test get attribute
+    result = uni.context.parse({'a': 1}, 'a', 2)
+    # print(result)
+    assert result == 1
+    result = uni.context.parse({'a': 1}, 'b', 2)
+    # print(result)
+    assert result == 2
+
+
 def test_css_parser():
     uni = Uniparser()
     # test get attribute
@@ -272,7 +284,7 @@ def test_selectolax_parser():
     # =================== test se1 ===================
     result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url1',
                            '@href')
-    assert result is None, result
+    assert result == '', result
     result = uni.se1.parse('<a class="url" href="/">title</a>', 'a.url',
                            '@href')
     assert result == '/', result
@@ -389,6 +401,7 @@ def test_re_parser():
     result = uni.re.parse('a\t \nb  c', r'b(\s+)', '#0')
     # print(result)
     assert result == 'b  '
+
 
 def test_jsonpath_parser():
     uni = Uniparser()
@@ -1092,6 +1105,17 @@ def test_uni_parser():
         assert result is False
     except InvalidSchemaError:
         pass
+    # 8. test context parser
+    uni = Uniparser()
+    parse_rule = ParseRule('parse_rule', [['context', 'key', 'not found']])
+    result = uni.parse(HTML, parse_rule, {'key': 'hello world'})
+    # print(result)
+    assert result == {'parse_rule': 'hello world'}
+    parse_rule = ParseRule('parse_rule',
+                           [['context', 'key_not_exist', 'not found']])
+    result = uni.parse(HTML, parse_rule, {'key': 'hello world'})
+    # print(result)
+    assert result == {'parse_rule': 'not found'}
 
 
 def test_sync_adapters():
@@ -1284,6 +1308,7 @@ if __name__ == "__main__":
     from uniparser.config import GlobalConfig
     GlobalConfig.GLOBAL_TIMEOUT = 5
     for case in (
+            test_context_parser,
             test_css_parser,
             test_selectolax_parser,
             test_xml_parser,

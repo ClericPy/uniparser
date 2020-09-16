@@ -1282,6 +1282,11 @@ class Uniparser(object):
     def se1(self):
         return self.selectolax1
 
+    # for alias
+    @property
+    def json(self):
+        return self.jmespath
+
     @property
     def parsers(self):
         return [

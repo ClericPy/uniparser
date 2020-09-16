@@ -477,6 +477,10 @@ def test_objectpath_parser():
 
 def test_jmespath_parser():
     uni = Uniparser()
+    # test alias
+    result = uni.json.parse(JSON, 'firstName', '')
+    # print(result)
+    assert result == 'John'
     # test default value ''
     result = uni.jmespath.parse(JSON, 'firstName', '')
     # print(result)

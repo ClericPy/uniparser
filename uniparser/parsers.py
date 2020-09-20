@@ -7,7 +7,7 @@ from base64 import (b16decode, b16encode, b32decode, b32encode, b64decode,
 from hashlib import md5 as _md5
 from itertools import chain
 from logging import getLogger
-from re import compile as re_compile, search
+from re import compile as re_compile
 from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
 from typing import Any, Callable, Dict, List, Union
@@ -1128,6 +1128,7 @@ class CrawlerRule(JsonSerializable):
     def __init__(self,
                  name: str,
                  request_args: Union[dict, str],
+                 description: str = "",
                  parse_rules: List[ParseRule] = None,
                  regex: str = None,
                  context: dict = None,
@@ -1139,6 +1140,7 @@ class CrawlerRule(JsonSerializable):
             for parse_rule in parse_rules or []
         ]
         super().__init__(name=name,
+                         description=description,
                          parse_rules=parse_rules,
                          request_args=_request_args,
                          regex=regex or '',
@@ -1370,14 +1372,16 @@ class Uniparser(object):
               rule_object: Union[CrawlerRule, ParseRule],
               context=None):
         if isinstance(rule_object, CrawlerRule):
-            result = self.parse_crawler_rule(input_object=input_object,
-                                             rule=rule_object,
-                                             context=context)
-        elif isinstance(rule_object, ParseRule):
-            result = self.parse_parse_rule(input_object=input_object,
+            return self.parse_crawler_rule(input_object=input_object,
                                            rule=rule_object,
                                            context=context)
-        return result
+        elif isinstance(rule_object, ParseRule):
+            return self.parse_parse_rule(input_object=input_object,
+                                         rule=rule_object,
+                                         context=context)
+        else:
+            raise TypeError(
+                'rule_object type should be CrawlerRule or ParseRule.')
 
     def ensure_adapter(self, sync=True):
         if self.request_adapter:

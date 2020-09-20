@@ -87,8 +87,12 @@
             <el-main>
                 <el-form :model="crawler_rule">
                     <el-input clearable v-model="crawler_rule.name" style="width: 100%;"
-                        placeholder="Rule name of CrawlerRule, auto set after downloading">
+                        placeholder="Rule name of CrawlerRule, auto set after downloading. Often be set as Rule ID.">
                         <span slot="prepend">Rule Name</span>
+                    </el-input>
+                    <el-input clearable v-model="crawler_rule.description" style="width: 100%;"
+                        placeholder="Description(or alias) of the rule.">
+                        <span slot="prepend">Description</span>
                     </el-input>
                     <el-input v-model="crawler_rule.regex" style="width: 100%;" placeholder="Regex to match the url"
                         title="Regex to match the url">
@@ -155,7 +159,7 @@
                         <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
                             <div class="rule">
                                 <el-input type="text" style="width: 50%;" autosize
-                                    placeholder="Rule name for saving parse result" v-model="rule.name">
+                                    placeholder="Rule name for saving parse result" @keyup.ctrl.13.native="parse" v-model="rule.name">
                                     <template slot="prepend" class="sub-title">ParseRule Name</template>
                                 </el-input>
                                 <el-button size="small" circle icon="el-icon-d-caret"

@@ -35,6 +35,7 @@ var Main = {
             current_template: "",
             crawler_rule: {
                 name: "",
+                description: "",
                 regex: "^https://httpbin.org/html$",
                 parse_rules: [
                     {
@@ -161,8 +162,9 @@ var Main = {
                 input_object: this.input_object,
             }
             if (!this.crawler_rule.parse_rules || !this.input_object) {
+                this.download()
                 this.openAlert(
-                    "Send request and fill the parse_rules before parsing"
+                    "Can not parse it before downloading, now wait for downloading finished."
                 )
                 return
             }
@@ -480,6 +482,7 @@ var Main = {
                 })
                 var data = {
                     name: this.crawler_rule.name,
+                    description: this.crawler_rule.description,
                     request_args: JSON.parse(this.crawler_rule.request_args),
                     parse_rules: rules,
                     regex: this.crawler_rule.regex,

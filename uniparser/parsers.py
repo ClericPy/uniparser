@@ -1128,7 +1128,6 @@ class CrawlerRule(JsonSerializable):
     def __init__(self,
                  name: str,
                  request_args: Union[dict, str],
-                 description: str = "",
                  parse_rules: List[ParseRule] = None,
                  regex: str = None,
                  context: dict = None,
@@ -1140,7 +1139,6 @@ class CrawlerRule(JsonSerializable):
             for parse_rule in parse_rules or []
         ]
         super().__init__(name=name,
-                         description=description,
                          parse_rules=parse_rules,
                          request_args=_request_args,
                          regex=regex or '',

@@ -676,7 +676,7 @@ class PythonParser(BaseParser):
             4.  param: chain
                 value: nonsense `value` variable. return list(itertools.chain(*input_object))
             5.  param: const
-                value: return value if value else input_object
+                value: return value if value else input_object.
             6.  param: template
                 value: Template.safe_substitute(input_object=input_object, **input_object if isinstance(input_object, dict))
             7.  param: index
@@ -690,6 +690,8 @@ class PythonParser(BaseParser):
             11. param: a number for index, will try to get input_object.__getitem__(int(param))
                 value: default string
                 similar to `param=default` if param is 0
+
+        If not param, return value. (like `const`)
         examples:
 
             [[1, 2, 3], 'getitem', '[-1]']              => 3
@@ -718,6 +720,7 @@ class PythonParser(BaseParser):
             ['', '0', 'b']                              => 'b'
             [None, '0', 'b']                            => 'b'
             [{0: 'a'}, '0', 'a']                        => 'a'
+            [{0: 'a'}, '', 'abc']                        => 'abc'
 """
     name = 'python'
     doc_url = 'https://docs.python.org/3/'
@@ -764,6 +767,8 @@ class PythonParser(BaseParser):
             return return_self(input_object)
 
     def _parse(self, input_object, param, value):
+        if not param:
+            return value
         function = self.param_functions.get(param, self._handle_others)
         return function(input_object, param, value)
 

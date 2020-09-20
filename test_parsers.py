@@ -640,6 +640,9 @@ def test_python_parser():
     assert uni.python(*[{0: 'a'}, '0', 'a']) == 'a'
     assert uni.python(*[['a'], '0', 'b']) == 'a'
 
+    # test null param
+    assert uni.python(*['a', '', 'abc']) == 'abc'
+
 
 def test_udf_parser():
     uni = Uniparser()

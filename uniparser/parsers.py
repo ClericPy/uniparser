@@ -16,7 +16,7 @@ from frequency_controller import AsyncFrequency, Frequency
 
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError, UnknownParserNameError
-from .utils import (AsyncRequestAdapter, LazyImporter, SyncRequestAdapter,
+from .utils import (AsyncRequestAdapter, _lib, SyncRequestAdapter,
                     decode_as_base64, encode_as_base64, ensure_request,
                     get_available_async_request, get_available_sync_request,
                     get_host)
@@ -29,18 +29,6 @@ __all__ = [
 ]
 
 logger = getLogger('uniparser')
-lib = LazyImporter()
-lib.register('from jmespath import compile as jmespath_compile',
-             'jmespath_compile')
-lib.register('from jsonpath_rw_ext import parse as jp_parse', 'jp_parse')
-lib.register('from toml import loads as toml_loads', 'toml_loads')
-lib.register('from bs4 import BeautifulSoup, Tag', ('BeautifulSoup', 'Tag'))
-lib.register('from objectpath import Tree as OP_Tree', 'OP_Tree')
-lib.register('from objectpath.core import ITER_TYPES', 'ITER_TYPES')
-lib.register('from yaml import full_load as yaml_full_load', 'yaml_full_load')
-lib.register('from yaml import safe_load as yaml_safe_load', 'yaml_safe_load')
-lib.register('from selectolax.parser import HTMLParser', 'HTMLParser')
-lib.register('from selectolax.parser import Node', 'Node')
 
 
 def return_self(self, *args, **kwargs):
@@ -181,8 +169,8 @@ class CSSParser(BaseParser):
         if not input_object:
             return result
         # ensure input_object is instance of BeautifulSoup
-        if not isinstance(input_object, lib.Tag):
-            input_object = lib.BeautifulSoup(input_object, 'lxml')
+        if not isinstance(input_object, _lib.Tag):
+            input_object = _lib.BeautifulSoup(input_object, 'lxml')
         if value.startswith('@'):
             result = [
                 item.get(value[1:], None) for item in input_object.select(param)
@@ -213,8 +201,8 @@ class CSSSingleParser(CSSParser):
         if not input_object:
             return result
         # ensure input_object is instance of BeautifulSoup
-        if not isinstance(input_object, lib.Tag):
-            input_object = lib.BeautifulSoup(input_object, 'lxml')
+        if not isinstance(input_object, _lib.Tag):
+            input_object = _lib.BeautifulSoup(input_object, 'lxml')
         item = input_object.select_one(param)
         if item is None:
             return None
@@ -289,8 +277,8 @@ class SelectolaxParser(BaseParser):
         if not input_object:
             return result
         # ensure input_object is instance of Node
-        if not isinstance(input_object, lib.Node):
-            input_object = lib.HTMLParser(input_object)
+        if not isinstance(input_object, _lib.Node):
+            input_object = _lib.HTMLParser(input_object)
         if value.startswith('@'):
             result = [
                 item.attributes.get(value[1:], None)
@@ -322,8 +310,8 @@ class SelectolaxSingleParser(SelectolaxParser):
         if not input_object:
             return result
         # ensure input_object is instance of Node
-        if not isinstance(input_object, lib.Node):
-            input_object = lib.HTMLParser(input_object)
+        if not isinstance(input_object, _lib.Node):
+            input_object = _lib.HTMLParser(input_object)
         item = input_object.css_first(param)
         if item is None:
             return ''
@@ -383,8 +371,8 @@ class XMLParser(BaseParser):
         if not input_object:
             return result
         # ensure input_object is instance of BeautifulSoup
-        if not isinstance(input_object, lib.Tag):
-            input_object = lib.BeautifulSoup(input_object, 'lxml-xml')
+        if not isinstance(input_object, _lib.Tag):
+            input_object = _lib.BeautifulSoup(input_object, 'lxml-xml')
         if value.startswith('@'):
             result = [
                 item.get(value[1:], None) for item in input_object.select(param)
@@ -472,7 +460,7 @@ class RegexParser(BaseParser):
 
 
 class JSONPathParser(BaseParser):
-    """JSONPath parser, requires `jsonpath-rw-ext` lib.
+    """JSONPath parser, requires `jsonpath-rw-ext` library.
     Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
@@ -501,7 +489,7 @@ class JSONPathParser(BaseParser):
         if param.startswith('JSON.'):
             param = '$%s' % param[4:]
         # try get the compiled jsonpath
-        jsonpath_expr = getattr(param, 'code', lib.jp_parse(param))
+        jsonpath_expr = getattr(param, 'code', _lib.jp_parse(param))
         result = [
             getattr(match, attr_name, match.value)
             for match in jsonpath_expr.find(input_object)
@@ -510,7 +498,7 @@ class JSONPathParser(BaseParser):
 
 
 class ObjectPathParser(BaseParser):
-    """ObjectPath parser, requires `objectpath` lib.
+    """ObjectPath parser, requires `objectpath` library.
     Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
@@ -528,14 +516,14 @@ class ObjectPathParser(BaseParser):
     doc_url = 'http://github.com/adriank/ObjectPath'
     test_url = 'http://objectpath.org/'
     _RECURSION_LIST = False
-    ITER_TYPES_TUPLE = tuple(lib.ITER_TYPES)
+    ITER_TYPES_TUPLE = tuple(_lib.ITER_TYPES)
 
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
             input_object = GlobalConfig.json_loads(input_object)
         if param.startswith('JSON.'):
             param = '$%s' % param[4:]
-        tree = lib.OP_Tree(input_object)
+        tree = _lib.OP_Tree(input_object)
         result = tree.execute(param)
         # from objectpath.core import ITER_TYPES
         if isinstance(result, self.ITER_TYPES_TUPLE):
@@ -544,7 +532,7 @@ class ObjectPathParser(BaseParser):
 
 
 class JMESPathParser(BaseParser):
-    """JMESPath parser, requires `jmespath` lib.
+    """JMESPath parser, requires `jmespath` library.
     Since json input object may be dict / list, _RECURSION_LIST will be False.
 
         :param input_object: input object, could be str, list, dict.
@@ -566,7 +554,7 @@ class JMESPathParser(BaseParser):
     def _parse(self, input_object, param, value=''):
         if isinstance(input_object, str):
             input_object = GlobalConfig.json_loads(input_object)
-        code = getattr(param, 'code', lib.jmespath_compile(param))
+        code = getattr(param, 'code', _lib.jmespath_compile(param))
         return code.search(input_object)
 
 
@@ -850,10 +838,10 @@ class LoaderParser(BaseParser):
     def __init__(self):
         self.loaders = {
             'json': GlobalConfig.json_loads,
-            'toml': lib.toml_loads,
-            'yaml': lib.yaml_full_load,
-            'yaml_safe_load': lib.yaml_safe_load,
-            'yaml_full_load': lib.yaml_full_load,
+            'toml': _lib.toml_loads,
+            'yaml': _lib.yaml_full_load,
+            'yaml_safe_load': _lib.yaml_safe_load,
+            'yaml_full_load': _lib.yaml_full_load,
             'b16decode': lambda input_object: b16decode(
                 input_object.encode(GlobalConfig.__encoding__)).decode(
                     GlobalConfig.__encoding__),
@@ -987,9 +975,9 @@ class CompiledString(str):
         if mode == 'jmespath':
             if string.startswith('JSON.'):
                 string = string[5:]
-            obj.code = lib.jmespath_compile(string)
+            obj.code = _lib.jmespath_compile(string)
         elif mode == 'jsonpath':
-            obj.code = lib.jp_parse(string)
+            obj.code = _lib.jp_parse(string)
         elif mode == 'udf':
             obj.operator = UDFParser.get_code_mode(string)
             # for higher performance, pre-compile the code

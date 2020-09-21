@@ -86,27 +86,40 @@
             </el-header>
             <el-main>
                 <el-form :model="crawler_rule">
-                    <el-input clearable v-model="crawler_rule.name" style="width: 100%;"
-                        placeholder="Rule name of CrawlerRule, auto set after downloading. Often be set as Rule ID.">
-                        <span slot="prepend">Rule Name</span>
-                    </el-input>
-                    <el-input clearable v-model="crawler_rule.description" style="width: 100%;"
-                        placeholder="Description(or alias) of the rule.">
-                        <span slot="prepend">Description</span>
-                    </el-input>
-                    <el-input v-model="crawler_rule.regex" style="width: 100%;" placeholder="Regex to match the url"
-                        title="Regex to match the url">
-                        <span slot="prepend">Regex Pattern</span>
-                    </el-input>
-                    <el-input v-model="encoding" style="width: 100%;"
-                        placeholder="Encoding of request_args, defaults to None"
-                        title="Encoding of request_args, defaults to None">
-                        <span slot="prepend">Encoding</span>
-                    </el-input>
-                    <el-input style="width: 100%;zoom: 100%;" placeholder="Custom Args for CrawlerRule, JSON required"
-                        title="Custom Args for CrawlerRule, JSON required" v-model="custom_args">
-                        <span slot="prepend">Custom Args</span>
-                    </el-input>
+                    <div class="form-head">
+                        <el-row>
+                            <el-col :span="24">
+                                <el-input clearable v-model="crawler_rule.name"
+                                    placeholder="Rule name of CrawlerRule, auto set after downloading, often be set as the rule ID.">
+                                    <span slot="prepend">Rule Name</span>
+                                </el-input>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col :span="24">
+                                <el-input clearable v-model="crawler_rule.description"
+                                    placeholder="Description (or alias) of the rule.">
+                                    <span slot="prepend">Description</span>
+                                </el-input>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col :span="24">
+                                <el-input v-model="crawler_rule.regex" placeholder="Regex to match the url"
+                                    title="Regex to match the url">
+                                    <span slot="prepend">Regex Pattern</span>
+                                </el-input>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col :span="24">
+                                <el-input placeholder="Custom Args of the CrawlerRule, JSON required"
+                                    title="Custom Args of the CrawlerRule, JSON required" v-model="custom_args">
+                                    <span slot="prepend">Custom Args</span>
+                                </el-input>
+                            </el-col>
+                        </el-row>
+                    </div>
                     <hr>
                     <el-form-item label="Request Args">
                         <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_curl">
@@ -115,6 +128,12 @@
                             @click="show_request_template"
                             v-if="crawler_rule.request_template || crawler_rule.request_args"
                             :type="crawler_rule.request_template?'success':'plain'"><b>Template</b></el-button>
+                        <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_encoding">
+                            <b>Encoding</b>
+                        </el-button>
+                        <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_resp_callback">
+                            <b>Callback</b>
+                        </el-button>
                         <el-link style="margin-left: 1em;" target="_blank" title="Current URL"
                             :href="current_request_url" type="primary">
                             ${current_request_url}
@@ -159,7 +178,8 @@
                         <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
                             <div class="rule">
                                 <el-input type="text" style="width: 50%;" autosize
-                                    placeholder="Rule name for saving parse result" @keyup.ctrl.13.native="parse" v-model="rule.name">
+                                    placeholder="Rule name for saving parse result" @keyup.ctrl.13.native="parse"
+                                    v-model="rule.name">
                                     <template slot="prepend" class="sub-title">ParseRule Name</template>
                                 </el-input>
                                 <el-button size="small" circle icon="el-icon-d-caret"

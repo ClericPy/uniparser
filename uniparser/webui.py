@@ -12,7 +12,8 @@ from traceback import format_exc
 from bottle import BaseRequest, Bottle, request, static_file, template
 
 from . import CrawlerRule, Uniparser, __version__
-from .utils import GlobalConfig, ensure_request, get_available_sync_request
+from .utils import (GlobalConfig, ResponseCallbacks, ensure_request,
+                    get_available_sync_request)
 
 logger = getLogger('uniparser')
 # 10MB
@@ -55,6 +56,7 @@ def index():
         'options': parser_name_choices,
         'docs': parser_name_docs,
         'demo_choices': GlobalConfig.demo_choices,
+        'cb_names': ' / '.join(map(str, ResponseCallbacks._CALLBACKS.keys()))
     }
     init_vars_b64 = b64encode(
         GlobalConfig.json_dumps(init_vars).encode('u8')).decode('u8')
@@ -71,7 +73,7 @@ def send_request():
     regex = rule['regex']
     url = rule['request_args']['url']
     if not regex or not rule.check_regex(url):
-        msg = f'regex `{regex}` not match url: {url}'
+        msg = f'Download completed, but the regex `{regex}` does not match the given url: {url}'
     else:
         msg = ''
     body, r = uni.download(rule)

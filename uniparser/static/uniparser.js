@@ -30,7 +30,6 @@ var Main = {
             pretty_json: false,
             drawer: false,
             options: "",
-            encoding: "",
             docs: "",
             current_template: "",
             crawler_rule: {
@@ -362,6 +361,42 @@ var Main = {
             this.request_status = ""
             this.load_rule()
         },
+        input_encoding() {
+            this.$prompt("Input the encoding of response", "", {
+                confirmButtonText: "OK",
+                cancelButtonText: "Cancel",
+            })
+                .then(({ value }) => {
+                    let args = JSON.parse(this.crawler_rule.request_args)
+                    args.encoding = value
+                    this.crawler_rule.request_args = JSON.stringify(
+                        args,
+                        null,
+                        2
+                    )
+                })
+                .catch(() => {})
+        },
+        input_resp_callback() {
+            this.$prompt(
+                "Input one of the callback name of response: " + this.cb_names,
+                "",
+                {
+                    confirmButtonText: "OK",
+                    cancelButtonText: "Cancel",
+                }
+            )
+                .then(({ value }) => {
+                    let args = JSON.parse(this.crawler_rule.request_args)
+                    args.resp_callback = value
+                    this.crawler_rule.request_args = JSON.stringify(
+                        args,
+                        null,
+                        2
+                    )
+                })
+                .catch(() => {})
+        },
         input_curl() {
             this.$prompt("Input cURL string (or URL)", "", {
                 confirmButtonText: "OK",
@@ -439,13 +474,7 @@ var Main = {
             }
         },
     },
-    watch: {
-        encoding() {
-            let args = JSON.parse(this.crawler_rule.request_args)
-            args.encoding = this.encoding
-            this.crawler_rule.request_args = JSON.stringify(args, null, 2)
-        },
-    },
+    watch: {},
     computed: {
         current_request_url: function () {
             try {

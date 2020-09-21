@@ -49,6 +49,7 @@ setup(
         'aiohttp': ['aiohttp'],
         'torequests': ['torequests>=4.9.9'],
         'all': ['torequests>=4.9.9', 'httpx', 'requests', 'aiohttp'],
+        'web': ['fastapi', 'jinja2', 'uvicorn', 'uvloop', 'aiofiles']
     },
     classifiers=[
         "License :: OSI Approved :: MIT License",

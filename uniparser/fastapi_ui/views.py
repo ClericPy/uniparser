@@ -14,7 +14,8 @@ from starlette.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 
 from .. import CrawlerRule, Uniparser, __version__
-from ..utils import GlobalConfig, ensure_request, get_available_async_request
+from ..utils import (GlobalConfig, ResponseCallbacks, ensure_request,
+                     get_available_async_request)
 
 app = FastAPI(title="Uniparser", version=__version__)
 logger = getLogger('uniparser')
@@ -60,6 +61,7 @@ def index(request: Request):
         'options': parser_name_choices,
         'docs': parser_name_docs,
         'demo_choices': GlobalConfig.demo_choices,
+        'cb_names': ' / '.join(map(str, ResponseCallbacks._CALLBACKS.keys()))
     }
     init_vars_b64 = b64encode(
         GlobalConfig.json_dumps(init_vars).encode('u8')).decode('u8')
@@ -78,7 +80,7 @@ async def send_request(request_args: dict):
     regex = rule['regex']
     url = rule['request_args']['url']
     if not regex or not rule.check_regex(url):
-        msg = f'regex `{regex}` not match url: {url}'
+        msg = f'Download completed, but the regex `{regex}` does not match the given url: {url}'
     else:
         msg = ''
     body, r = await uni.adownload(rule)

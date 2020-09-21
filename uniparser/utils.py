@@ -221,7 +221,8 @@ class SyncRequestAdapter(ABC):
                 text = str(e)
                 resp = e
                 continue
-        return text, resp
+        return ResponseCallbacks.callback(
+            text, request_args.get('resp_callback')), resp
 
     @abstractmethod
     def __enter__(self):
@@ -290,7 +291,8 @@ class AsyncRequestAdapter(ABC):
                 text = str(e)
                 resp = e
                 continue
-        return text, resp
+        return ResponseCallbacks.callback(
+            text, request_args.get('resp_callback')), resp
 
 
 class RequestsAdapter(SyncRequestAdapter):
@@ -409,7 +411,8 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
                 text = str(e)
                 resp = e
                 continue
-        return text, resp
+        return ResponseCallbacks.callback(
+            text, request_args.get('resp_callback')), resp
 
 
 class TorequestsAsyncAdapter(AsyncRequestAdapter):
@@ -448,7 +451,8 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
                 text = str(e)
                 resp = e
                 continue
-        return text, resp
+        return ResponseCallbacks.callback(
+            text, request_args.get('resp_callback')), resp
 
 
 class TorequestsAiohttpAsyncAdapter(AsyncRequestAdapter):
@@ -489,7 +493,8 @@ class TorequestsAiohttpAsyncAdapter(AsyncRequestAdapter):
                 text = str(e)
                 resp = e
                 continue
-        return text, resp
+        return ResponseCallbacks.callback(
+            text, request_args.get('resp_callback')), resp
 
 
 def no_adapter():
@@ -699,3 +704,37 @@ def fix_relative_path(base_url: str,
         return str(dom)
     else:
         return dom.select_one('body').decode_contents()
+
+
+_lib = LazyImporter()
+_lib.register('from jmespath import compile as jmespath_compile',
+              'jmespath_compile')
+_lib.register('from jsonpath_rw_ext import parse as jp_parse', 'jp_parse')
+_lib.register('from toml import loads as toml_loads', 'toml_loads')
+_lib.register('from bs4 import BeautifulSoup, Tag', ('BeautifulSoup', 'Tag'))
+_lib.register('from objectpath import Tree as OP_Tree', 'OP_Tree')
+_lib.register('from objectpath.core import ITER_TYPES', 'ITER_TYPES')
+_lib.register('from yaml import full_load as yaml_full_load', 'yaml_full_load')
+_lib.register('from yaml import safe_load as yaml_safe_load', 'yaml_safe_load')
+_lib.register('from selectolax.parser import HTMLParser', 'HTMLParser')
+_lib.register('from selectolax.parser import Node', 'Node')
+
+
+class ResponseCallbacks(object):
+    _CALLBACKS = {
+        'json': lambda input_object: GlobalConfig.json_loads(input_object),
+        'se': lambda input_object: _lib.HTMLParser(input_object),
+        'selectolax': lambda input_object: _lib.HTMLParser(input_object),
+        'css': lambda input_object: _lib.BeautifulSoup(input_object, 'lxml'),
+        'html': lambda input_object: _lib.BeautifulSoup(input_object, 'lxml'),
+        'xml': lambda input_object: _lib.BeautifulSoup(input_object, 'lxml-xml')
+    }
+
+    @classmethod
+    def callback(cls, input_object, callback_name=None):
+        return cls._CALLBACKS.get(callback_name,
+                                  cls.default_callback)(input_object)
+
+    @staticmethod
+    def default_callback(input_object):
+        return input_object

@@ -277,7 +277,7 @@ class SelectolaxParser(BaseParser):
         if not input_object:
             return result
         # ensure input_object is instance of Node
-        if not isinstance(input_object, _lib.Node):
+        if not isinstance(input_object, (_lib.Node, _lib.HTMLParser)):
             input_object = _lib.HTMLParser(input_object)
         if value.startswith('@'):
             result = [
@@ -310,7 +310,7 @@ class SelectolaxSingleParser(SelectolaxParser):
         if not input_object:
             return result
         # ensure input_object is instance of Node
-        if not isinstance(input_object, _lib.Node):
+        if not isinstance(input_object, (_lib.Node, _lib.HTMLParser)):
             input_object = _lib.HTMLParser(input_object)
         item = input_object.css_first(param)
         if item is None:

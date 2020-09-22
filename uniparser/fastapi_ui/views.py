@@ -25,8 +25,11 @@ if not adapter:
         "one of these libs should be installed: ('requests', 'httpx', 'torequests')"
     )
 uni = Uniparser(adapter())
-GLOBAL_REQ = None
-GLOBAL_RESP = None
+GLOBAL_ARGS = {
+    'GLOBAL_REQ': None,
+    'GLOBAL_RESP': None,
+    'INPUT_OBJECT': None,
+}
 templates_directory = str(
     (Path(__file__).parent.parent / 'templates').absolute())
 templates = Jinja2Templates(directory=templates_directory)
@@ -75,7 +78,6 @@ def index(request: Request):
 
 @app.post("/request")
 async def send_request(request_args: dict):
-    global GLOBAL_RESP, GLOBAL_REQ
     rule = CrawlerRule(**request_args)
     regex = rule['regex']
     url = rule['request_args']['url']
@@ -83,12 +85,13 @@ async def send_request(request_args: dict):
         msg = f'Download completed, but the regex `{regex}` does not match the given url: {url}'
     else:
         msg = ''
-    body, r = await uni.adownload(rule)
-    GLOBAL_RESP = r
-    GLOBAL_REQ = rule['request_args']
+    input_object, r = await uni.adownload(rule)
+    GLOBAL_ARGS['GLOBAL_RESP'] = r
+    GLOBAL_ARGS['GLOBAL_REQ'] = rule['request_args']
+    GLOBAL_ARGS['INPUT_OBJECT'] = input_object
     return {
-        'text': body,
-        'status': f'[{getattr(r, "status_code", 0)}]',
+        'text': str(input_object),
+        'status': f'[{getattr(r, "status_code", 0)}] - ({type(input_object)!r})',
         'ok': getattr(r, "status_code", 0) in range(200, 300),
         'msg': msg
     }
@@ -105,17 +108,18 @@ async def curl_parse(request: Request):
 
 @app.post("/parse")
 def parse_rule(kwargs: dict):
-    input_object = kwargs['input_object']
-    if not input_object:
-        return 'Null input_object?'
+    if isinstance(GLOBAL_ARGS['INPUT_OBJECT'], str):
+        input_object = kwargs['input_object']
+    else:
+        input_object = GLOBAL_ARGS['INPUT_OBJECT']
     rule_json = kwargs['rule']
     json_result = ""
     try:
         rule = CrawlerRule.loads(rule_json)
         # print(rule)
         result = uni.parse(input_object, rule, {
-            'resp': GLOBAL_RESP,
-            'request_args': GLOBAL_REQ
+            'resp': GLOBAL_ARGS['GLOBAL_RESP'],
+            'request_args': GLOBAL_ARGS['GLOBAL_REQ']
         })
         try:
             json_result = GlobalConfig.json_dumps(result, default=repr)

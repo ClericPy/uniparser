@@ -378,14 +378,10 @@ var Main = {
                 .catch(() => {})
         },
         input_resp_callback() {
-            this.$prompt(
-                "Input one of the callback name of response: " + this.cb_names,
-                "",
-                {
-                    confirmButtonText: "OK",
-                    cancelButtonText: "Cancel",
-                }
-            )
+            this.$prompt(this.cb_names, "Callback name for response:", {
+                confirmButtonText: "OK",
+                cancelButtonText: "Cancel",
+            })
                 .then(({ value }) => {
                     let args = JSON.parse(this.crawler_rule.request_args)
                     args.resp_callback = value

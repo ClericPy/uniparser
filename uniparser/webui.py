@@ -59,7 +59,7 @@ def index():
         'options': parser_name_choices,
         'docs': parser_name_docs,
         'demo_choices': GlobalConfig.demo_choices,
-        'cb_names': ' / '.join(map(str, ResponseCallbacks._CALLBACKS.keys()))
+        'cb_names': ' | '.join(map(str, ResponseCallbacks._CALLBACKS.keys()))
     }
     init_vars_b64 = b64encode(
         GlobalConfig.json_dumps(init_vars).encode('u8')).decode('u8')

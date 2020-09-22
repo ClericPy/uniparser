@@ -25,8 +25,11 @@ if not adapter:
         "one of these libs should be installed: ('requests', 'httpx', 'torequests')"
     )
 uni = Uniparser(adapter())
-GLOBAL_REQ = None
-GLOBAL_RESP = None
+GLOBAL_ARGS = {
+    'GLOBAL_REQ': None,
+    'GLOBAL_RESP': None,
+    'INPUT_OBJECT': None,
+}
 cdn_urls = GlobalConfig.cdn_urls
 root_path = Path(__file__).parent
 index_tpl_path = root_path / 'templates' / 'index.html'
@@ -68,7 +71,6 @@ def index():
 
 @app.post("/request")
 def send_request():
-    global GLOBAL_RESP, GLOBAL_REQ
     rule = CrawlerRule(**request.json)
     regex = rule['regex']
     url = rule['request_args']['url']
@@ -76,12 +78,13 @@ def send_request():
         msg = f'Download completed, but the regex `{regex}` does not match the given url: {url}'
     else:
         msg = ''
-    body, r = uni.download(rule)
-    GLOBAL_RESP = r
-    GLOBAL_REQ = rule['request_args']
+    input_object, r = uni.download(rule)
+    GLOBAL_ARGS['INPUT_OBJECT'] = input_object
+    GLOBAL_ARGS['GLOBAL_RESP'] = r
+    GLOBAL_ARGS['GLOBAL_REQ'] = rule['request_args']
     return {
-        'text': body,
-        'status': f'[{getattr(r, "status_code", 0)}]',
+        'text': str(input_object),
+        'status': f'[{getattr(r, "status_code", 0)}] - ({type(input_object)!r})',
         'ok': getattr(r, "status_code", 0) in range(200, 300),
         'msg': msg
     }
@@ -107,16 +110,18 @@ def parse_rule():
     kwargs = request.json
     # print(kwargs)
     input_object = kwargs['input_object']
-    if not input_object:
-        return 'Null input_object?'
+    if isinstance(GLOBAL_ARGS['INPUT_OBJECT'], str):
+        input_object = kwargs['input_object']
+    else:
+        input_object = GLOBAL_ARGS['INPUT_OBJECT']
     rule_json = kwargs['rule']
     json_result = ""
     try:
         rule = CrawlerRule.loads(rule_json)
         # print(rule)
         result = uni.parse(input_object, rule, {
-            'resp': GLOBAL_RESP,
-            'request_args': GLOBAL_REQ
+            'resp': GLOBAL_ARGS['GLOBAL_RESP'],
+            'request_args': GLOBAL_ARGS['GLOBAL_REQ']
         })
         try:
             json_result = GlobalConfig.json_dumps(result, default=repr)

@@ -167,9 +167,10 @@
                             </el-dropdown-menu>
                         </el-dropdown>
                     </el-form-item>
-                    <el-form-item :label="'Response Body ' + request_status " id="request_status">
-                        <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 5}" placeholder="" width="50%"
-                            v-model="input_object">
+                    <el-form-item :label="'Response ' + request_status " id="request_status">
+                        <el-input type="textarea" :autosize="{ minRows: 2, maxRows: 5}" placeholder=""
+                            title="Do not edit this response text unless request_args['resp_callback'] is null."
+                            width="50%" v-model="input_object">
                         </el-input>
                     </el-form-item>
                     <hr>

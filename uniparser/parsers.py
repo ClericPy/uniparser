@@ -16,10 +16,10 @@ from frequency_controller import AsyncFrequency, Frequency
 
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError, UnknownParserNameError
-from .utils import (AsyncRequestAdapter, _lib, SyncRequestAdapter,
-                    decode_as_base64, encode_as_base64, ensure_request,
-                    get_available_async_request, get_available_sync_request,
-                    get_host)
+from .utils import (AsyncRequestAdapter, SyncRequestAdapter, _lib,
+                    decode_as_base64, encode_as_base64, ensure_await_result,
+                    ensure_request, get_available_async_request,
+                    get_available_sync_request, get_host)
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'CSSParser',
@@ -1369,6 +1369,80 @@ class Uniparser(object):
             raise TypeError(
                 'rule_object type should be CrawlerRule or ParseRule.')
 
+    async def aparse_crawler_rule(self,
+                                  input_object,
+                                  rule: CrawlerRule,
+                                  context=None):
+        parse_rules = rule['parse_rules']
+        parse_result: Dict[str, Any] = {}
+        context = rule.context if context is None else context
+        context.setdefault('request_args', rule['request_args'])
+        # alias name for request_args in context
+        context.setdefault('req', context['request_args'])
+        context['parse_result'] = parse_result
+        for parse_rule in parse_rules:
+            temp_result = await self.aparse_parse_rule(input_object, parse_rule,
+                                                       context)
+            parse_result[parse_rule['name']] = temp_result.get(
+                parse_rule['name'])
+        context.pop('parse_result', None)
+        return {rule['name']: parse_result}
+
+    async def aparse_parse_rule(self,
+                                input_object,
+                                rule: ParseRule,
+                                context=None):
+        # if context, use context; else use rule.context
+        input_object = await ensure_await_result(
+            self.parse_chain(
+                input_object,
+                rule['chain_rules'],
+                context=context or getattr(rule, 'context', {}),
+            ))
+        if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
+            raise InvalidSchemaError(
+                f'Schema check is not True: {repr(input_object)[:50]}')
+        if rule['child_rules']:
+            result: Dict[str, Any] = {rule['name']: {}}
+            if rule.get('iter_parse_child', False):
+                result[rule['name']] = []
+                for partial_input_object in input_object:
+                    partial_result = {}
+                    for sub_rule in rule['child_rules']:
+                        temp_result = await self.aparse_parse_rule(
+                            partial_input_object, sub_rule, context=context)
+                        partial_result[sub_rule['name']] = temp_result.get(
+                            sub_rule['name'])
+                    result[rule['name']].append(partial_result)
+            else:
+                for sub_rule in rule['child_rules']:
+                    temp_result = await self.aparse_parse_rule(input_object,
+                                                               sub_rule,
+                                                               context=context)
+                    result[rule['name']][sub_rule['name']] = temp_result.get(
+                        sub_rule['name'])
+        else:
+            result = {rule['name']: input_object}
+        if self.parse_callback:
+            return self.parse_callback(rule, result, context)
+        return result
+
+    async def aparse(self,
+                     input_object,
+                     rule_object: Union[CrawlerRule, ParseRule],
+                     context=None):
+        if isinstance(rule_object, CrawlerRule):
+            return await self.aparse_crawler_rule(input_object=input_object,
+                                                  rule=rule_object,
+                                                  context=context)
+        elif isinstance(rule_object, ParseRule):
+            return await self.aparse_parse_rule(input_object=input_object,
+                                                rule=rule_object,
+                                                context=context)
+        else:
+            raise TypeError(
+                'rule_object type should be CrawlerRule or ParseRule.')
+
     def ensure_adapter(self, sync=True):
         if self.request_adapter:
             request_adapter = self.request_adapter
@@ -1465,7 +1539,7 @@ class Uniparser(object):
                     context[k] = v
         context['resp'] = resp
         context['request_args'] = request_args
-        return self.parse(input_object, crawler_rule, context)
+        return await self.aparse(input_object, crawler_rule, context)
 
     @classmethod
     def set_frequency(cls, host_or_url: str, n=0, interval=0):

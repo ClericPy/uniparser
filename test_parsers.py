@@ -10,7 +10,6 @@ from selectolax.parser import Node
 
 from uniparser import (Crawler, CrawlerRule, HostRule, JSONRuleStorage,
                        ParseRule, Uniparser)
-import uniparser
 from uniparser.crawler import RuleNotFoundError
 from uniparser.exceptions import InvalidSchemaError
 from uniparser.utils import (AiohttpAsyncAdapter, HTTPXAsyncAdapter,
@@ -1071,12 +1070,40 @@ def test_uni_parser():
     # print(result)
     assert result == {'test_crawler_rule': {'rule1': (True, 'http')}}
 
+    # test acrawl and async udf
+    crawler_rule = CrawlerRule(
+        **{
+            'name': 'test_crawler_rule',
+            'parse_rules': [{
+                'name': 'rule1',
+                'chain_rules': [
+                    ['objectpath', 'JSON.url', ''
+                    ], ['python', 'getitem', '[:4]'],
+                    [
+                        'udf',
+                        r"async def parse(obj):return (await context['asyncio'].sleep(0.1)) or obj",
+                        '',
+                    ]
+                ],
+                'child_rules': []
+            }],
+            'request_args': {
+                'url': 'http://httpbin.org/get',
+                'method': 'get',
+                'headers': {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36'
+                }
+            },
+            'regex': 'https?://httpbin.org/get.*'
+        })
+
     async def _a_test():
         result = await uni.acrawl(crawler_rule,
                                   HTTPXAsyncAdapter(),
+                                  context={'asyncio': asyncio},
                                   url='http://httpbin.org/get?a=1')
         # print(result)
-        assert result['test_crawler_rule']['rule1'][0]
+        assert result['test_crawler_rule']['rule1'] == 'http'
 
     asyncio.get_event_loop().run_until_complete(_a_test())
     # 5. test the parse_result variable in context usage

@@ -752,11 +752,9 @@ class PythonParser(BaseParser):
         if param.isdigit():
             return self._handle_index(input_object, param, value)
         else:
-            return return_self(input_object)
+            return value or input_object
 
     def _parse(self, input_object, param, value):
-        if not param:
-            return value
         function = self.param_functions.get(param, self._handle_others)
         return function(input_object, param, value)
 

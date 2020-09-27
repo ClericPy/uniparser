@@ -209,9 +209,6 @@ class SyncRequestAdapter(ABC):
         auth = request_args.get('auth')
         if auth and isinstance(auth, tuple):
             request_args['auth'] = list(auth)
-        callback = ResponseCallbacks._CALLBACKS.get(
-            request_args.pop('resp_callback', None),
-            ResponseCallbacks.default_callback)
         for _ in range(retry + 1):
             try:
                 resp = self.session.request(**request_args)
@@ -224,7 +221,7 @@ class SyncRequestAdapter(ABC):
                 text = str(e)
                 resp = e
                 continue
-        return callback(text), resp
+        return text, resp
 
     @abstractmethod
     def __enter__(self):
@@ -281,9 +278,6 @@ class AsyncRequestAdapter(ABC):
         retry = request_args.pop('retry', 0)
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
-        callback = ResponseCallbacks._CALLBACKS.get(
-            request_args.pop('resp_callback', None),
-            ResponseCallbacks.default_callback)
         for _ in range(retry + 1):
             try:
                 resp = await self.session.request(**request_args)
@@ -296,7 +290,7 @@ class AsyncRequestAdapter(ABC):
                 text = str(e)
                 resp = e
                 continue
-        return callback(text), resp
+        return text, resp
 
 
 class RequestsAdapter(SyncRequestAdapter):
@@ -406,9 +400,6 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
         request_args = self.fix_aiohttp_request_args(request_args)
-        callback = ResponseCallbacks._CALLBACKS.get(
-            request_args.pop('resp_callback', None),
-            ResponseCallbacks.default_callback)
         for _ in range(retry + 1):
             try:
                 resp = await self.session.request(**request_args)
@@ -418,7 +409,7 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
                 text = str(e)
                 resp = e
                 continue
-        return callback(text), resp
+        return text, resp
 
 
 class TorequestsAsyncAdapter(AsyncRequestAdapter):
@@ -445,9 +436,6 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
         request_args = self.fix_aiohttp_request_args(request_args)
-        callback = ResponseCallbacks._CALLBACKS.get(
-            request_args.pop('resp_callback', None),
-            ResponseCallbacks.default_callback)
         for _ in range(retry + 1):
             try:
                 resp = await self.req.request(**request_args)
@@ -460,7 +448,7 @@ class TorequestsAsyncAdapter(AsyncRequestAdapter):
                 text = str(e)
                 resp = e
                 continue
-        return callback(text), resp
+        return text, resp
 
 
 class TorequestsAiohttpAsyncAdapter(AsyncRequestAdapter):
@@ -489,9 +477,6 @@ class TorequestsAiohttpAsyncAdapter(AsyncRequestAdapter):
         encoding = request_args.pop('encoding', None)
         request_args.setdefault('timeout', GlobalConfig.GLOBAL_TIMEOUT)
         request_args = self.fix_aiohttp_request_args(request_args)
-        callback = ResponseCallbacks._CALLBACKS.get(
-            request_args.pop('resp_callback', None),
-            ResponseCallbacks.default_callback)
         for _ in range(retry + 1):
             try:
                 resp = await self.req.request(**request_args)
@@ -504,7 +489,7 @@ class TorequestsAiohttpAsyncAdapter(AsyncRequestAdapter):
                 text = str(e)
                 resp = e
                 continue
-        return callback(text), resp
+        return text, resp
 
 
 def no_adapter():
@@ -732,19 +717,19 @@ _lib.register('from selectolax.parser import Node', 'Node')
 
 class ResponseCallbacks(object):
     _CALLBACKS = {
-        'json': lambda input_object: GlobalConfig.json_loads(input_object),
-        'se': lambda input_object: _lib.HTMLParser(input_object),
-        'selectolax': lambda input_object: _lib.HTMLParser(input_object),
-        'css': lambda input_object: _lib.BeautifulSoup(input_object, 'lxml'),
-        'html': lambda input_object: _lib.BeautifulSoup(input_object, 'lxml'),
-        'xml': lambda input_object: _lib.BeautifulSoup(input_object, 'lxml-xml')
+        'json': lambda text, resp: GlobalConfig.json_loads(text),
+        'se': lambda text, resp: _lib.HTMLParser(text),
+        'selectolax': lambda text, resp: _lib.HTMLParser(text),
+        'css': lambda text, resp: _lib.BeautifulSoup(text, 'lxml'),
+        'html': lambda text, resp: _lib.BeautifulSoup(text, 'lxml'),
+        'xml': lambda text, resp: _lib.BeautifulSoup(text, 'lxml-xml')
     }
 
     @classmethod
-    def callback(cls, input_object, callback_name=None):
-        return cls._CALLBACKS.get(callback_name,
-                                  cls.default_callback)(input_object)
+    def callback(cls, text, resp, callback_name=None):
+        return cls._CALLBACKS.get(callback_name, cls.default_callback)(text,
+                                                                       resp)
 
     @staticmethod
-    def default_callback(input_object):
-        return input_object
+    def default_callback(text, resp):
+        return text

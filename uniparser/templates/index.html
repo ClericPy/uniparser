@@ -113,6 +113,15 @@
                         </el-row>
                         <el-row>
                             <el-col :span="24">
+                                <el-input clearable v-model="crawler_rule.resp_callback"
+                                    title="Callback for the response text, default to the raw text"
+                                    :placeholder="cb_names">
+                                    <span slot="prepend">Callback</span>
+                                </el-input>
+                            </el-col>
+                        </el-row>
+                        <el-row>
+                            <el-col :span="24">
                                 <el-input placeholder="Custom Args of the CrawlerRule, JSON required"
                                     title="Custom Args of the CrawlerRule, JSON required" v-model="custom_args">
                                     <span slot="prepend">Custom Args</span>
@@ -130,9 +139,6 @@
                             :type="crawler_rule.request_template?'success':'plain'"><b>Template</b></el-button>
                         <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_encoding">
                             <b>Encoding</b>
-                        </el-button>
-                        <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_resp_callback">
-                            <b>Callback</b>
                         </el-button>
                         <el-link style="margin-left: 1em;" target="_blank" title="Current URL"
                             :href="current_request_url" type="primary">

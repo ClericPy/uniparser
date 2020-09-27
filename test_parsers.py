@@ -858,7 +858,7 @@ def test_crawler_rule():
     assert crawler_rule == {'name': 'test', 'parse_rules': [{'name': 'rule1', 'chain_rules': [['objectpath', 'JSON.url', ''], ['python', 'getitem', '[:4]'], ['udf', '(context["resp"].url, context["request_args"]["url"], input_object)', '']], 'child_rules': []}], 'request_args': {'url': 'http://httpbin.org/get', 'method': 'get'}, 'regex': '', 'context': {'a': 1, 'b': {'c': 2}}}
     # yapf: enable
     host_rule = HostRule('importpython.com')
-    crawler_rule_json = '{"name":"C-1583501370","request_args":{"method":"get","url":"https://importpython.com/blog/feed/"},"parse_rules":[{"name":"text","chain_rules":[["xml","channel>item>title","$text"],["python","getitem","[0]"]],"childs":""},{"name":"url","chain_rules":[["xml","channel>item>link","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"https://bad_url_host.com/blog/feed/$","encoding":""}'
+    crawler_rule_json = '{"name":"C-1583501370","request_args":{"method":"get","url":"https://importpython.com/blog/feed/"},"parse_rules":[{"name":"text","chain_rules":[["xml","channel>item>title","$text"],["python","getitem","[0]"]],"childs":""},{"name":"url","chain_rules":[["xml","channel>item>link","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"https://bad_url_host.com/blog/feed/$"}'
     try:
         host_rule.add_crawler_rule(crawler_rule_json)
         assert NotImplementedError
@@ -1108,7 +1108,7 @@ def test_uni_parser():
     asyncio.get_event_loop().run_until_complete(_a_test())
     # 5. test the parse_result variable in context usage
     # yapf: disable
-    crawler_rule = CrawlerRule.loads(r'''{"name":"HelloWorld","request_args":{"method":"get","url":"http://httpbin.org/get","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"rule1","chain_rules":[["objectpath","$.url",""]],"child_rules":[],"iter_parse_child":false},{"name":"rule2","chain_rules":[["udf","context['parse_result']['rule1']",""]],"child_rules":[],"iter_parse_child":false}],"regex":"http://httpbin.org/get$","encoding":""}''')
+    crawler_rule = CrawlerRule.loads(r'''{"name":"HelloWorld","request_args":{"method":"get","url":"http://httpbin.org/get","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"rule1","chain_rules":[["objectpath","$.url",""]],"child_rules":[],"iter_parse_child":false},{"name":"rule2","chain_rules":[["udf","context['parse_result']['rule1']",""]],"child_rules":[],"iter_parse_child":false}],"regex":"http://httpbin.org/get$"}''')
     result = uni.crawl(crawler_rule, RequestsAdapter(), None)
     # print(result)
     assert result == {'HelloWorld': {'rule1': 'http://httpbin.org/get', 'rule2': 'http://httpbin.org/get'}}
@@ -1116,7 +1116,7 @@ def test_uni_parser():
 
     # 6. test url with non-http scheme, will ignore download
     # yapf: disable
-    crawler_rule = CrawlerRule.loads(r'''{"name":"HelloWorld","request_args":{"method":"get","url":"http://httpbin.org/get","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"only_req","chain_rules":[["udf","obj['url'].startswith('ftp://')",""]],"child_rules":[],"iter_parse_child":false}],"regex":".*://httpbin.org/get$","encoding":""}''')
+    crawler_rule = CrawlerRule.loads(r'''{"name":"HelloWorld","request_args":{"method":"get","url":"http://httpbin.org/get","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"only_req","chain_rules":[["udf","obj['url'].startswith('ftp://')",""]],"child_rules":[],"iter_parse_child":false}],"regex":".*://httpbin.org/get$"}''')
     # yapf: enable
     result = uni.crawl(crawler_rule, url='ftp://httpbin.org/get')
     # print(result)
@@ -1162,8 +1162,7 @@ def test_uni_parser():
         'test_resp_callback',
         {
             'url': 'http://httpbin.org/get',
-            'method': 'get',
-            'resp_callback': 'json'
+            'method': 'get'
         },
         [{
             "name": "rule1",
@@ -1174,8 +1173,9 @@ def test_uni_parser():
             "child_rules": []
         }],
         'https?://httpbin.org/get',
+        resp_callback='json',
     )
-    result = uni.parse(uni.download(crawler_rule)[0], crawler_rule)
+    result = uni.crawl(crawler_rule)
     # print(result)
     assert result == {'test_resp_callback': {'rule1': 'http'}}
 
@@ -1246,7 +1246,7 @@ def test_crawler_storage():
 
 def test_crawler():
     crawler = Crawler(storage=JSONRuleStorage.loads(
-        r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "subs": {"name":"detail","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
+        r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$"}, "subs": {"name":"detail","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$"}}}}'
     ))
     # yapf: disable
     expected_result = {'list': {'__request__': ['https://www.python.org/dev/peps/pep-0001', 'https://www.python.org/dev/peps/pep-0004', 'https://www.python.org/dev/peps/pep-0005'], '__result__': [{'detail': {'title': 'PEP 1 -- PEP Purpose and Guidelines'}}, {'detail': {'title': 'PEP 4 -- Deprecation of Standard Modules'}}, {'detail': {'title': 'PEP 5 -- Guidelines for Language Evolution'}}]}}
@@ -1273,7 +1273,7 @@ def test_crawler():
 
     # test crawl return Exception
     crawler = Crawler(storage=JSONRuleStorage.loads(
-        r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"list","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$","encoding":""}, "detail": {"name":"detail","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$","encoding":""}}}}'
+        r'{"www.python.org": {"host": "www.python.org", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"list","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://www.python.org/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/$"}, "detail": {"name":"detail","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://www.python.org/dev/peps/pep-0001/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"title","chain_rules":[["css","h1.page-title","$text"],["python","getitem","[0]"]],"childs":""}],"regex":"^https://www.python.org/dev/peps/pep-\\d+$"}}}}'
     ))
     result = crawler.crawl('https://www.python.org/')
     # print(result)
@@ -1281,7 +1281,7 @@ def test_crawler():
     assert str(
         result) == 'No rule matched the given url: https://www.python.org/'
     crawler = Crawler(storage=JSONRuleStorage.loads(
-        r'{"clericpyclericpyclericpyclericpy.com.cn": {"host": "clericpyclericpyclericpyclericpy.com.cn", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"list","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://clericpyclericpyclericpyclericpy.com.cn/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/$","encoding":""}}}}'
+        r'{"clericpyclericpyclericpyclericpy.com.cn": {"host": "clericpyclericpyclericpyclericpy.com.cn", "crawler_rules": {"list": {"name":"list","request_args":{"method":"get","retry":3,"timeout":8,"url":"https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"list","chain_rules":[["css","#index-by-category #meta-peps-peps-about-peps-or-processes td.num>a","@href"],["re","^/","@https://clericpyclericpyclericpyclericpy.com.cn/"],["python","getitem","[:3]"]],"childs":""}],"regex":"^https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/$"}}}}'
     ))
     result = crawler.crawl(
         'https://clericpyclericpyclericpyclericpy.com.cn/dev/peps/')
@@ -1297,7 +1297,7 @@ def test_uni_parser_frequency():
         Uniparser.pop_frequency('https://www.baidu.com/robots.txt')
         uni = Uniparser()
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt"}'''
         )
         start_time = time.time()
         pool = ThreadPoolExecutor()
@@ -1320,7 +1320,7 @@ def test_uni_parser_frequency():
         uni = Uniparser()
         uni.pop_frequency('https://www.baidu.com/robots.txt')
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt","encoding":""}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt"}'''
         )
         start_time = time.time()
         tasks = [

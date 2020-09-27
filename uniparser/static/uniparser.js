@@ -35,6 +35,7 @@ var Main = {
             crawler_rule: {
                 name: "",
                 description: "",
+                resp_callback: "",
                 regex: "^https://httpbin.org/html$",
                 parse_rules: [
                     {
@@ -254,6 +255,7 @@ var Main = {
                     "regex",
                     "parse_rules",
                     "request_args",
+                    "resp_callback",
                 ]
                 var custom_args = {}
                 for (key in new_rule) {
@@ -377,22 +379,6 @@ var Main = {
                 })
                 .catch(() => {})
         },
-        input_resp_callback() {
-            this.$prompt(this.cb_names, "Callback name for response:", {
-                confirmButtonText: "OK",
-                cancelButtonText: "Cancel",
-            })
-                .then(({ value }) => {
-                    let args = JSON.parse(this.crawler_rule.request_args)
-                    args.resp_callback = value
-                    this.crawler_rule.request_args = JSON.stringify(
-                        args,
-                        null,
-                        2
-                    )
-                })
-                .catch(() => {})
-        },
         input_curl() {
             this.$prompt("Input cURL string (or URL)", "", {
                 confirmButtonText: "OK",
@@ -493,7 +479,7 @@ var Main = {
                         }
                         var chain_rules = []
                         item.chain_rules.forEach((i) => {
-                            if (i[0] && i[1]) {
+                            if (i[0] || i[1] || i[2]) {
                                 chain_rules.push([i[0], i[1], i[2]])
                             }
                         })
@@ -511,6 +497,7 @@ var Main = {
                     request_args: JSON.parse(this.crawler_rule.request_args),
                     parse_rules: rules,
                     regex: this.crawler_rule.regex,
+                    resp_callback: this.crawler_rule.resp_callback,
                 }
                 var custom_args = this.custom_args
                     ? JSON.parse(this.custom_args)

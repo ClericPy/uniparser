@@ -16,10 +16,11 @@ from frequency_controller import AsyncFrequency, Frequency
 
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError, UnknownParserNameError
-from .utils import (AsyncRequestAdapter, SyncRequestAdapter, _lib,
-                    decode_as_base64, encode_as_base64, ensure_await_result,
-                    ensure_request, get_available_async_request,
-                    get_available_sync_request, get_host)
+from .utils import (AsyncRequestAdapter, ResponseCallbacks, SyncRequestAdapter,
+                    _lib, decode_as_base64, encode_as_base64,
+                    ensure_await_result, ensure_request,
+                    get_available_async_request, get_available_sync_request,
+                    get_host)
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'CSSParser',
@@ -1457,6 +1458,7 @@ class Uniparser(object):
     def download(self,
                  crawler_rule: CrawlerRule = None,
                  request_adapter=None,
+                 callback_name=None,
                  **request):
         request_adapter = request_adapter or self.ensure_adapter(sync=True)
         if not isinstance(request_adapter, SyncRequestAdapter):
@@ -1470,7 +1472,9 @@ class Uniparser(object):
             freq = self._HOST_FREQUENCIES.get(host, self._DEFAULT_FREQUENCY)
             with freq:
                 with request_adapter as req:
-                    input_object, resp = req.request(**request_args)
+                    text, resp = req.request(**request_args)
+                    input_object = ResponseCallbacks.callback(
+                        text, resp, callback_name)
         else:
             # non-http request will skip the downloading process, request_args as input_object
             input_object, resp = request_args, None
@@ -1482,7 +1486,10 @@ class Uniparser(object):
               context=None,
               **request):
         request_args = crawler_rule.get_request(**request)
-        input_object, resp = self.download(None, request_adapter,
+        callback_name = crawler_rule.get('resp_callback')
+        input_object, resp = self.download(None,
+                                           request_adapter,
+                                           callback_name=callback_name,
                                            **request_args)
         if isinstance(resp, Exception):
             return resp
@@ -1499,6 +1506,7 @@ class Uniparser(object):
     async def adownload(self,
                         crawler_rule: CrawlerRule = None,
                         request_adapter=None,
+                        callback_name=None,
                         **request):
         request_adapter = request_adapter or self.ensure_adapter(sync=False)
         if not isinstance(request_adapter, AsyncRequestAdapter):
@@ -1513,9 +1521,11 @@ class Uniparser(object):
                                               self._DEFAULT_ASYNC_FREQUENCY)
             async with freq:
                 async with request_adapter as req:
-                    input_object, resp = await req.request(**request_args)
+                    text, resp = await req.request(**request_args)
+                    input_object = await ensure_await_result(
+                        ResponseCallbacks.callback(text, resp, callback_name))
         else:
-            # non-http request will skip the downloading process, request_args as input_object
+            # non-http request will skip the downloading process, request_args as text
             input_object, resp = request_args, None
         return input_object, resp
 
@@ -1525,7 +1535,10 @@ class Uniparser(object):
                      context=None,
                      **request):
         request_args = crawler_rule.get_request(**request)
-        input_object, resp = await self.adownload(None, request_adapter,
+        callback_name = crawler_rule.get('resp_callback')
+        input_object, resp = await self.adownload(None,
+                                                  request_adapter,
+                                                  callback_name=callback_name,
                                                   **request_args)
         if isinstance(resp, Exception):
             return resp

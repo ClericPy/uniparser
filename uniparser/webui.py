@@ -78,14 +78,14 @@ def send_request():
         msg = f'Download completed, but the regex `{regex}` does not match the given url: {url}'
     else:
         msg = ''
-    input_object, r = uni.download(rule)
-    GLOBAL_ARGS['INPUT_OBJECT'] = input_object
-    GLOBAL_ARGS['GLOBAL_RESP'] = r
+    input_object, resp = uni.download(rule)
+    GLOBAL_ARGS['GLOBAL_RESP'] = resp
     GLOBAL_ARGS['GLOBAL_REQ'] = rule['request_args']
+    GLOBAL_ARGS['INPUT_OBJECT'] = input_object
     return {
         'text': str(input_object),
-        'status': f'[{getattr(r, "status_code", 0)}] - ({type(input_object)!r})',
-        'ok': getattr(r, "status_code", 0) in range(200, 300),
+        'status': f'[{getattr(resp, "status_code", 0)}] - ({type(input_object)!r})',
+        'ok': getattr(resp, "status_code", 0) in range(200, 300),
         'msg': msg
     }
 

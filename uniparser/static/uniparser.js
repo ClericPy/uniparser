@@ -35,7 +35,7 @@ var Main = {
             crawler_rule: {
                 name: "",
                 description: "",
-                resp_callback: "",
+                input_callback: "",
                 regex: "^https://httpbin.org/html$",
                 parse_rules: [
                     {
@@ -255,7 +255,7 @@ var Main = {
                     "regex",
                     "parse_rules",
                     "request_args",
-                    "resp_callback",
+                    "input_callback",
                 ]
                 var custom_args = {}
                 for (key in new_rule) {
@@ -497,7 +497,7 @@ var Main = {
                     request_args: JSON.parse(this.crawler_rule.request_args),
                     parse_rules: rules,
                     regex: this.crawler_rule.regex,
-                    resp_callback: this.crawler_rule.resp_callback,
+                    input_callback: this.crawler_rule.input_callback,
                 }
                 var custom_args = this.custom_args
                     ? JSON.parse(this.custom_args)

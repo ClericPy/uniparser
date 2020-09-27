@@ -1157,9 +1157,9 @@ def test_uni_parser():
     # print(result)
     assert result == {'parse_rule': 'not found'}
 
-    # 9. test resp_callback, load json after downloading
+    # 9. test input_callback, load json after downloading
     crawler_rule = CrawlerRule(
-        'test_resp_callback',
+        'test_input_callback',
         {
             'url': 'http://httpbin.org/get',
             'method': 'get'
@@ -1173,11 +1173,11 @@ def test_uni_parser():
             "child_rules": []
         }],
         'https?://httpbin.org/get',
-        resp_callback='json',
+        input_callback='json',
     )
     result = uni.crawl(crawler_rule)
     # print(result)
-    assert result == {'test_resp_callback': {'rule1': 'http'}}
+    assert result == {'test_input_callback': {'rule1': 'http'}}
 
 
 def test_sync_adapters():

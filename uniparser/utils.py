@@ -715,21 +715,21 @@ _lib.register('from selectolax.parser import HTMLParser', 'HTMLParser')
 _lib.register('from selectolax.parser import Node', 'Node')
 
 
-class ResponseCallbacks(object):
+class InputCallbacks(object):
     _CALLBACKS = {
-        'json': lambda text, resp: GlobalConfig.json_loads(text),
-        'se': lambda text, resp: _lib.HTMLParser(text),
-        'selectolax': lambda text, resp: _lib.HTMLParser(text),
-        'css': lambda text, resp: _lib.BeautifulSoup(text, 'lxml'),
-        'html': lambda text, resp: _lib.BeautifulSoup(text, 'lxml'),
-        'xml': lambda text, resp: _lib.BeautifulSoup(text, 'lxml-xml')
+        'json': lambda text, context: GlobalConfig.json_loads(text),
+        'se': lambda text, context: _lib.HTMLParser(text),
+        'selectolax': lambda text, context: _lib.HTMLParser(text),
+        'css': lambda text, context: _lib.BeautifulSoup(text, 'lxml'),
+        'html': lambda text, context: _lib.BeautifulSoup(text, 'lxml'),
+        'xml': lambda text, context: _lib.BeautifulSoup(text, 'lxml-xml')
     }
 
     @classmethod
-    def callback(cls, text, resp, callback_name=None):
+    def callback(cls, text, context, callback_name=None):
         return cls._CALLBACKS.get(callback_name, cls.default_callback)(text,
-                                                                       resp)
+                                                                       context)
 
     @staticmethod
-    def default_callback(text, resp):
+    def default_callback(text, context):
         return text

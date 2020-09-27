@@ -12,7 +12,7 @@ from traceback import format_exc
 from bottle import BaseRequest, Bottle, request, static_file, template
 
 from . import CrawlerRule, Uniparser, __version__
-from .utils import (GlobalConfig, ResponseCallbacks, ensure_request,
+from .utils import (GlobalConfig, InputCallbacks, ensure_request,
                     get_available_sync_request)
 
 logger = getLogger('uniparser')
@@ -25,11 +25,7 @@ if not adapter:
         "one of these libs should be installed: ('requests', 'httpx', 'torequests')"
     )
 uni = Uniparser(adapter())
-GLOBAL_ARGS = {
-    'GLOBAL_REQ': None,
-    'GLOBAL_RESP': None,
-    'INPUT_OBJECT': None,
-}
+CONTEXT = {'request_args': None, 'resp': None}
 cdn_urls = GlobalConfig.cdn_urls
 root_path = Path(__file__).parent
 index_tpl_path = root_path / 'templates' / 'index.html'
@@ -59,7 +55,7 @@ def index():
         'options': parser_name_choices,
         'docs': parser_name_docs,
         'demo_choices': GlobalConfig.demo_choices,
-        'cb_names': ' | '.join(map(str, ResponseCallbacks._CALLBACKS.keys()))
+        'cb_names': ' | '.join(map(str, InputCallbacks._CALLBACKS.keys()))
     }
     init_vars_b64 = b64encode(
         GlobalConfig.json_dumps(init_vars).encode('u8')).decode('u8')
@@ -79,9 +75,8 @@ def send_request():
     else:
         msg = ''
     input_object, resp = uni.download(rule)
-    GLOBAL_ARGS['GLOBAL_RESP'] = resp
-    GLOBAL_ARGS['GLOBAL_REQ'] = rule['request_args']
-    GLOBAL_ARGS['INPUT_OBJECT'] = input_object
+    CONTEXT['request_args'] = rule['request_args']
+    CONTEXT['resp'] = resp
     return {
         'text': str(input_object),
         'status': f'[{getattr(resp, "status_code", 0)}] - ({type(input_object)!r})',
@@ -110,19 +105,12 @@ def parse_rule():
     kwargs = request.json
     # print(kwargs)
     input_object = kwargs['input_object']
-    if isinstance(GLOBAL_ARGS['INPUT_OBJECT'], str):
-        input_object = kwargs['input_object']
-    else:
-        input_object = GLOBAL_ARGS['INPUT_OBJECT']
     rule_json = kwargs['rule']
     json_result = ""
     try:
         rule = CrawlerRule.loads(rule_json)
         # print(rule)
-        result = uni.parse(input_object, rule, {
-            'resp': GLOBAL_ARGS['GLOBAL_RESP'],
-            'request_args': GLOBAL_ARGS['GLOBAL_REQ']
-        })
+        result = uni.parse(input_object, rule, context=CONTEXT)
         try:
             json_result = GlobalConfig.json_dumps(result, default=repr)
         except Exception as e:

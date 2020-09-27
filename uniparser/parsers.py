@@ -98,8 +98,7 @@ class BaseParser(ABC):
             else:
                 return self._parse(input_object, param, value)
         except Exception as err:
-            # for traceback
-            # import traceback; traceback.print_exc()
+            # traceback.format_exception(None, e, e.__traceback__)
             return err
 
     @property

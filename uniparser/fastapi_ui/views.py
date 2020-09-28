@@ -111,7 +111,10 @@ def parse_rule(kwargs: dict):
         # print(rule)
         result = uni.parse(input_object, rule, context=CONTEXT)
         try:
-            json_result = GlobalConfig.json_dumps(result, default=repr)
+            json_result = GlobalConfig.json_dumps(result,
+                                                  default=repr,
+                                                  indent=2,
+                                                  ensure_ascii=False)
         except Exception as e:
             json_result = repr(e)
         return {

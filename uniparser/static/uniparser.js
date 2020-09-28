@@ -141,7 +141,13 @@ var Main = {
                     ).style.color = color
                     this.downloading = false
                     if (r.body.msg) {
-                        this.openAlert(r.body.msg)
+                        const h = this.$createElement
+                        this.$notify({
+                            title: "Warning",
+                            message: h("b", r.body.msg),
+                            type: "warning",
+                            position: "top-left",
+                        })
                     }
                 },
                 (r) => {
@@ -252,6 +258,7 @@ var Main = {
                 var new_rule = JSON.parse(this.new_rule_json)
                 var known_keys = [
                     "name",
+                    "description",
                     "regex",
                     "parse_rules",
                     "request_args",
@@ -398,7 +405,7 @@ var Main = {
                                     2
                                 )
                                 let url = result.result.url
-                                if (url) {
+                                if (url && !this.crawler_rule.regex) {
                                     this.crawler_rule.regex =
                                         "^" +
                                         url

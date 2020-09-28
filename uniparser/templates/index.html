@@ -331,7 +331,7 @@ ${current_doc}</textarea>
                     <hr />
                     <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
                         <el-button v-if="rule.name && parse_rule_idx_to_send!=index" type="primary"
-                            @click="send_child(rule, index)">
+                            style="margin-top: 8px;" @click="send_child(rule, index)">
                             ${rule.name}
                         </el-button>
                     </template>
@@ -368,8 +368,8 @@ ${current_doc}</textarea>
     <!-- [CSS Minifier](https://cssminifier.com/)
     [JavaScript Minifier](https://javascript-minifier.com/)
     [HTML Minifier](https://html-minifier.com/) -->
-    <!-- <script src="static/uniparser.js"></script> -->
-    <script src="static/uniparser.min.js"></script>
+    <script src="static/uniparser.js"></script>
+    <!-- <script src="static/uniparser.min.js"></script> -->
 </body>
 
 </html>

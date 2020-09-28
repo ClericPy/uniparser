@@ -1351,7 +1351,7 @@ def test_utils():
     base_url = 'http://www.abc.com/a/b/c/d/e?query=a#b'
     result = fix_relative_path(base_url, HTML)
     # print(result)
-    assert result == '<a href="http://www.abc.com/b">test</a><a href="http://www.abc.com/a/b/c/d/b">test</a><a href="http://www.abc.com/a/b/c/b">test</a><a href="http://www.abc.com/a/b/b">test</a><img src="http://www.abc.com/b"/><img src="http://www.abc.com/a/b/c/d/b"/><img src="http://www.abc.com/a/b/c/b"/><img src="http://www.abc.com/a/b/b"/>'
+    assert result == '<a href="http://www.abc.com/b">test</a><a href="http://www.abc.com/a/b/c/d/b">test</a><a href="http://www.abc.com/a/b/c/b">test</a><a href="http://www.abc.com/a/b/b">test</a><img src="http://www.abc.com/b"><img src="http://www.abc.com/a/b/c/d/b"><img src="http://www.abc.com/a/b/c/b"><img src="http://www.abc.com/a/b/b">'
 
 
 def _partial_test_parser():
@@ -1370,6 +1370,7 @@ if __name__ == "__main__":
     from uniparser.config import GlobalConfig
     GlobalConfig.GLOBAL_TIMEOUT = 5
     for case in (
+            test_utils,
             test_context_parser,
             test_css_parser,
             test_selectolax_parser,
@@ -1388,7 +1389,6 @@ if __name__ == "__main__":
             test_crawler_storage,
             test_uni_parser_frequency,
             test_crawler,
-            test_utils,
     ):
         case()
         print(case.__name__, 'ok')

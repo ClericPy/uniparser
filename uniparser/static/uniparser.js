@@ -71,6 +71,7 @@ var Main = {
             show_parse_result_as_json: false,
             custom_args: "",
             demo_choices: [],
+            cb_names: "",
         }
     },
     methods: {

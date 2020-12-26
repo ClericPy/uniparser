@@ -5,8 +5,8 @@
     <meta charset="utf-8" />
     <meta name="referrer" content="never" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <link rel="shortcut icon" type="image/ico" href="/icon.png" />
-    <title>Uniparser Test Console</title>
+    <link rel="shortcut icon" type="image/ico" href="{{FAVICON}}" />
+    <title>Uniparser Testing Console</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="{{cdn_urls['VUE_JS_CDN']}}"></script>
     <script src="{{cdn_urls['ELEMENT_JS_CDN']}}"></script>
@@ -59,6 +59,15 @@
 
         .el-input-group__prepend {
             width: 7em;
+        }
+
+        .toc {
+            position: fixed;
+            overflow: auto;
+            left: 0;
+            top: 10%;
+            width: 18%;
+            max-height: 80%;
         }
     </style>
 </head>
@@ -132,7 +141,8 @@
                     <hr>
                     <el-form-item label="Request Args">
                         <el-button style="margin-left: 0;" size="mini" icon="el-icon-link" @click="input_curl">
-                            <b>cURL</b></el-button>
+                            <b>cURL</b>
+                        </el-button>
                         <el-button style="margin-left: 0;" size="mini" icon="el-icon-tickets"
                             @click="show_request_template"
                             v-if="crawler_rule.request_template || crawler_rule.request_args"
@@ -180,6 +190,7 @@
                     </el-form-item>
                     <hr>
                     <el-form-item label="ParseRules">
+                        <el-checkbox v-model="show_toc" style="padding-right: 0.5em;" title="Toggle the TOC sidebar"><span style="font-size: 0.5em;">TOC</span></el-checkbox>
                         <br />
                         <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
                             <div class="rule">
@@ -362,6 +373,27 @@ ${current_doc}</textarea>
                             to request_args</el-button>
                     </div>
                 </el-dialog>
+                <div class="toc" v-show="show_toc">
+                    <el-menu class="el-menu-vertical-demo" @select="jump_rule" active-text-color="#303133"
+                        background-color="#ffffff60">
+                        <el-menu-item :index="0">
+                            <span slot="title" title="Back to the top"><i class="el-icon-top"></i>Top</span>
+                        </el-menu-item>
+                        <el-menu-item :index="1">
+                            <span slot="title" title="Back to the top">
+                                <i v-show="!downloading" class="el-icon-download"></i>
+                                <i v-show="downloading" class="el-icon-loading"></i>
+                                Download</span>
+                        </el-menu-item>
+                        <el-menu-item :index="2" :disabled="!input_object">
+                            <span slot="title"><i class="el-icon-video-play"></i>Parse</span>
+                        </el-menu-item>
+                        <hr>
+                        <el-menu-item v-for="(rule, index) in crawler_rule.parse_rules" :index="index+3">
+                            <span slot="title"># ${rule.name} </span>
+                        </el-menu-item>
+                    </el-menu>
+                </div>
             </el-main>
         </el-container>
     </div>

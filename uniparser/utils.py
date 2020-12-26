@@ -730,7 +730,7 @@ class InputCallbacks(object):
                                       cls.default_callback)(text, context)
         except cls.CATCH_EXCEPTIONS:
             if cls.DEFAULT_RETURN is NotSet:
-                return text
+                return cls.default_callback(text, context)
             else:
                 return cls.DEFAULT_RETURN
 

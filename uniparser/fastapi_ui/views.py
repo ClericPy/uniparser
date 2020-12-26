@@ -68,6 +68,7 @@ def index(request: Request):
         'index.html',
         dict(cdn_urls=cdn_urls,
              version=__version__,
+             FAVICON=GlobalConfig.FAVICON,
              init_vars_b64=init_vars_b64,
              request=request))
 

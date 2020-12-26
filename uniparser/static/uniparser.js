@@ -68,13 +68,32 @@ var Main = {
             send_child_rule_visible: false,
             template_visible: false,
             request_template_values: {},
-            show_parse_result_as_json: false,
+            show_parse_result_as_json: true,
             custom_args: "",
             demo_choices: [],
             cb_names: "",
+            show_toc: true,
         }
     },
     methods: {
+        jump_rule(index) {
+            switch (index) {
+                case 0:
+                    document.getElementById("app").scrollIntoView()
+                    break
+                case 1:
+                    this.download()
+                    break
+                case 2:
+                    this.parse()
+                    break
+                default:
+                    document
+                        .querySelectorAll(".rule")
+                        [index - 3].scrollIntoView()
+                    break
+            }
+        },
         querySearch(queryString, cb) {
             var options = this.options
             var results = queryString

@@ -61,6 +61,7 @@ def index():
         GlobalConfig.json_dumps(init_vars).encode('u8')).decode('u8')
     return template(index_tpl_path_str,
                     cdn_urls=cdn_urls,
+                    FAVICON=GlobalConfig.FAVICON,
                     init_vars_b64=init_vars_b64,
                     version=__version__)
 

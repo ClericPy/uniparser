@@ -720,11 +720,19 @@ class InputCallbacks(object):
         'html': lambda text, context: _lib.BeautifulSoup(text, 'lxml'),
         'xml': lambda text, context: _lib.BeautifulSoup(text, 'lxml-xml')
     }
+    CATCH_EXCEPTIONS = (Exception,)
+    DEFAULT_RETURN = NotSet
 
     @classmethod
     def callback(cls, text, context, callback_name=None):
-        return cls._CALLBACKS.get(callback_name, cls.default_callback)(text,
-                                                                       context)
+        try:
+            return cls._CALLBACKS.get(callback_name,
+                                      cls.default_callback)(text, context)
+        except cls.CATCH_EXCEPTIONS:
+            if cls.DEFAULT_RETURN is NotSet:
+                return text
+            else:
+                return cls.DEFAULT_RETURN
 
     @staticmethod
     def default_callback(text, context):

@@ -18,6 +18,10 @@ if py_version.major < 3 or py_version.minor < 6:
 with open('requirements.txt') as f:
     install_requires = [line for line in f.read().strip().split('\n')]
 
+# for pure uniparser without any parsers
+if os.getenv('PURE_UNIPARSER'):
+    install_requires = ['frequency-controller>=0.0.3']
+
 # for webui
 if not re.search(r'requests|httpx|torequests|\[all\]', str(sys.argv)):
     install_requires.append('requests')

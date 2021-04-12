@@ -83,6 +83,7 @@ async def send_request(request_args: dict):
     else:
         msg = ''
     input_object, resp = await uni.adownload(rule)
+    CONTEXT.clear()
     CONTEXT['request_args'] = rule['request_args']
     CONTEXT['resp'] = resp
     return {

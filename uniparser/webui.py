@@ -76,6 +76,7 @@ def send_request():
     else:
         msg = ''
     input_object, resp = uni.download(rule)
+    CONTEXT.clear()
     CONTEXT['request_args'] = rule['request_args']
     CONTEXT['resp'] = resp
     return {

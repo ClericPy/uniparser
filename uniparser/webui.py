@@ -77,6 +77,7 @@ def send_request():
         msg = ''
     input_object, resp = uni.download(rule)
     CONTEXT.clear()
+    CONTEXT.update(GlobalConfig.init_context())
     CONTEXT['request_args'] = rule['request_args']
     CONTEXT['resp'] = resp
     return {
@@ -126,7 +127,7 @@ def parse_rule():
             'json': json_result
         }
     except BaseException as err:
-        return {'type': str(type(err)), 'data': repr(err), 'json': json_result}
+        return {'type': str(type(err)), 'data': repr(err), 'json': format_exc()}
 
 
 if __name__ == "__main__":

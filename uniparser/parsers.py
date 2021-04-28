@@ -1039,7 +1039,9 @@ class ParseRule(JsonSerializable):
         child_rules = [
             self.__class__(**parse_rule) for parse_rule in child_rules or []
         ]
-        self.context: dict = context or {}
+        self.context = GlobalConfig.init_context(
+        ) if context is None else context
+
         super().__init__(name=name,
                          chain_rules=chain_rules,
                          child_rules=child_rules,
@@ -1119,7 +1121,8 @@ class CrawlerRule(JsonSerializable):
                  context: dict = None,
                  **kwargs):
         _request_args: dict = ensure_request(request_args)
-        self.context = context or {}
+        self.context = GlobalConfig.init_context(
+        ) if context is None else context
         parse_rules = [
             ParseRule(context=self.context, **parse_rule)
             for parse_rule in parse_rules or []
@@ -1289,7 +1292,11 @@ class Uniparser(object):
     def parser_classes(self):
         return BaseParser.__subclasses__()
 
-    def parse_chain(self, input_object, chain_rules: List, context=None):
+    def parse_chain(self,
+                    input_object,
+                    chain_rules: List,
+                    context: dict = None):
+        context = GlobalConfig.init_context() if context is None else context
         for parser_name, param, value in chain_rules:
             parser: BaseParser = getattr(self, parser_name)
             if parser is None:
@@ -1319,11 +1326,12 @@ class Uniparser(object):
 
     def parse_parse_rule(self, input_object, rule: ParseRule, context=None):
         # if context, use context; else use rule.context
-        input_object = self.parse_chain(
-            input_object,
-            rule['chain_rules'],
-            context=context or getattr(rule, 'context', {}),
-        )
+        context = getattr(
+            rule, 'context',
+            GlobalConfig.init_context()) if context is None else context
+        input_object = self.parse_chain(input_object,
+                                        rule['chain_rules'],
+                                        context=context)
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
                 f'Schema check is not True: {repr(input_object)[:50]}')
@@ -1355,6 +1363,7 @@ class Uniparser(object):
               input_object,
               rule_object: Union[CrawlerRule, ParseRule],
               context=None):
+        context = GlobalConfig.init_context() if context is None else context
         if isinstance(rule_object, CrawlerRule):
             input_object = InputCallbacks.callback(
                 text=input_object,
@@ -1395,12 +1404,12 @@ class Uniparser(object):
                                 rule: ParseRule,
                                 context=None):
         # if context, use context; else use rule.context
+        context = getattr(
+            rule, 'context',
+            GlobalConfig.init_context()) if context is None else context
         input_object = await ensure_await_result(
-            self.parse_chain(
-                input_object,
-                rule['chain_rules'],
-                context=context or getattr(rule, 'context', {}),
-            ))
+            self.parse_chain(input_object, rule['chain_rules'],
+                             context=context))
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
                 f'Schema check is not True: {repr(input_object)[:50]}')
@@ -1433,11 +1442,13 @@ class Uniparser(object):
                      input_object,
                      rule_object: Union[CrawlerRule, ParseRule],
                      context=None):
+        context = GlobalConfig.init_context() if context is None else context
         if isinstance(rule_object, CrawlerRule):
-            input_object = await ensure_await_result(InputCallbacks.callback(
-                text=input_object,
-                context=context,
-                callback_name=rule_object.get('input_callback')))
+            input_object = await ensure_await_result(
+                InputCallbacks.callback(
+                    text=input_object,
+                    context=context,
+                    callback_name=rule_object.get('input_callback')))
             return await self.aparse_crawler_rule(input_object=input_object,
                                                   rule=rule_object,
                                                   context=context)

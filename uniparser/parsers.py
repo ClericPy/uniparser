@@ -1326,9 +1326,7 @@ class Uniparser(object):
 
     def parse_parse_rule(self, input_object, rule: ParseRule, context=None):
         # if context, use context; else use rule.context
-        context = getattr(
-            rule, 'context',
-            GlobalConfig.init_context()) if context is None else context
+        context = rule.context if context is None else context
         input_object = self.parse_chain(input_object,
                                         rule['chain_rules'],
                                         context=context)
@@ -1363,7 +1361,7 @@ class Uniparser(object):
               input_object,
               rule_object: Union[CrawlerRule, ParseRule],
               context=None):
-        context = GlobalConfig.init_context() if context is None else context
+        context = rule_object.context if context is None else context
         if isinstance(rule_object, CrawlerRule):
             input_object = InputCallbacks.callback(
                 text=input_object,
@@ -1404,9 +1402,7 @@ class Uniparser(object):
                                 rule: ParseRule,
                                 context=None):
         # if context, use context; else use rule.context
-        context = getattr(
-            rule, 'context', await ensure_await_result(
-                GlobalConfig.init_context())) if context is None else context
+        context = rule.context if context is None else context
         input_object = await ensure_await_result(
             self.parse_chain(input_object, rule['chain_rules'],
                              context=context))
@@ -1442,8 +1438,7 @@ class Uniparser(object):
                      input_object,
                      rule_object: Union[CrawlerRule, ParseRule],
                      context=None):
-        context = ensure_await_result(
-            GlobalConfig.init_context()) if context is None else context
+        context = rule_object.context if context is None else context
         if isinstance(rule_object, CrawlerRule):
             input_object = await ensure_await_result(
                 InputCallbacks.callback(

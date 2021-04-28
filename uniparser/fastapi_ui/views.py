@@ -14,8 +14,8 @@ from starlette.responses import JSONResponse
 from starlette.templating import Jinja2Templates
 
 from .. import CrawlerRule, Uniparser, __version__
-from ..utils import (GlobalConfig, InputCallbacks, ensure_request,
-                     get_available_async_request)
+from ..utils import (GlobalConfig, InputCallbacks, ensure_await_result,
+                     ensure_request, get_available_async_request)
 
 app = FastAPI(title="Uniparser", version=__version__)
 logger = getLogger('uniparser')
@@ -84,6 +84,7 @@ async def send_request(request_args: dict):
         msg = ''
     input_object, resp = await uni.adownload(rule)
     CONTEXT.clear()
+    CONTEXT.update(await ensure_await_result(GlobalConfig.init_context()))
     CONTEXT['request_args'] = rule['request_args']
     CONTEXT['resp'] = resp
     return {
@@ -125,4 +126,4 @@ async def parse_rule(kwargs: dict):
             'json': json_result
         }
     except BaseException as err:
-        return {'type': str(type(err)), 'data': repr(err), 'json': json_result}
+        return {'type': str(type(err)), 'data': repr(err), 'json': format_exc()}

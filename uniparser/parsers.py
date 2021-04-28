@@ -1405,8 +1405,8 @@ class Uniparser(object):
                                 context=None):
         # if context, use context; else use rule.context
         context = getattr(
-            rule, 'context',
-            GlobalConfig.init_context()) if context is None else context
+            rule, 'context', await ensure_await_result(
+                GlobalConfig.init_context())) if context is None else context
         input_object = await ensure_await_result(
             self.parse_chain(input_object, rule['chain_rules'],
                              context=context))
@@ -1442,7 +1442,8 @@ class Uniparser(object):
                      input_object,
                      rule_object: Union[CrawlerRule, ParseRule],
                      context=None):
-        context = GlobalConfig.init_context() if context is None else context
+        context = ensure_await_result(
+            GlobalConfig.init_context()) if context is None else context
         if isinstance(rule_object, CrawlerRule):
             input_object = await ensure_await_result(
                 InputCallbacks.callback(

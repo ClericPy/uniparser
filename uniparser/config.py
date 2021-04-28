@@ -50,3 +50,8 @@ class GlobalConfig:
             '{"name":"Null demo","request_args":"{}","parse_rules":[],"regex":""}'
         ],
     ]
+
+    @staticmethod
+    def init_context() -> dict:
+        """Make a default context for uniparser. you can rewrite this method as you wish"""
+        return {}

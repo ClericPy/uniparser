@@ -104,14 +104,14 @@ async def curl_parse(request: Request):
 
 
 @app.post("/parse")
-def parse_rule(kwargs: dict):
+async def parse_rule(kwargs: dict):
     input_object = kwargs['input_object']
     rule_json = kwargs['rule']
     json_result = ""
     try:
         rule = CrawlerRule.loads(rule_json)
         # print(rule)
-        result = uni.parse(input_object, rule, context=CONTEXT)
+        result = await uni.aparse(input_object, rule, context=CONTEXT)
         try:
             json_result = GlobalConfig.json_dumps(result,
                                                   default=repr,

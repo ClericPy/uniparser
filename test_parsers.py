@@ -1103,7 +1103,7 @@ def test_uni_parser():
                                   context={'asyncio': asyncio},
                                   url='http://httpbin.org/get?a=1')
         # print(result)
-        assert result['test_crawler_rule']['rule1'] == 'http'
+        assert result['test_crawler_rule']['rule1'] == 'http', result['test_crawler_rule']['rule1']
 
     asyncio.get_event_loop().run_until_complete(_a_test())
     # 5. test the parse_result variable in context usage
@@ -1256,14 +1256,14 @@ def test_crawler():
         # JSON will be saved if file_path!=None
 
         result = crawler.crawl('https://www.python.org/dev/peps/')
-        # print(result)
+        print(result)
         assert result == expected_result
 
     def test_async_crawler():
 
         async def _test():
             result = await crawler.acrawl('https://www.python.org/dev/peps/')
-            # print(result)
+            print(result)
             assert result == expected_result
 
         asyncio.get_event_loop().run_until_complete(_test())

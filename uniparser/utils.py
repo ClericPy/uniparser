@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import asyncio
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from base64 import b64decode, b64encode
@@ -11,7 +12,7 @@ from re import escape as re_escape
 from re import findall as re_findall
 from re import match as re_match
 from shlex import split as shlex_split
-from typing import Dict, List, Union
+from typing import Dict, Union
 from urllib.parse import quote_plus, urljoin, urlparse
 
 from _codecs import escape_decode
@@ -335,7 +336,7 @@ class HTTPXSyncAdapter(SyncRequestAdapter):
 class TorequestsSyncAdapter(SyncRequestAdapter):
 
     def __init__(self, session=None, **kwargs):
-        from torequests.main import tPool, FailureException
+        from torequests.main import FailureException, tPool
         if session:
             self.session = session
         else:
@@ -369,7 +370,8 @@ class HTTPXAsyncAdapter(AsyncRequestAdapter):
 class AiohttpAsyncAdapter(AsyncRequestAdapter):
 
     def __init__(self, session=None, **kwargs):
-        from aiohttp import ClientSession, ClientError, BasicAuth, ClientTimeout
+        from aiohttp import (BasicAuth, ClientError, ClientSession,
+                             ClientTimeout)
         self.session = session
         self.session_class = partial(ClientSession, **kwargs)
         self.error = (ClientError, InvalidSchemaError)
@@ -412,8 +414,8 @@ class AiohttpAsyncAdapter(AsyncRequestAdapter):
 class TorequestsAsyncAdapter(AsyncRequestAdapter):
 
     def __init__(self, session=None, **kwargs):
-        from torequests.dummy import Requests, FailureException
         from aiohttp import BasicAuth, ClientTimeout
+        from torequests.dummy import FailureException, Requests
         self.BasicAuth, self.ClientTimeout = BasicAuth, ClientTimeout
         if session:
             kwargs['session'] = session
@@ -454,8 +456,8 @@ class TorequestsAiohttpAsyncAdapter(AsyncRequestAdapter):
     WARNING: `torequests.aiohttp_dummy.Requests` is faster than `torequests.dummy.Requests`, but it only can be init in async env."""
 
     def __init__(self, session=None, **kwargs):
-        from torequests.aiohttp_dummy import Requests, FailureException
         from aiohttp import BasicAuth, ClientTimeout
+        from torequests.aiohttp_dummy import FailureException, Requests
         self.BasicAuth, self.ClientTimeout = BasicAuth, ClientTimeout
         if session:
             kwargs['session'] = session
@@ -728,6 +730,22 @@ class InputCallbacks(object):
         try:
             return cls._CALLBACKS.get(callback_name,
                                       cls.default_callback)(text, context)
+        except cls.CATCH_EXCEPTIONS:
+            if cls.DEFAULT_RETURN is NotSet:
+                return cls.default_callback(text, context)
+            else:
+                return cls.DEFAULT_RETURN
+
+    @classmethod
+    async def acallback(cls, text, context, callback_name=None):
+        try:
+            function = cls._CALLBACKS.get(callback_name, cls.default_callback)
+            if asyncio.iscoroutinefunction(function):
+                coro = function(text, context)
+            else:
+                coro = asyncio.get_event_loop().run_in_executor(
+                    None, function, text, context)
+            return await coro
         except cls.CATCH_EXCEPTIONS:
             if cls.DEFAULT_RETURN is NotSet:
                 return cls.default_callback(text, context)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import asyncio
 import re
 from abc import ABC, abstractmethod
 from base64 import (b16decode, b16encode, b32decode, b32encode, b64decode,
@@ -1231,7 +1232,7 @@ class Uniparser(object):
         """
         :param request_adapter: request_adapter for downloading, defaults to None
         :type request_adapter: Union[AsyncRequestAdapter, SyncRequestAdapter], optional
-        :param parse_callback: the callback function called while parsing result. Accept two args: (rule, result, context)
+        :param parse_callback: the callback function called while parsing result. Accept 3 args: (rule, result, context)
         :type parse_callback: Callable, optional
         """
         self._prepare_default_parsers()
@@ -1403,9 +1404,9 @@ class Uniparser(object):
                                 context=None):
         # if context, use context; else use rule.context
         context = rule.context if context is None else context
-        input_object = await ensure_await_result(
-            self.parse_chain(input_object, rule['chain_rules'],
-                             context=context))
+        input_object = await asyncio.get_event_loop().run_in_executor(
+            None, self.parse_chain, input_object, rule['chain_rules'], context)
+        input_object = await ensure_await_result(input_object)
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
                 f'Schema check is not True: {repr(input_object)[:50]}')
@@ -1431,7 +1432,12 @@ class Uniparser(object):
         else:
             result = {rule['name']: input_object}
         if self.parse_callback:
-            return self.parse_callback(rule, result, context)
+            if asyncio.iscoroutinefunction(self.parse_callback):
+                coro = self.parse_callback(rule, result, context)
+            else:
+                coro = asyncio.get_event_loop().run_in_executor(
+                    None, self.parse_callback, rule, result, context)
+            return await coro
         return result
 
     async def aparse(self,
@@ -1440,11 +1446,10 @@ class Uniparser(object):
                      context=None):
         context = rule_object.context if context is None else context
         if isinstance(rule_object, CrawlerRule):
-            input_object = await ensure_await_result(
-                InputCallbacks.callback(
-                    text=input_object,
-                    context=context,
-                    callback_name=rule_object.get('input_callback')))
+            input_object = await InputCallbacks.acallback(
+                text=input_object,
+                context=context,
+                callback_name=rule_object.get('input_callback'))
             return await self.aparse_crawler_rule(input_object=input_object,
                                                   rule=rule_object,
                                                   context=context)

@@ -229,16 +229,14 @@ var Main = {
         send_child(rule, receiver_index) {
             this.send_child_rule_visible = false
             let child_rules = JSON.parse(rule.child_rules || "[]")
-            let sender_rule = this.crawler_rule.parse_rules[
-                this.parse_rule_idx_to_send
-            ]
+            let sender_rule =
+                this.crawler_rule.parse_rules[this.parse_rule_idx_to_send]
             sender_rule.child_rules = JSON.parse(
                 sender_rule.child_rules || "[]"
             )
             child_rules.push(sender_rule)
-            this.crawler_rule.parse_rules[
-                receiver_index
-            ].child_rules = JSON.stringify(child_rules)
+            this.crawler_rule.parse_rules[receiver_index].child_rules =
+                JSON.stringify(child_rules)
             this.crawler_rule.parse_rules.splice(
                 this.parse_rule_idx_to_send,
                 1
@@ -415,6 +413,16 @@ var Main = {
                     "cURL string should start with curl, or url should start with http",
             })
                 .then(({ value }) => {
+                    let _old_args = JSON.parse(this.crawler_rule.request_args)
+                    if (/^https?:\/\/.*/.test(value) && _old_args.url) {
+                        _old_args.url = value
+                        this.crawler_rule.request_args = JSON.stringify(
+                            _old_args,
+                            null,
+                            2
+                        )
+                        return
+                    }
                     this.$http.post("curl_parse", value).then(
                         (r) => {
                             let result = r.body

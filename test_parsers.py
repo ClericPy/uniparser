@@ -1256,14 +1256,14 @@ def test_crawler():
         # JSON will be saved if file_path!=None
 
         result = crawler.crawl('https://www.python.org/dev/peps/')
-        print(result)
+        # print(result)
         assert result == expected_result
 
     def test_async_crawler():
 
         async def _test():
             result = await crawler.acrawl('https://www.python.org/dev/peps/')
-            print(result)
+            # print(result)
             assert result == expected_result
 
         asyncio.get_event_loop().run_until_complete(_test())

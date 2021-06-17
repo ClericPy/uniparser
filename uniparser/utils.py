@@ -726,6 +726,24 @@ class InputCallbacks(object):
     DEFAULT_RETURN = NotSet
 
     @classmethod
+    def use_content_for_default_callbacks(cls, **kwargs):
+        cls._CALLBACKS.update(
+            {
+                'json': lambda text, context: GlobalConfig.json_loads(context[
+                    'resp'].content),
+                'se': lambda text, context: _lib.HTMLParser(context['resp'].
+                                                            content),
+                'selectolax': lambda text, context: _lib.HTMLParser(context[
+                    'resp'].content),
+                'css': lambda text, context: _lib.BeautifulSoup(
+                    context['resp'].content, 'lxml'),
+                'html': lambda text, context: _lib.BeautifulSoup(
+                    context['resp'].content, 'lxml'),
+                'xml': lambda text, context: _lib.BeautifulSoup(
+                    context['resp'].content, 'lxml-xml')
+            }, **kwargs)
+
+    @classmethod
     def callback(cls, text, context, callback_name=None):
         try:
             return cls._CALLBACKS.get(callback_name,

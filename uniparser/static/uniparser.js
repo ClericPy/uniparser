@@ -215,6 +215,17 @@ var Main = {
                 iter_parse_child: false,
             })
         },
+        prepose_rule() {
+            this.send_child_rule_visible = false
+            if (this.parse_rule_idx_to_send != null) {
+                let rule = this.crawler_rule.parse_rules.splice(
+                    this.parse_rule_idx_to_send,
+                    1
+                )[0]
+                this.crawler_rule.parse_rules.unshift(rule)
+            }
+            this.parse_rule_idx_to_send = null
+        },
         tail_rule() {
             this.send_child_rule_visible = false
             if (this.parse_rule_idx_to_send != null) {

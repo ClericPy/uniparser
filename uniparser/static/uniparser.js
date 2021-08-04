@@ -413,14 +413,42 @@ var Main = {
                     "cURL string should start with curl, or url should start with http",
             })
                 .then(({ value }) => {
-                    let _old_args = JSON.parse(this.crawler_rule.request_args)
-                    if (/^https?:\/\/.*/.test(value) && _old_args.url) {
-                        _old_args.url = value
-                        this.crawler_rule.request_args = JSON.stringify(
-                            _old_args,
-                            null,
-                            2
-                        )
+                    fill_regex = (url) => {
+                        if (url && !this.crawler_rule.regex) {
+                            this.crawler_rule.regex =
+                                "^" +
+                                url
+                                    .replace(/([\.\?\+\*\^\$])/g, "\\$1")
+                                    .replace(/^https?:\/\//, "https?://") +
+                                "$"
+                        }
+                    }
+                    if (/^https?:\/\/.*/.test(value)) {
+                        try {
+                            let _old_args
+                            try {
+                                _old_args = JSON.parse(
+                                    this.crawler_rule.request_args
+                                )
+                            } catch (error) {
+                                _old_args = {
+                                    method: "get",
+                                    url: value,
+                                    headers: {
+                                        "User-Agent": "Chrome",
+                                    },
+                                }
+                            }
+
+                            _old_args.url = value
+                            this.crawler_rule.request_args = JSON.stringify(
+                                _old_args,
+                                null,
+                                2
+                            )
+                            fill_regex(value)
+                            return
+                        } catch (error) {}
                         return
                     }
                     this.$http.post("curl_parse", value).then(
@@ -433,20 +461,7 @@ var Main = {
                                     2
                                 )
                                 let url = result.result.url
-                                if (url && !this.crawler_rule.regex) {
-                                    this.crawler_rule.regex =
-                                        "^" +
-                                        url
-                                            .replace(
-                                                /([\.\?\+\*\^\$])/g,
-                                                "\\$1"
-                                            )
-                                            .replace(
-                                                /^https?:\/\//,
-                                                "https?://"
-                                            ) +
-                                        "$"
-                                }
+                                fill_regex(url)
                             } else {
                                 this.$message({
                                     type: "error",

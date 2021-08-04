@@ -190,7 +190,9 @@
                     </el-form-item>
                     <hr>
                     <el-form-item label="ParseRules">
-                        <el-checkbox v-model="show_toc" style="padding-right: 0.5em;" title="Toggle the TOC sidebar"><span style="font-size: 0.5em;">TOC</span></el-checkbox>
+                        <el-checkbox v-model="show_toc" style="padding-right: 0.5em;" title="Toggle the TOC sidebar">
+                            <span style="font-size: 0.5em;">TOC</span>
+                        </el-checkbox>
                         <br />
                         <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">
                             <div class="rule">
@@ -338,6 +340,10 @@ ${current_doc}</textarea>
                     <el-button type="warning" @click="tail_rule()"
                         title="Move this ParseRule to the tail of parse_rules to reset the sequence.">
                         Move to tail
+                    </el-button>
+                    <el-button type="warning" @click="prepose_rule()"
+                        title="Move this ParseRule to the head of parse_rules to reset the sequence.">
+                        Move to head
                     </el-button>
                     <hr />
                     <template v-for="(rule, index) in crawler_rule.parse_rules" class="rule">

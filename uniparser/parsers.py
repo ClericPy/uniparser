@@ -5,6 +5,7 @@ import re
 from abc import ABC, abstractmethod
 from base64 import (b16decode, b16encode, b32decode, b32encode, b64decode,
                     b64encode, b85decode, b85encode)
+from copy import deepcopy
 from hashlib import md5 as _md5
 from itertools import chain
 from logging import getLogger
@@ -1137,7 +1138,8 @@ class CrawlerRule(JsonSerializable):
     def get_request(self, **request):
         if not request:
             return self['request_args']
-        for k, v in self['request_args'].items():
+        # deepcopy avoid headers pollution
+        for k, v in deepcopy(self['request_args']).items():
             if k not in request:
                 request[k] = v
         return request

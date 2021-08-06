@@ -80,9 +80,13 @@ def send_request():
     CONTEXT.update(GlobalConfig.init_context())
     CONTEXT['request_args'] = rule['request_args']
     CONTEXT['resp'] = resp
+    headers = getattr(resp, 'headers', {})
+    text = str(input_object)
+    content_length = headers.get('Content-Length', len(text))
+    content_type = headers.get('Content-Type', len(text))
     return {
-        'text': str(input_object),
-        'status': f'[{getattr(resp, "status_code", 0)}] - ({type(input_object)!r})',
+        'text': text,
+        'status': f'[{getattr(resp, "status_code", 0)}] | Content-Length={content_length} | Content-Type={content_type}',
         'ok': getattr(resp, "status_code", 0) in range(200, 300),
         'msg': msg
     }

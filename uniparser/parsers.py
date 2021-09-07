@@ -22,7 +22,7 @@ from .utils import (AsyncRequestAdapter, InputCallbacks, SyncRequestAdapter,
                     _lib, decode_as_base64, encode_as_base64,
                     ensure_await_result, ensure_request,
                     get_available_async_request, get_available_sync_request,
-                    get_host)
+                    get_host, to_thread)
 
 __all__ = [
     'BaseParser', 'ParseRule', 'CrawlerRule', 'HostRule', 'CSSParser',
@@ -1406,8 +1406,8 @@ class Uniparser(object):
                                 context=None):
         # if context, use context; else use rule.context
         context = rule.context if context is None else context
-        input_object = await asyncio.get_event_loop().run_in_executor(
-            None, self.parse_chain, input_object, rule['chain_rules'], context)
+        input_object = await to_thread(self.parse_chain, input_object,
+                                       rule['chain_rules'], context)
         input_object = await ensure_await_result(input_object)
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(

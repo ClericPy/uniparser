@@ -22,6 +22,18 @@ from .exceptions import InvalidSchemaError
 
 logger = getLogger('uniparser')
 
+try:
+    from asyncio import to_thread
+except ImportError:
+    from contextvars import copy_context
+
+    async def to_thread(func, *args, **kwargs):
+        """copy python3.9"""
+        loop = asyncio.get_running_loop()
+        ctx = copy_context()
+        func_call = partial(ctx.run, func, *args, **kwargs)
+        return await loop.run_in_executor(None, func_call)
+
 
 class NotSet(object):
     __slots__ = ()
@@ -761,8 +773,7 @@ class InputCallbacks(object):
             if asyncio.iscoroutinefunction(function):
                 coro = function(text, context)
             else:
-                coro = asyncio.get_event_loop().run_in_executor(
-                    None, function, text, context)
+                coro = to_thread(function, text, context)
             return await coro
         except cls.CATCH_EXCEPTIONS:
             if cls.DEFAULT_RETURN is NotSet:

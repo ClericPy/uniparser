@@ -8,7 +8,7 @@ from setuptools import find_packages, setup
 linux:
 rm -rf "dist/*";rm -rf "build/*";python3 setup.py bdist_wheel;twine upload "dist/*;rm -rf "dist/*";rm -rf "build/*""
 win32:
-rm -rf dist;rm -rf build;python3 setup.py bdist_wheel;twine upload "dist/*";rm -rf dist;rm -rf build;rm -rf uniparser.egg-info
+rm -r dist;rm -r build;python3 setup.py bdist_wheel;twine upload "dist/*";rm -r dist;rm -r build;rm -r uniparser.egg-info
 """
 
 py_version = sys.version_info

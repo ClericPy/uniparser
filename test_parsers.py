@@ -1103,7 +1103,8 @@ def test_uni_parser():
                                   context={'asyncio': asyncio},
                                   url='http://httpbin.org/get?a=1')
         # print(result)
-        assert result['test_crawler_rule']['rule1'] == 'http', result['test_crawler_rule']['rule1']
+        assert result['test_crawler_rule']['rule1'] == 'http', result[
+            'test_crawler_rule']['rule1']
 
     asyncio.get_event_loop().run_until_complete(_a_test())
     # 5. test the parse_result variable in context usage
@@ -1354,6 +1355,19 @@ def test_utils():
     assert result == '<a href="http://www.abc.com/b">test</a><a href="http://www.abc.com/a/b/c/d/b">test</a><a href="http://www.abc.com/a/b/c/b">test</a><a href="http://www.abc.com/a/b/b">test</a><img src="http://www.abc.com/b"><img src="http://www.abc.com/a/b/c/d/b"><img src="http://www.abc.com/a/b/c/b"><img src="http://www.abc.com/a/b/b">'
 
 
+def test_object():
+    uni = Uniparser()
+    crawler_rule = CrawlerRule('crawler_rule', 'http://example.com', [
+        ParseRule('old', [['py', '', '']]),
+        ParseRule('__object__', [['py', '', 'new']]),
+        ParseRule('new', [['py', '', '']]),
+    ], '')
+    result = uni.parse(HTML, crawler_rule)['crawler_rule']
+    # print(result)
+    assert '<html>' in result['old']
+    assert result['new'] == 'new'
+
+
 def _partial_test_parser():
     from uniparser import Uniparser
 
@@ -1389,6 +1403,6 @@ if __name__ == "__main__":
             test_crawler_storage,
             test_uni_parser_frequency,
             test_crawler,
-    ):
+            test_object,):
         case()
         print(case.__name__, 'ok')

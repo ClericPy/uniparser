@@ -10,6 +10,7 @@ class GlobalConfig:
     __schema__ = '__schema__'
     __request__ = '__request__'
     __result__ = '__result__'
+    __object__ = '__object__'
     __encoding__ = 'utf-8'
     cdn_urls = {
         'VUE_JS_CDN': 'https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.12/vue.min.js',

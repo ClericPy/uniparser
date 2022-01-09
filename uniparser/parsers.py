@@ -1321,9 +1321,13 @@ class Uniparser(object):
         # alias name for request_args in context
         context.setdefault('req', context['request_args'])
         context['parse_result'] = parse_result
+        _input_object = input_object
         for parse_rule in parse_rules:
-            parse_result[parse_rule['name']] = self.parse_parse_rule(
-                input_object, parse_rule, context).get(parse_rule['name'])
+            temp_result = self.parse_parse_rule(_input_object, parse_rule,
+                                                context).get(parse_rule['name'])
+            if parse_rule['name'] == GlobalConfig.__object__:
+                _input_object = temp_result
+            parse_result[parse_rule['name']] = temp_result
         context.pop('parse_result', None)
         return {rule['name']: parse_result}
 
@@ -1392,11 +1396,13 @@ class Uniparser(object):
         # alias name for request_args in context
         context.setdefault('req', context['request_args'])
         context['parse_result'] = parse_result
+        _input_object = input_object
         for parse_rule in parse_rules:
-            temp_result = await self.aparse_parse_rule(input_object, parse_rule,
-                                                       context)
-            parse_result[parse_rule['name']] = temp_result.get(
-                parse_rule['name'])
+            temp_result = (await self.aparse_parse_rule(
+                _input_object, parse_rule, context)).get(parse_rule['name'])
+            if parse_rule['name'] == GlobalConfig.__object__:
+                _input_object = temp_result
+            parse_result[parse_rule['name']] = temp_result
         context.pop('parse_result', None)
         return {rule['name']: parse_result}
 

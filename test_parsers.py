@@ -752,7 +752,7 @@ def test_loader_parser():
     }
 
     # json
-    result = uni.loader.parse(JSON, 'json', '{"encoding": null}')
+    result = uni.loader.parse(JSON, 'json', '{"parse_int": null}')
     # print(result)
     assert result['age'] == 26
     # base64 lib

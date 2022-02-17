@@ -25,17 +25,23 @@ logger = getLogger('uniparser')
 try:
     from asyncio import to_thread
 except ImportError:
-    from contextvars import copy_context
+    try:
+        # python3.7, python3.8
+        from contextvars import copy_context
 
-    async def to_thread(func, *args, **kwargs):
-        """copy python3.9"""
-        try:
+        async def to_thread(func, *args, **kwargs):
+            """copy python3.9"""
             loop = asyncio.get_running_loop()
-        except AttributeError:
+            ctx = copy_context()
+            func_call = partial(ctx.run, func, *args, **kwargs)
+            return await loop.run_in_executor(None, func_call)
+    except ImportError:
+
+        async def to_thread(func, *args, **kwargs):
+            # python3.6
             loop = asyncio.get_event_loop()
-        ctx = copy_context()
-        func_call = partial(ctx.run, func, *args, **kwargs)
-        return await loop.run_in_executor(None, func_call)
+            func_call = partial(func, *args, **kwargs)
+            return await loop.run_in_executor(None, func_call)
 
 
 class NotSet(object):

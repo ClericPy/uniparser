@@ -1303,20 +1303,25 @@ def test_uni_parser_frequency():
         )
         start_time = time.time()
         pool = ThreadPoolExecutor()
-        tasks = [pool.submit(uni.download, crawler_rule) for _ in range(5)]
+        test_count = 5
+        tasks = [
+            pool.submit(uni.download, crawler_rule) for _ in range(test_count)
+        ]
         [task.result() for task in tasks]
         cost_time = time.time() - start_time
         # print(cost_time)
-        assert cost_time < 2
-        # set Frequency, download 2 times each 1 sec
-        uni.set_frequency('https://www.baidu.com/robots.txt', 2, 1)
+        assert cost_time < test_count
+        # set Frequency, download 1 times each 1 sec
+        uni.set_frequency('https://www.baidu.com/robots.txt', 1, 1)
         start_time = time.time()
         pool = ThreadPoolExecutor()
-        tasks = [pool.submit(uni.download, crawler_rule) for _ in range(5)]
+        tasks = [
+            pool.submit(uni.download, crawler_rule) for _ in range(test_count)
+        ]
         [task.result() for task in tasks]
         cost_time = time.time() - start_time
         # print(cost_time)
-        assert cost_time > 2
+        assert cost_time >= test_count
 
     async def test_async_crawl():
         uni = Uniparser()
@@ -1325,23 +1330,26 @@ def test_uni_parser_frequency():
             r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt"}'''
         )
         start_time = time.time()
+        test_count = 5
         tasks = [
-            asyncio.ensure_future(uni.adownload(crawler_rule)) for _ in range(5)
+            asyncio.ensure_future(uni.adownload(crawler_rule))
+            for _ in range(test_count)
         ]
         [await task for task in tasks]
         cost_time = time.time() - start_time
         # print(cost_time)
-        assert cost_time < 2
-        # set Frequency, download 2 times each 1 sec
-        uni.set_async_frequency('https://www.baidu.com/robots.txt', 2, 1)
+        assert cost_time < test_count
+        # set Frequency, download 1 times each 1 sec
+        uni.set_async_frequency('https://www.baidu.com/robots.txt', 1, 1)
         start_time = time.time()
         tasks = [
-            asyncio.ensure_future(uni.adownload(crawler_rule)) for _ in range(5)
+            asyncio.ensure_future(uni.adownload(crawler_rule))
+            for _ in range(test_count)
         ]
         [await task for task in tasks]
         cost_time = time.time() - start_time
         # print(cost_time)
-        assert cost_time > 2
+        assert cost_time > test_count
 
     test_sync_crawl()
     asyncio.get_event_loop().run_until_complete(test_async_crawl())
@@ -1404,6 +1412,7 @@ if __name__ == "__main__":
             test_crawler_storage,
             test_uni_parser_frequency,
             test_crawler,
-            test_object,):
+            test_object,
+    ):
         case()
         print(case.__name__, 'ok')

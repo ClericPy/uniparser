@@ -1303,7 +1303,7 @@ def test_uni_parser_frequency():
         )
         start_time = time.time()
         pool = ThreadPoolExecutor()
-        test_count = 5
+        test_count = 3
         tasks = [
             pool.submit(uni.download, crawler_rule) for _ in range(test_count)
         ]
@@ -1312,7 +1312,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < test_count
         # set Frequency, download 1 times each 1 sec
-        uni.set_frequency('https://www.baidu.com/robots.txt', 1, 1)
+        uni.set_frequency('https://www.baidu.com/robots.txt', 1, 2)
         start_time = time.time()
         pool = ThreadPoolExecutor()
         tasks = [
@@ -1330,7 +1330,7 @@ def test_uni_parser_frequency():
             r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt"}'''
         )
         start_time = time.time()
-        test_count = 5
+        test_count = 3
         tasks = [
             asyncio.ensure_future(uni.adownload(crawler_rule))
             for _ in range(test_count)
@@ -1340,7 +1340,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < test_count
         # set Frequency, download 1 times each 1 sec
-        uni.set_async_frequency('https://www.baidu.com/robots.txt', 1, 1)
+        uni.set_async_frequency('https://www.baidu.com/robots.txt', 1, 2)
         start_time = time.time()
         tasks = [
             asyncio.ensure_future(uni.adownload(crawler_rule))

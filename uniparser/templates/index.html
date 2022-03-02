@@ -383,7 +383,10 @@ ${current_doc}</textarea>
                     <el-menu class="el-menu-vertical-demo" @select="jump_rule" active-text-color="#303133"
                         background-color="#ffffff60">
                         <el-menu-item :index="0">
-                            <span slot="title" title="Back to the top"><i class="el-icon-top"></i>Top</span>
+                            <span slot="title" title="Back to the top"><i class="el-icon-top"></i> Top </span>
+                        </el-menu-item>
+                        <el-menu-item :index="3">
+                            <span slot="title"><i class="el-icon-edit-outline"></i> Load </span>
                         </el-menu-item>
                         <el-menu-item :index="1">
                             <span slot="title" title="Back to the top">
@@ -392,7 +395,7 @@ ${current_doc}</textarea>
                                 Download</span>
                         </el-menu-item>
                         <el-menu-item :index="2" :disabled="!input_object">
-                            <span slot="title"><i class="el-icon-video-play"></i>Parse</span>
+                            <span slot="title"><i class="el-icon-video-play"></i> Parse </span>
                         </el-menu-item>
                         <hr>
                         <el-menu-item v-for="(rule, index) in crawler_rule.parse_rules" :index="index+3">

@@ -2,11 +2,15 @@
 
 [![PyPI](https://img.shields.io/pypi/v/uniparser?style=plastic)](https://pypi.org/project/uniparser/)[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/clericpy/uniparser/Python%20package?style=plastic)](https://github.com/ClericPy/uniparser/actions?query=workflow%3A%22Python+package%22)![PyPI - Wheel](https://img.shields.io/pypi/wheel/uniparser?style=plastic)![PyPI - Python Version](https://img.shields.io/pypi/pyversions/uniparser?style=plastic)![PyPI - Downloads](https://img.shields.io/pypi/dm/uniparser?style=plastic)![PyPI - License](https://img.shields.io/pypi/l/uniparser?style=plastic)
 
-Provide a universal solution for crawler.
+Provides a general low-code page parsing solution.
 
 ## Install
 
-> pip install uniparser -U
+> `pip install uniparser -U`
+> 
+> or
+> 
+> `pip install --no-dependencies uniparser`
 
 ## Why?
 

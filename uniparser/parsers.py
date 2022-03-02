@@ -14,13 +14,11 @@ from string import Template
 from time import localtime, mktime, strftime, strptime, timezone
 from typing import Any, Callable, Dict, List, Union
 
-from frequency_controller import AsyncFrequency, Frequency
-
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError, UnknownParserNameError
-from .utils import (AsyncRequestAdapter, InputCallbacks, SyncRequestAdapter,
-                    _lib, decode_as_base64, encode_as_base64,
-                    ensure_await_result, ensure_request,
+from .utils import (AsyncRequestAdapter, InputCallbacks, NullContext,
+                    SyncRequestAdapter, _lib, decode_as_base64,
+                    encode_as_base64, ensure_await_result, ensure_request,
                     get_available_async_request, get_available_sync_request,
                     get_host, to_thread)
 
@@ -1223,9 +1221,6 @@ class Uniparser(object):
     """Parsers collection.
     """
     _RECURSION_CRAWL = True
-    _DEFAULT_FREQUENCY = Frequency()
-    _DEFAULT_ASYNC_FREQUENCY = AsyncFrequency()
-    _HOST_FREQUENCIES: Dict[str, Union[Frequency, AsyncFrequency]] = {}
 
     def __init__(self,
                  request_adapter: Union[AsyncRequestAdapter,
@@ -1241,6 +1236,10 @@ class Uniparser(object):
         self._prepare_custom_parsers()
         self.request_adapter = request_adapter
         self.parse_callback = parse_callback
+
+        self._DEFAULT_FREQUENCY = NullContext()
+        self._DEFAULT_ASYNC_FREQUENCY = NullContext()
+        self._HOST_FREQUENCIES: dict = {}
 
     def _prepare_default_parsers(self):
         self.css = CSSParser()
@@ -1567,17 +1566,14 @@ class Uniparser(object):
         context['request_args'] = request_args
         return await self.aparse(input_object, crawler_rule, context)
 
-    @classmethod
-    def set_frequency(cls, host_or_url: str, n=0, interval=0):
+    def set_frequency(self, host_or_url: str, n=0, interval=0):
         host = get_host(host_or_url, host_or_url)
-        cls._HOST_FREQUENCIES[host] = Frequency(n, interval)
+        self._HOST_FREQUENCIES[host] = _lib.Frequency(n, interval)
 
-    @classmethod
-    def set_async_frequency(cls, host_or_url: str, n=0, interval=0):
+    def set_async_frequency(self, host_or_url: str, n=0, interval=0):
         host = get_host(host_or_url, host_or_url)
-        cls._HOST_FREQUENCIES[host] = AsyncFrequency(n, interval)
+        self._HOST_FREQUENCIES[host] = _lib.AsyncFrequency(n, interval)
 
-    @classmethod
-    def pop_frequency(cls, host_or_url: str, default=None):
+    def pop_frequency(self, host_or_url: str, default=None):
         host = get_host(host_or_url, host_or_url)
-        return cls._HOST_FREQUENCIES.pop(host, default)
+        return self._HOST_FREQUENCIES.pop(host, default)

@@ -735,6 +735,8 @@ _lib.register('from yaml import full_load as yaml_full_load', 'yaml_full_load')
 _lib.register('from yaml import safe_load as yaml_safe_load', 'yaml_safe_load')
 _lib.register('from selectolax.parser import HTMLParser', 'HTMLParser')
 _lib.register('from selectolax.parser import Node', 'Node')
+_lib.register('from frequency_controller import AsyncFrequency, Frequency',
+              ('AsyncFrequency', 'Frequency'))
 
 
 class InputCallbacks(object):
@@ -796,3 +798,22 @@ class InputCallbacks(object):
     @staticmethod
     def default_callback(text, context):
         return text
+
+
+class NullContext:
+    __slots__ = ('item',)
+
+    def __init__(self, item=None):
+        self.item = item
+
+    def __enter__(self):
+        return self.item
+
+    async def __aenter__(self):
+        return self.item
+
+    def __exit__(self, *_):
+        pass
+
+    async def __aexit__(self, *_):
+        pass

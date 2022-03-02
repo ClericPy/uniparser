@@ -1295,7 +1295,8 @@ def test_uni_parser_frequency():
 
     def test_sync_crawl():
         from concurrent.futures import ThreadPoolExecutor
-        Uniparser.pop_frequency('https://www.baidu.com/robots.txt')
+        uni = Uniparser()
+        uni.pop_frequency('https://www.baidu.com/robots.txt')
         uni = Uniparser()
         crawler_rule = CrawlerRule.loads(
             r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt"}'''

@@ -87,6 +87,9 @@ var Main = {
                 case 2:
                     this.parse()
                     break
+                case 3:
+                    this.load_rule_popup()
+                    break
                 default:
                     document
                         .querySelectorAll(".rule")

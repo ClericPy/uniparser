@@ -3,6 +3,8 @@ from json import JSONDecodeError, dumps, loads
 
 class GlobalConfig:
     GLOBAL_TIMEOUT = 60
+    # system errors, will not be handled
+    SYSTEM_ERRORS = (KeyboardInterrupt, OSError, SystemExit)
     # can be set as orjson / ujson
     JSONDecodeError = JSONDecodeError
     json_dumps = dumps

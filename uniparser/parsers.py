@@ -97,6 +97,8 @@ class BaseParser(ABC):
                 ]
             else:
                 return self._parse(input_object, param, value)
+        except GlobalConfig.SYSTEM_ERRORS:
+            raise
         except Exception as err:
             # traceback.format_exception(None, e, e.__traceback__)
             return err
@@ -1413,7 +1415,12 @@ class Uniparser(object):
         context = rule.context if context is None else context
         input_object = await to_thread(self.parse_chain, input_object,
                                        rule['chain_rules'], context)
-        input_object = await ensure_await_result(input_object, catch_error=True)
+        try:
+            input_object = await ensure_await_result(input_object)
+        except GlobalConfig.SYSTEM_ERRORS:
+            raise
+        except Exception as error:
+            input_object = error
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
                 f'Schema check is not True: {repr(input_object)[:50]}')

@@ -1296,10 +1296,10 @@ def test_uni_parser_frequency():
     def test_sync_crawl():
         from concurrent.futures import ThreadPoolExecutor
         uni = Uniparser()
-        uni.pop_frequency('https://www.baidu.com/robots.txt')
+        uni.pop_frequency('https://www.python.org/robots.txt')
         uni = Uniparser()
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt"}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.python.org/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"__request__","chain_rules":[["udf","['https://www.python.org/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.python.org/robots.txt"}'''
         )
         start_time = time.time()
         pool = ThreadPoolExecutor()
@@ -1312,7 +1312,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < test_count
         # set Frequency, download 1 times each 1 sec
-        uni.set_frequency('https://www.baidu.com/robots.txt', 1, 2)
+        uni.set_frequency('https://www.python.org/robots.txt', 1, 2)
         start_time = time.time()
         pool = ThreadPoolExecutor()
         tasks = [
@@ -1325,9 +1325,9 @@ def test_uni_parser_frequency():
 
     async def test_async_crawl():
         uni = Uniparser()
-        uni.pop_frequency('https://www.baidu.com/robots.txt')
+        uni.pop_frequency('https://www.python.org/robots.txt')
         crawler_rule = CrawlerRule.loads(
-            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.baidu.com/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.baidu.com/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.baidu.com/robots.txt"}'''
+            r'''{"name":"Test Frequency","request_args":{"method":"get","url":"https://www.python.org/robots.txt","headers":{"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"}},"parse_rules":[{"name":"nonsense","chain_rules":[["udf","['https://www.python.org/robots.txt'] * 4",""]],"childs":""}],"regex":"^https://www.python.org/robots.txt"}'''
         )
         start_time = time.time()
         test_count = 3
@@ -1340,7 +1340,7 @@ def test_uni_parser_frequency():
         # print(cost_time)
         assert cost_time < test_count
         # set Frequency, download 1 times each 1 sec
-        uni.set_async_frequency('https://www.baidu.com/robots.txt', 1, 2)
+        uni.set_async_frequency('https://www.python.org/robots.txt', 1, 2)
         start_time = time.time()
         tasks = [
             asyncio.ensure_future(uni.adownload(crawler_rule))
@@ -1393,24 +1393,24 @@ if __name__ == "__main__":
     from uniparser.config import GlobalConfig
     GlobalConfig.GLOBAL_TIMEOUT = 5
     for case in (
-            # test_utils,
-            # test_context_parser,
-            # test_css_parser,
-            # test_selectolax_parser,
-            # test_xml_parser,
-            # test_re_parser,
-            # test_jsonpath_parser,
-            # test_objectpath_parser,
-            # test_jmespath_parser,
-            # test_python_parser,
-            # test_udf_parser,
-            # test_loader_parser,
-            # test_time_parser,
-            # test_uni_parser,
-            # test_crawler_rule,
-            # test_default_usage,
-            # test_crawler_storage,
-            # test_uni_parser_frequency,
+            test_utils,
+            test_context_parser,
+            test_css_parser,
+            test_selectolax_parser,
+            test_xml_parser,
+            test_re_parser,
+            test_jsonpath_parser,
+            test_objectpath_parser,
+            test_jmespath_parser,
+            test_python_parser,
+            test_udf_parser,
+            test_loader_parser,
+            test_time_parser,
+            test_uni_parser,
+            test_crawler_rule,
+            test_default_usage,
+            test_crawler_storage,
+            test_uni_parser_frequency,
             test_crawler,
             test_object,
     ):

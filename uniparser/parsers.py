@@ -1413,7 +1413,7 @@ class Uniparser(object):
         context = rule.context if context is None else context
         input_object = await to_thread(self.parse_chain, input_object,
                                        rule['chain_rules'], context)
-        input_object = await ensure_await_result(input_object)
+        input_object = await ensure_await_result(input_object, catch_error=True)
         if rule['name'] == GlobalConfig.__schema__ and input_object is not True:
             raise InvalidSchemaError(
                 f'Schema check is not True: {repr(input_object)[:50]}')

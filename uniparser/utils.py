@@ -687,10 +687,18 @@ class LazyImporter(object):
         return self.register(import_string, names=names)
 
 
-async def ensure_await_result(result):
-    if isawaitable(result):
-        return await result
-    return result
+async def ensure_await_result(result, catch_error=False):
+    try:
+        if isawaitable(result):
+            _result = await result
+        else:
+            _result = result
+        return _result
+    except Exception as error:
+        if catch_error:
+            return error
+        else:
+            raise error
 
 
 def encode_as_base64(string, encoding='utf-8'):

@@ -386,19 +386,19 @@ ${current_doc}</textarea>
                             <span slot="title" title="Back to the top"><i class="el-icon-top"></i> Top </span>
                         </el-menu-item>
                         <el-menu-item :index="3">
-                            <span slot="title"><i class="el-icon-edit-outline"></i> Load </span>
+                            <span slot="title" title="Load Rule"><i class="el-icon-edit-outline"></i> Load </span>
                         </el-menu-item>
                         <el-menu-item :index="1">
-                            <span slot="title" title="Back to the top">
+                            <span slot="title" title="Download">
                                 <i v-show="!downloading" class="el-icon-download"></i>
                                 <i v-show="downloading" class="el-icon-loading"></i>
                                 Download</span>
                         </el-menu-item>
                         <el-menu-item :index="2" :disabled="!input_object">
-                            <span slot="title"><i class="el-icon-video-play"></i> Parse </span>
+                            <span slot="title" title="Parse"><i class="el-icon-video-play"></i> Parse </span>
                         </el-menu-item>
                         <hr>
-                        <el-menu-item v-for="(rule, index) in crawler_rule.parse_rules" :index="index+3">
+                        <el-menu-item v-for="(rule, index) in crawler_rule.parse_rules" :index="index+4">
                             <span slot="title"># ${rule.name} </span>
                         </el-menu-item>
                     </el-menu>

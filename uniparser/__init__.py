@@ -18,4 +18,4 @@ __all__ = [
     'get_available_async_request', 'get_available_sync_request', 'LazyImporter',
     'TorequestsAiohttpAsyncAdapter', 'SyncRequestAdapter'
 ]
-__version__ = '2.0.2'
+__version__ = '3.0.0'

@@ -1236,6 +1236,7 @@ class Uniparser(object):
         """
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
+        self._setup_alias()
         self.request_adapter = request_adapter
         self.parse_callback = parse_callback
 
@@ -1265,25 +1266,12 @@ class Uniparser(object):
             if parser.name not in self.__dict__:
                 self.__dict__[parser.name] = parser()
 
-    # for alias
-    @property
-    def py(self):
-        return self.python
-
-    # for alias
-    @property
-    def se(self):
-        return self.selectolax
-
-    # for alias
-    @property
-    def se1(self):
-        return self.selectolax1
-
-    # for alias
-    @property
-    def json(self):
-        return self.jmespath
+    def _setup_alias(self):
+        # for alias
+        self.py = self.python
+        self.se = self.selectolax
+        self.se1 = self.selectolax1
+        self.json = self.jmespath
 
     @property
     def parsers(self):
@@ -1291,6 +1279,14 @@ class Uniparser(object):
             parser for parser in self.__dict__.values()
             if isinstance(parser, BaseParser)
         ]
+
+    @property
+    def parsers_all(self) -> Dict[str, BaseParser]:
+        return {
+            name: parser
+            for name, parser in self.__dict__.items()
+            if isinstance(parser, BaseParser)
+        }
 
     @property
     def parser_classes(self):

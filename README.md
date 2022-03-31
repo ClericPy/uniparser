@@ -26,6 +26,8 @@ Provides a general low-code page parsing solution.
 6. The implementation of web views is to be plug-in and portable, which means it can be mounted on other web apps as a [sub_app](https://fastapi.tiangolo.com/advanced/sub-applications-proxy/#mount-the-sub-application):
     1. `app.mount("/uniparser", uniparser_app)`
 
+![demo.jpg](https://raw.githubusercontent.com/ClericPy/uniparser/master/imgs/demo.jpg)
+
 ## Feature List
 
 1. Support most of popular parsers for HTML / XML / JSON / AnyString / Python object
@@ -187,30 +189,13 @@ test_async_crawler()
 > 2. python -m uniparser 8080
 > 3. open browser => http://127.0.0.1:8080/
 
-<details>
-    <summary>Start page</summary>
+![start_page.jpg](https://raw.githubusercontent.com/ClericPy/uniparser/master/imgs/start_page.jpg)
 
-![1.png](https://raw.githubusercontent.com/ClericPy/uniparser/master/imgs/1.png)
+Show result as JSON
 
-</details>
-
-<details>
-    <summary>Prepare the rules</summary>
-
-![2.png](https://raw.githubusercontent.com/ClericPy/uniparser/master/imgs/2.png)
-
-</details>
-
-<details>
-    <summary>Read the parse result</summary>
-
-Show result as repr(result)
-
-> {'HelloWorld': {'rule1-get-first-p': 'Customer name: ', 'rule2-get-legends': [' Pizza Size ', ' Pizza Toppings ']}}
+> {"CSS demo":{"Tag attribute":"post"}}
 
 As we can see, CrawlerRule's name is the root key, and ParseRule's name as the others.
-
-</details>
 
 ### Async environment usage: [Fastapi](https://github.com/tiangolo/fastapi)
 

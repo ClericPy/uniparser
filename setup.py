@@ -18,10 +18,6 @@ if py_version.major < 3 or py_version.minor < 6:
 with open('requirements.txt') as f:
     install_requires = [line for line in f.read().strip().split('\n')]
 
-# for pure uniparser without any parsers, or use pip install --no-dependencies uniparser
-if os.getenv('PURE_UNIPARSER'):
-    install_requires = []
-
 # for webui
 if not re.search(r'requests|httpx|torequests|\[all\]', str(sys.argv)):
     install_requires.append('requests')
@@ -35,6 +31,17 @@ with open(os.path.join(here, 'uniparser', '__init__.py'), encoding="u8") as f:
 
 keywords = "requests crawler parser tools universal lxml beautifulsoup bs4 jsonpath udf toml yaml"
 description = "Provide a universal solution for crawler platforms. Read more: https://github.com/ClericPy/uniparser."
+
+requests_requires = ['requests']
+httpx_requires = ['httpx']
+aiohttp_requires = ['aiohttp']
+torequests_requires = ['torequests>=5.1.5']
+parsers_requires = [
+    'selectolax', 'jsonpath-rw-ext', 'objectpath', 'bs4', 'toml', 'pyyaml>=5.3',
+    'lxml', 'jmespath'
+]
+web_requires = ['fastapi', 'jinja2', 'uvicorn', 'uvloop', 'aiofiles']
+all_requires = requests_requires + httpx_requires + torequests_requires + aiohttp_requires + parsers_requires
 setup(
     name="uniparser",
     version=version,
@@ -47,12 +54,13 @@ setup(
     py_modules=["uniparser"],
     package_data={'uniparser': ['templates/*.html', 'static/*.js']},
     extras_require={
-        'requests': ['requests'],
-        'httpx': ['httpx'],
-        'aiohttp': ['aiohttp'],
-        'torequests': ['torequests>=5.1.5'],
-        'all': ['torequests>=5.1.5', 'httpx', 'requests', 'aiohttp'],
-        'web': ['fastapi', 'jinja2', 'uvicorn', 'uvloop', 'aiofiles']
+        'requests': requests_requires,
+        'httpx': httpx_requires,
+        'aiohttp': aiohttp_requires,
+        'torequests': torequests_requires,
+        'webparsers': parsers_requires,
+        'all': all_requires,
+        'web': web_requires
     },
     classifiers=[
         "License :: OSI Approved :: MIT License",

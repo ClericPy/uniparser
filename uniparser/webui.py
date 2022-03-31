@@ -48,7 +48,9 @@ app.error_handler[500] = exception_handler
 @app.get("/")
 def index():
     parser_name_docs = {
-        name: parser.__doc__ for name, parser in uni.parsers_all.items()
+        name: parser.__doc__
+        for name, parser in uni.parsers_all.items()
+        if parser.installed
     }
     parser_name_docs[''] = 'Choose a parser_name'
     parser_name_choices = [{'value': name} for name in parser_name_docs]
@@ -109,15 +111,12 @@ def callback(path):
 
 @app.post("/parse")
 def parse_rule():
-    # kwargs = request.body.read().decode('u8')
     kwargs = request.json
-    # print(kwargs)
     input_object = kwargs['input_object']
     rule_json = kwargs['rule']
     json_result = ""
     try:
         rule = CrawlerRule.loads(rule_json)
-        # print(rule)
         result = uni.parse(input_object, rule, context=CONTEXT)
         try:
             json_result = GlobalConfig.json_dumps(result,

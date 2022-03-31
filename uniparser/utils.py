@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 from base64 import b64decode, b64encode
 from functools import partial
+from importlib.util import find_spec
 from inspect import isawaitable
 from logging import getLogger
 from re import compile as re_compile
@@ -708,7 +709,7 @@ def fix_relative_path(base_url: str, html: str, attrs=None, strict=False):
     ).search(html):
         # no need to fix
         return html
-    dom = _lib.HTMLParser(html, 'lxml')
+    dom = _lib.HTMLParser(html)
     for attr in attrs:
         for item in dom.css(f'[{attr}]'):
             value = item.attrs[attr]
@@ -817,3 +818,7 @@ class NullContext:
 
     async def __aexit__(self, *_):
         pass
+
+
+def check_import(name):
+    return find_spec(name) is not None

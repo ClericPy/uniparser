@@ -54,9 +54,10 @@ async def exception_handler(request: Request, exc: Exception):
 
 @app.get("/")
 def index(request: Request):
-    print(uni.parsers_all)
     parser_name_docs = {
-        name: parser.__doc__ for name, parser in uni.parsers_all.items()
+        name: parser.__doc__
+        for name, parser in uni.parsers_all.items()
+        if parser.installed
     }
     parser_name_docs[''] = 'Choose a parser_name'
     parser_name_choices = [{'value': name} for name in parser_name_docs]
@@ -119,7 +120,6 @@ async def parse_rule(kwargs: dict):
     json_result = ""
     try:
         rule = CrawlerRule.loads(rule_json)
-        # print(rule)
         result = await uni.aparse(input_object, rule, context=CONTEXT)
         try:
             json_result = GlobalConfig.json_dumps(result,

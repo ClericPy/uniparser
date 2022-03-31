@@ -17,7 +17,7 @@ from typing import Any, Callable, Dict, List, Union
 from .config import GlobalConfig
 from .exceptions import InvalidSchemaError, UnknownParserNameError
 from .utils import (AsyncRequestAdapter, InputCallbacks, NullContext,
-                    SyncRequestAdapter, _lib, decode_as_base64,
+                    SyncRequestAdapter, _lib, check_import, decode_as_base64,
                     encode_as_base64, ensure_await_result, ensure_request,
                     get_available_async_request, get_available_sync_request,
                     get_host, to_thread)
@@ -82,6 +82,7 @@ class BaseParser(ABC):
     test_url = 'https://github.com/ClericPy/uniparser'
     doc_url = 'https://github.com/ClericPy/uniparser'
     name = 'base'
+    installed = True
     _RECURSION_LIST = True
     __slots__ = ()
 
@@ -152,6 +153,7 @@ class CSSParser(BaseParser):
     """
     name = 'css'
     doc_url = 'https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors'
+    installed = check_import('bs4')
     operations = {
         '@attr': lambda element: element.get(),
         '$text': lambda element: element.text,
@@ -172,7 +174,10 @@ class CSSParser(BaseParser):
             return result
         # ensure input_object is instance of BeautifulSoup
         if not isinstance(input_object, _lib.Tag):
-            input_object = _lib.BeautifulSoup(input_object, 'lxml')
+            if check_import('lxml'):
+                input_object = _lib.BeautifulSoup(input_object, 'lxml')
+            else:
+                input_object = _lib.BeautifulSoup(input_object, 'html.parser')
         if value.startswith('@'):
             result = [
                 item.get(value[1:], None) for item in input_object.select(param)
@@ -204,7 +209,10 @@ class CSSSingleParser(CSSParser):
             return result
         # ensure input_object is instance of BeautifulSoup
         if not isinstance(input_object, _lib.Tag):
-            input_object = _lib.BeautifulSoup(input_object, 'lxml')
+            if check_import('lxml'):
+                input_object = _lib.BeautifulSoup(input_object, 'lxml')
+            else:
+                input_object = _lib.BeautifulSoup(input_object, 'html.parser')
         item = input_object.select_one(param)
         if item is None:
             return None
@@ -251,6 +259,7 @@ class SelectolaxParser(BaseParser):
     """
     name = 'selectolax'
     doc_url = 'https://github.com/rushter/selectolax'
+    installed = check_import('selectolax')
 
     def get_inner_html(element):
         result = []
@@ -356,6 +365,7 @@ class XMLParser(BaseParser):
     """
     name = 'xml'
     doc_url = 'https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors'
+    installed = check_import('lxml') and check_import('bs4')
     operations = {
         '@attr': lambda element: element.get(),
         '$text': lambda element: element.text,
@@ -481,6 +491,7 @@ class JSONPathParser(BaseParser):
     name = 'jsonpath'
     doc_url = 'https://github.com/sileht/python-jsonpath-rw-ext'
     test_url = 'https://jsonpath.com/'
+    installed = check_import('jsonpath_rw_ext')
     _RECURSION_LIST = False
 
     def _parse(self, input_object, param, value=''):
@@ -517,6 +528,7 @@ class ObjectPathParser(BaseParser):
     name = 'objectpath'
     doc_url = 'http://github.com/adriank/ObjectPath'
     test_url = 'http://objectpath.org/'
+    installed = check_import('objectpath')
     _RECURSION_LIST = False
     ITER_TYPES_TUPLE = tuple(_lib.ITER_TYPES)
 
@@ -551,6 +563,7 @@ class JMESPathParser(BaseParser):
     name = 'jmespath'
     doc_url = 'https://github.com/jmespath/jmespath.py'
     test_url = 'http://jmespath.org/'
+    installed = check_import('jmespath')
     _RECURSION_LIST = False
 
     def _parse(self, input_object, param, value=''):
@@ -1239,7 +1252,6 @@ class Uniparser(object):
         """
         self._prepare_default_parsers()
         self._prepare_custom_parsers()
-        self._setup_alias()
         self.request_adapter = request_adapter
         self.parse_callback = parse_callback
 
@@ -1250,16 +1262,16 @@ class Uniparser(object):
     def _prepare_default_parsers(self):
         self.css = CSSParser()
         self.css1 = CSSSingleParser()
-        self.selectolax = SelectolaxParser()
-        self.selectolax1 = SelectolaxSingleParser()
         self.xml = XMLParser()
-        self.re = RegexParser()
+        self.se = self.selectolax = SelectolaxParser()
+        self.se1 = self.selectolax1 = SelectolaxSingleParser()
         self.jsonpath = JSONPathParser()
         self.objectpath = ObjectPathParser()
-        self.jmespath = JMESPathParser()
-        self.python = PythonParser()
-        self.udf = UDFParser()
+        self.json = self.jmespath = JMESPathParser()
         self.loader = LoaderParser()
+        self.re = RegexParser()
+        self.py = self.python = PythonParser()
+        self.udf = UDFParser()
         self.time = TimeParser()
         self.context = ContextParser()
 
@@ -1268,13 +1280,6 @@ class Uniparser(object):
         for parser in BaseParser.__subclasses__():
             if parser.name not in self.__dict__:
                 self.__dict__[parser.name] = parser()
-
-    def _setup_alias(self):
-        # for alias
-        self.py = self.python
-        self.se = self.selectolax
-        self.se1 = self.selectolax1
-        self.json = self.jmespath
 
     @property
     def parsers(self):

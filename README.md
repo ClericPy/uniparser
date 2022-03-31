@@ -4,13 +4,17 @@
 
 Provides a general low-code page parsing solution.
 
+> Backwards Compatibility Breaking Warning:
+> 
+> `uniparser` will not install any default parsers after version v3.0.0. You can install some of them manually ('selectolax', 'jsonpath-rw-ext', 'objectpath', 'bs4', 'toml', 'pyyaml>=5.3', 'lxml', 'jmespath'). This warning will keep 2 versions.
+
 ## Install
 
-> `pip install uniparser -U` with all the parsers
+> `pip install uniparser -U`
 > 
 > or
 > 
-> `pip install --no-dependencies uniparser`
+> `pip install uniparser[parsers]` with default 3rd parsers
 
 ## Why?
 

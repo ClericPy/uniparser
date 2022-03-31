@@ -25,8 +25,9 @@ Provides a general low-code page parsing solution.
 5. Summarize common string parsing tools on the market.
 6. The implementation of web views is to be plug-in and portable, which means it can be mounted on other web apps as a [sub_app](https://fastapi.tiangolo.com/advanced/sub-applications-proxy/#mount-the-sub-application):
     1. `app.mount("/uniparser", uniparser_app)`
+7. Here is the **low-code** web UI screenshot.
 
-![demo.jpg](https://raw.githubusercontent.com/ClericPy/uniparser/master/imgs/demo.jpg)
+![demo.png](https://raw.githubusercontent.com/ClericPy/uniparser/master/imgs/demo.png)
 
 ## Feature List
 
@@ -189,7 +190,13 @@ test_async_crawler()
 > 2. python -m uniparser 8080
 > 3. open browser => http://127.0.0.1:8080/
 
-![start_page.jpg](https://raw.githubusercontent.com/ClericPy/uniparser/master/imgs/start_page.jpg)
+- Download URL
+
+![1.png](https://raw.githubusercontent.com/ClericPy/uniparser/master/imgs/1.png)
+
+- Parse HTML
+
+![2.png](https://raw.githubusercontent.com/ClericPy/uniparser/master/imgs/2.png)
 
 Show result as JSON
 

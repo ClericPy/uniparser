@@ -47,10 +47,11 @@ app.error_handler[500] = exception_handler
 
 @app.get("/")
 def index():
-    parser_name_docs = {i.name: i.doc for i in uni.parsers}
-    parser_name_choices = [{'value': name} for name in parser_name_docs]
+    parser_name_docs = {
+        name: parser.__doc__ for name, parser in uni.parsers_all.items()
+    }
     parser_name_docs[''] = 'Choose a parser_name'
-    parser_name_docs['py'] = parser_name_docs['python']
+    parser_name_choices = [{'value': name} for name in parser_name_docs]
     init_vars = {
         'options': parser_name_choices,
         'docs': parser_name_docs,

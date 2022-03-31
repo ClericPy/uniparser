@@ -6,7 +6,7 @@ Provides a general low-code page parsing solution.
 
 ## Install
 
-> `pip install uniparser -U`
+> `pip install uniparser -U` with all the parsers
 > 
 > or
 > 

@@ -718,6 +718,10 @@ def parse(item):
     # print(result)
     assert result == 'hello world.'
 
+    # test custom locals from context
+    result = uni.udf.parse('', 'abc', {'locals': {'abc': True}})
+    # print(result)
+    assert result is True
 
 def test_loader_parser():
     uni = Uniparser()

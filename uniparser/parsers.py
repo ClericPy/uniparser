@@ -636,6 +636,9 @@ class UDFParser(BaseParser):
         }
         local_vars.update(self._FORBIDDEN_FUNCS)
         local_vars.update(self._GLOBALS_ARGS)
+        context_locals = context.get('locals')
+        if context_locals:
+            local_vars.update(context_locals)
         # run code
         code = getattr(param, 'code', param)
         if self.get_code_mode(param) is exec:

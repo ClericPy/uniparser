@@ -8,7 +8,6 @@ from time import time
 from traceback import format_exc
 
 from fastapi import FastAPI
-from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -19,7 +18,6 @@ from ..utils import (GlobalConfig, InputCallbacks, ensure_await_result,
                      ensure_request, get_available_async_request)
 
 app = FastAPI(title="Uniparser", version=__version__)
-app.add_middleware(GZipMiddleware, minimum_size=1000)
 logger = getLogger('uniparser')
 adapter = get_available_async_request()
 if not adapter:

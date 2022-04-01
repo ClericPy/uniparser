@@ -11,6 +11,8 @@ def main():
     try:
         from .fastapi_ui import app
         from uvicorn import run
+        from fastapi.middleware.gzip import GZipMiddleware
+        app.add_middleware(GZipMiddleware, minimum_size=1000)
         run(app, port=port)
     except ImportError:
         from .webui import app

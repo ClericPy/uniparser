@@ -311,7 +311,7 @@
                         <el-switch v-model="show_parse_result_as_json" active-text="JSON" inactive-text="REPR"
                             style="font-size: 0.8em;padding: 1em;">
                         </el-switch>
-                        <textarea name="doc" id="show_parse_result"
+                        <textarea name="doc" id="show_parse_result" disabled
                             style="width: 100%; height: 100%; padding-bottom: 3em;">
 ${show_parse_result_as_json?parse_result.json:parse_result.data}</textarea>
                     </el-drawer>

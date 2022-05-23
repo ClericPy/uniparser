@@ -9,9 +9,13 @@ class GlobalConfig:
     JSONDecodeError = JSONDecodeError
     json_dumps = dumps
     json_loads = loads
+    # ensure the result is True
     __schema__ = '__schema__'
+    # fetch a new request
     __request__ = '__request__'
+    # as the result of crawler
     __result__ = '__result__'
+    # refresh the global input_object
     __object__ = '__object__'
     __encoding__ = 'utf-8'
     cdn_urls = {

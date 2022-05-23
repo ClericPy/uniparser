@@ -402,6 +402,9 @@ ${current_doc}</textarea>
                             <span slot="title"># ${rule.name} </span>
                         </el-menu-item>
                     </el-menu>
+                    <el-checkbox v-model="show_toc" style="padding-left: 0.5em;" title="Toggle the TOC sidebar">
+                        <span style="font-size: 0.5em;">Hide</span>
+                    </el-checkbox>
                 </div>
             </el-main>
         </el-container>

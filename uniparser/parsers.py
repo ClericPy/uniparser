@@ -696,6 +696,8 @@ class PythonParser(BaseParser):
             11. param: a number for index, will try to get input_object.__getitem__(int(param))
                 value: default string
                 similar to `param=default` if param is 0
+            12. param: callback
+                value: the key of InputCallbacks._CALLBACKS
 
         If not param, return value. (like `const`)
         examples:

@@ -652,10 +652,12 @@ class LazyImporter(object):
         names = self.container.pop(import_str)
         for _name in names:
             self.inverted_container.pop(_name, None)
-        old_keys = set(locals().keys())
+        old_keys = set(tuple(locals().keys()))
         # ! dangerous operation
-        exec(import_str)
-        current_locals = locals()
+        current_locals = dict()
+        exec(import_str, current_locals, current_locals)
+        if not set(names) & set(current_locals.keys()):
+            raise AttributeError(f"LazyImporter object has no attribute '{names}'")
         new_vars = current_locals.keys() - old_keys
         for imported_var in new_vars:
             if imported_var in names:
